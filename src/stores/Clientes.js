@@ -14,7 +14,7 @@ export const useStoreClientes = defineStore("Cliente", () => {
             });
             return r;
         } catch (error) {
-            console.error(error);
+            console.error("Error en getClientes:", error.response.data);
             return error;
         }
     };
@@ -28,7 +28,7 @@ export const useStoreClientes = defineStore("Cliente", () => {
             });
             return r;
         } catch (error) {
-            console.log(error);
+            console.log("Error en getClientesActivos:", error.response.data);
             return error
         }
     };
@@ -42,7 +42,7 @@ export const useStoreClientes = defineStore("Cliente", () => {
             });
             return r;
         } catch (error) {
-            console.log(error);
+            console.log("Error en getClientesInactivos:", error.response.data);
             return error
         }
     };
@@ -56,7 +56,7 @@ export const useStoreClientes = defineStore("Cliente", () => {
             });
             return r;
         } catch (error) {
-            console.log(error);
+            console.log("Error en getClientesID:", error.response.data);
             return error
         }
     };
@@ -70,7 +70,7 @@ export const useStoreClientes = defineStore("Cliente", () => {
             });
             return r;
         } catch (error) {
-            console.log(error);
+            console.log("Error en getClientesSeguimientoID:", error.response.data);
             return error
         }
     };
@@ -84,7 +84,7 @@ export const useStoreClientes = defineStore("Cliente", () => {
             });
             return r;
         } catch (error) {
-            console.log(error);
+            console.log("Error en getClientesPlan:", error.response.data);
             return error
         }
     };
@@ -98,7 +98,7 @@ export const useStoreClientes = defineStore("Cliente", () => {
             });
             return r;
         } catch (error) {
-            console.log(error);
+            console.log("Error en getClientesID:", error.response.data);
             return error
         }
     };
@@ -112,7 +112,7 @@ export const useStoreClientes = defineStore("Cliente", () => {
             });
             return r;
         } catch (error) {
-            console.log(error);
+            console.log(error.response.data);
             return error
         }
     };
@@ -127,22 +127,22 @@ export const useStoreClientes = defineStore("Cliente", () => {
             });
             return r.data; // Devuelve solo los datos de la respuesta, no toda la respuesta de Axios
         } catch (error) {
-            console.error('Error al enviar la solicitud POST:', error);
+            console.error('Error al enviar la solicitud POST:', error.response.data);
             throw error; // Lanza el error para que pueda ser manejado en el contexto donde se llama a esta función
         }
     }
-    
+
 
     const putClientes = async (id, datos) => {
         try {
             const r = await axios.put(`http://localhost:4505/api/clientes/${id}`, datos, {
                 headers: {
-                        token: useUsuario.token
-                    }
-                });
+                    token: useUsuario.token
+                }
+            });
             return r
         } catch (error) {
-            console.log(error);
+            console.log(error.response.data);
             return error
         }
     }
@@ -156,7 +156,7 @@ export const useStoreClientes = defineStore("Cliente", () => {
             });
             return r;
         } catch (error) {
-            console.log(error);
+            console.log(error.response.data);
             return error
         }
     };
@@ -170,7 +170,7 @@ export const useStoreClientes = defineStore("Cliente", () => {
             });
             return r;
         } catch (error) {
-            console.log(error);
+            console.log(error.response.data);
             return error
         }
     };

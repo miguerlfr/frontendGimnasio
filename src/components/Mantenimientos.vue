@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { useStoreMantenimientos } from "../stores/Mantenimientos.js";
 import { useStoreMaquinas } from "../stores/Maquinas.js";
 import { format } from "date-fns";
@@ -122,7 +122,7 @@ async function listarMantenimientos() {
 const listarMantenimientosPorNombreMaquina = computed(() => {
   if (
     selectedOption.value ===
-      "Listar Mantenimiento de la Máquina por su Nombre" &&
+    "Listar Mantenimiento de la Máquina por su Nombre" &&
     nombreMaquinaMantenimiento.value
   ) {
     const nombreMaquina = nombreMaquinaMantenimiento.value.toLowerCase(); // Convertir a minúsculas para comparación sin distinción entre mayúsculas y minúsculas
@@ -151,28 +151,15 @@ const listarMantenimientosPorFecha = computed(() => {
     return rows.value;
   }
 });
-
-
-
-
-// Referencias para los campos del formulario
-const selectedMachine = ref(null);
-const idMaquina = ref('');
-const fecha = ref('');
-const descripcion = ref('');
-const responsable = ref('');
-const precio = ref(0);
-const estado = ref('');
-const idMantenimientoSeleccionado = ref(null);
 const maquinas = ref([]);
 
-// Función para listar las máquinas
 const listarMaquinas = async () => {
   try {
     const response = await useMaquina.getMaquinas(); // Ajusta según tu API de servicio
     if (response.data) {
       maquinas.value = response.data.maquinas; // Ajusta según la estructura de respuesta de tu API
       console.log("Maquinas listadas:", maquinas.value);
+      // Verifica si selectedMachine y selectedMachine.value están definidos
     } else {
       console.error("La respuesta no contiene datos:", response);
     }
@@ -181,26 +168,72 @@ const listarMaquinas = async () => {
   }
 };
 
+const maquinasOptions = computed(() => {
+  return maquinas.value.map((maquina) => ({
+    label: maquina.descripcion,
+    id: maquina._id,
+  }));
+});
+
+const selectedMachine = ref(null);
+const idMaquina = ref('');
+const fecha = ref('');
+const descripcion = ref('');
+const responsable = ref('');
+const precio = ref("");
+const idMantenimientoSeleccionado = ref(null);
+
+
+const estadoOptions = [
+  { label: "Activo" },
+  { label: "Inactivo" },
+];
+
+const estadoM = ref(estadoOptions.find(option => option.label === "Activo").label);
+
 const agregarMantenimiento = async () => {
-  // Convertir la cadena de fecha a un objeto Date
-  const fechaDate = new Date(fecha.value);
-
-  // Sumar un día a la fecha
-  fechaDate.setDate(fechaDate.getDate() + 1);
-
-  const mantenimientoData = {
-    idMaquina: idMaquina.value,
-    fecha: fechaDate, // Usar el objeto Date con un día agregado
-    descripcion: descripcion.value,
-    responsable: responsable.value,
-    precio: precio.value,
-    estado: estado.value,
-  };
-
   try {
+    // Buscar la máquina seleccionada por su descripción
+    const select = selectedMachine.value
+    const label = select.label
+
+    // Verificar si se encontró la máquina seleccionada
+    if (!select) {
+      console.log("Máquina seleccionada:", label);
+      console.error("Máquina seleccionada no encontrada");
+      return;
+    }
+
+    const idMaquinaSeleccionada = select.id;
+
+    console.log("ID de la máquina seleccionada:", idMaquinaSeleccionada);
+
+    // Verifica si fecha.value tiene un valor válido antes de continuar
+    if (!fecha.value) {
+      console.error("El valor de fecha es nulo o indefinido");
+      return;
+    }
+
+    const fechaDate = new Date(fecha.value);
+    fechaDate.setDate(fechaDate.getDate() + 1);
+
+    // Asignar el valor de eA basado en el estado seleccionado
+    const eA = estadoM.value === "Activo" ? 1 : 0;
+
+    const mantenimientoData = {
+      idMaquina: idMaquinaSeleccionada,
+      fecha: fecha.value,
+      descripcion: descripcion.value,
+      responsable: responsable.value,
+      precio: precio.value,
+      estado: eA
+    };
+
+    console.log("id", idMaquinaSeleccionada);
+
     const resultado = await useMantenimiento.postMantenimientos(mantenimientoData);
-    console.log("Mantenimiento agregado con éxito:", resultado);
-    listarMantenimientos()
+    listarMantenimientos();
+    estadoM.value = estadoOptions.find(option => option.label === "Activo").label; // Estado predeterminado
     limpiarCampos();
   } catch (error) {
     console.error("Error al agregar el mantenimiento:", error);
@@ -208,28 +241,54 @@ const agregarMantenimiento = async () => {
 };
 
 const editarMantenimiento = async () => {
-  const fechaDate = new Date(fecha.value);
-
-  // Sumar un día a la fecha
-  fechaDate.setDate(fechaDate.getDate() + 1);
-
-  const mantenimientoEditado = {
+  console.log("ID de mantenimiento seleccionado:", idMantenimientoSeleccionado.value);
+  console.log("Datos a enviar:", {
     idMaquina: idMaquina.value,
-    fecha: fechaDate, // Usar el objeto Date con un día agregado
+    fecha: formatDate(fecha.value),
     descripcion: descripcion.value,
     responsable: responsable.value,
     precio: precio.value,
-    estado: estado.value,
+  });
+
+  const select = selectedMachine.value
+    const label = select.label
+
+    // Verificar si se encontró la máquina seleccionada
+    if (!select) {
+      console.log("Máquina seleccionada:", label);
+      console.error("Máquina seleccionada no encontrada");
+      return;
+    }
+
+    const idMaquinaSeleccionada = select.id;
+
+console.log("ID de la máquina seleccionada:", idMaquinaSeleccionada);
+
+
+  const mantenimientoEditado = {
+      idMaquina: idMaquinaSeleccionada,
+    fecha: formatDate(fecha.value),
+    descripcion: descripcion.value,
+    responsable: responsable.value,
+    precio: precio.value,
   };
 
   try {
+    if (!idMantenimientoSeleccionado.value) {
+      throw new Error("ID del Mantenimiento no proporcionado para la actualización");
+    }
     const response = await useMantenimiento.putMantenimientos(
       idMantenimientoSeleccionado.value,
       mantenimientoEditado
-    ); // Ajusta según tu API de servicio
+    );
     if (response.data) {
-      // Lógica para manejar la respuesta exitosa
-      limpiarCampos();
+      listarMantenimientos()
+      idMantenimientoSeleccionado.value = null;
+      idMaquina.value = "";
+      fecha.value = "";
+      descripcion.value = "";
+      responsable.value = "";
+      precio.value = "";
       console.log("Mantenimiento editado con éxito:", response.data);
     } else {
       console.error("La respuesta no contiene datos:", response);
@@ -239,63 +298,43 @@ const editarMantenimiento = async () => {
   }
 };
 
-
-
-// Función para limpiar los campos del formulario
 const limpiarCampos = () => {
   idMantenimientoSeleccionado.value = null;
   idMaquina.value = "";
   fecha.value = "";
   descripcion.value = "";
   responsable.value = "";
-  precio.value = 0;
-  estado.value = ""; // Estado predeterminado
+  precio.value = "";
+};
+const mostrarFormularioAgregarMantenimiento = ref(false);
+const mostrarFormularioEditarMantenimiento = ref(false);
+
+const cambiarFormulario = (agregar) => {
+  mostrarFormularioAgregarMantenimiento.value = agregar;
+  mostrarFormularioEditarMantenimiento.value = !agregar;
 };
 
-// Computed property para las opciones de máquinas
-const maquinasOptions = computed(() => {
-  return maquinas.value.map((maquina) => ({
-    label: maquina.descripcion,
-    value: maquina._id,
-  }));
-});
-
-// Función para manejar la selección de la máquina
-const handleMaquinaSelection = () => {
-  idMaquina.value = selectedMachine.value; // Asigna directamente el _id de la máquina seleccionada
-};
 const cargarMantenimientoParaEdicion = (mantenimiento) => {
-  idMaquina.value = mantenimiento.idMaquina;
-  if (mantenimiento.fecha) {
-    fecha.value = formatDate(mantenimiento.fecha);
-  } else {
-    fecha.value = ""; // o establecer un valor predeterminado en caso de que sea null
-  }
+  // Cargar los datos del mantenimiento en los campos del formulario
+  idMantenimientoSeleccionado.value = mantenimiento._id; // Asegúrate de que el ID está siendo seleccionado
+  selectedMachine.value = mantenimiento.idMaquina;
+  fecha.value = mantenimiento.fecha.split("T")[0],// Manejar la fecha nula
   descripcion.value = mantenimiento.descripcion;
   responsable.value = mantenimiento.responsable;
   precio.value = mantenimiento.precio;
-  estado.value = mantenimiento.estado;
 
-  // Establecer el valor seleccionado del select
-  const maquinaSeleccionada = maquinasOptions.value.find(
-    (maquina) => maquina.value === mantenimiento.idMaquina
-  );
-  if (maquinaSeleccionada) {
-    selectedMachine.value = maquinaSeleccionada.value;
-    console.log("Máquina seleccionada para edición:", maquinaSeleccionada);
-  }
+  // Cambiar al formulario de edición
+  cambiarFormulario(false);
 };
-
-
-
-
 const formatDate = (dateString) => {
   if (!dateString) return null;
   const date = new Date(dateString);
+  date.setDate(date.getDate() + 1); // Sumar un día
   const year = date.getFullYear();
   let month = date.getMonth() + 1;
   let day = date.getDate();
 
+  // Agregar ceros delante si el día o el mes son menores que 10
   if (month < 10) {
     month = "0" + month;
   }
@@ -305,26 +344,38 @@ const formatDate = (dateString) => {
 
   return `${year}-${month}-${day}`;
 };
-
-
-
-
+const cancelarMantenimiento = () => {
+  mostrarFormularioAgregarMantenimiento.value = false;
+  mostrarFormularioEditarMantenimiento.value = false;
+  limpiarCampos();
+};
 async function inactivarMantenimiento(id) {
   const r = await useMantenimiento.putMantenimientosInactivar(id);
   console.log(r.data);
   listarMantenimientos();
 }
-
 async function activarMantenimiento(id) {
   const r = await useMantenimiento.putMantenimientosActivar(id);
   console.log(r.data);
   listarMantenimientos();
 }
-
-onMounted(() => {
+onMounted(async () => {
+  await listarMaquinas(); // Asegúrate de que las máquinas se carguen antes de listar mantenimientos
   listarMantenimientos();
-  listarMaquinas();
 });
+
+watch(selectedOption, (newValue) => {
+  listarMantenimientos();
+  if (newValue === "Agregar Mantenimiento" || newValue === "Agregar Mantenimiento" && mostrarFormularioAgregarMantenimiento.value === false) {
+    mostrarFormularioAgregarMantenimiento.value = true; // Asignar el valor a la propiedad value
+    mostrarFormularioEditarMantenimiento.value = false; // Asegurarse de asignar a la propiedad value
+    // limpiarCampos()
+  } else {
+    mostrarFormularioEditarMantenimiento.value = false; // Asegurarse de asignar a la propiedad value
+    mostrarFormularioAgregarMantenimiento.value = false; // Asignar el valor a la propiedad value
+  }
+});
+
 </script>
 
 <template>
@@ -335,98 +386,103 @@ onMounted(() => {
         <hr style="width: 70%; height: 5px; background-color: green" />
       </div>
 
-      <div
-        class="contSelect"
-        style="margin-left: 5%; text-align: end; margin-right: 5%"
-      >
-        <q-select
-          background-color="green"
-          class="q-my-md"
-          v-model="selectedOption"
-          outlined
-          dense
-          options-dense
-          emit-value
-          :options="options"
-        />
+      <div class="contSelect" style="margin-left: 5%; text-align: end; margin-right: 5%">
+        <q-select background-color="green" class="q-my-md" v-model="selectedOption" outlined dense options-dense
+          emit-value :options="options" />
 
-        <input
-          v-if="
-            selectedOption ===
-            'Listar Mantenimiento de la Máquina por su Nombre'
-          "
-          v-model="nombreMaquinaMantenimiento"
-          class="q-my-md"
-          type="text"
-          name="search"
-          id="searchMaquina"
-          @dblclick="selectAllText"
-          placeholder="Nombre de la Máquina del Mantenimiento a buscar"
-        />
+        <input v-if="
+          selectedOption ===
+          'Listar Mantenimiento de la Máquina por su Nombre'
+        " v-model="nombreMaquinaMantenimiento" class="q-my-md" type="text" name="search" id="searchMaquina"
+          @dblclick="selectAllText" placeholder="Nombre de la Máquina del Mantenimiento a buscar" />
 
-        <input
-          v-if="selectedOption === 'Listar Mantenimientos por Fecha'"
-          v-model="fechaSeleccionada"
-          class="q-my-md"
-          type="date"
-          name="search"
-          id="fechaMantenimiento"
-          placeholder="Selecciona una fecha"
-        />
+        <input v-if="selectedOption === 'Listar Mantenimientos por Fecha'" v-model="fechaSeleccionada" class="q-my-md"
+          type="date" name="search" id="fechaMantenimiento" placeholder="Selecciona una fecha" />
       </div>
 
       <div>
-    <!-- Selección de máquina -->
-    <select v-model="selectedMachine" @change="handleMaquinaSelection">
-      <option v-for="maquina in maquinasOptions" :key="maquina.value" :value="maquina.value">
-        {{ maquina.label }}
-      </option>
-    </select>
+        <!-- Dialogo para agregar mantenimiento -->
+        <q-dialog v-model="mostrarFormularioAgregarMantenimiento">
+          <q-card>
+            <q-card-section>
+              <div class="text-h6">Agregar Mantenimiento</div>
+            </q-card-section>
 
-    <!-- Campos del formulario de mantenimiento -->
-    <input v-model="fecha" type="date" placeholder="Fecha" />
-    <input v-model="descripcion" type="text" placeholder="Descripción" />
-    <input v-model="responsable" type="text" placeholder="Responsable" />
-    <input v-model="precio" type="number" placeholder="Precio" />
-    <input v-model="estado" type="text" placeholder="Estado" />
+            <q-card-section>
+              <div class="q-pa-md">
+                <q-form @submit.prevent="agregarMantenimiento">
+                  <!-- Campos del formulario de agregar mantenimiento -->
+                  <!-- Selección de máquina -->
+                  <q-select v-model="selectedMachine" filled outlined label="Máquina" :options="maquinasOptions"
+                    class="q-mb-md" />
 
-    <!-- Botones para agregar y editar mantenimiento -->
-    <button @click="agregarMantenimiento">Agregar Mantenimiento</button>
-    <button @click="editarMantenimiento">Editar Mantenimiento</button>
-  </div>
+                  <q-input v-model="fecha" label="Fecha" type="date" filled class="q-mb-md" />
+                  <q-input v-model="descripcion" label="Descripción" filled class="q-mb-md" />
+                  <q-input v-model="responsable" label="Responsable" filled class="q-mb-md" />
+                  <q-input v-model="precio" label="Precio" type="number" filled class="q-mb-md" />
+                  <q-select v-model="estadoM" label="Estado" outlined :options="estadoOptions" filled class="q-mb-md" />
 
-      <q-table
-        flat
-        bordered
-        title="Mantenimientos"
-        title-class="text-green text-weight-bolder text-h5"
-        :rows="filteredRows"
-        :columns="columns"
-        row-key="id"
-      >
+                  <!-- Botón para agregar mantenimiento -->
+                  <div class="q-mt-md">
+                    <q-btn @click="cancelarMantenimiento" label="Cancelar" color="negative" class="q-ma-sm" />
+                    <q-btn type="submit" label="Agregar Mantenimiento" color="primary" class="q-ma-sm" />
+                  </div>
+                </q-form>
+              </div>
+            </q-card-section>
+          </q-card>
+        </q-dialog>
+
+        <!-- Dialogo para editar mantenimiento -->
+        <q-dialog v-model="mostrarFormularioEditarMantenimiento">
+          <q-card>
+            <q-card-section>
+              <div class="text-h6">Editar Mantenimiento</div>
+            </q-card-section>
+
+            <q-card-section>
+              <div class="q-pa-md">
+                <q-form @submit.prevent="editarMantenimiento">
+                  <!-- Campos del formulario de editar mantenimiento -->
+                  <!-- Selección de máquina -->
+                  <q-select v-model="selectedMachine" filled outlined label="Máquina" :options="maquinasOptions"
+                    class="q-mb-md" />
+
+                  <q-input v-model="fecha" label="Fecha" type="date" filled class="q-mb-md" />
+                  <q-input v-model="descripcion" label="Descripción" filled class="q-mb-md" />
+                  <q-input v-model="responsable" label="Responsable" filled class="q-mb-md" />
+                  <q-input v-model="precio" label="Precio" type="number" filled class="q-mb-md" />
+
+                  <!-- Botón para editar mantenimiento -->
+                  <div class="q-mt-md">
+                    <q-btn @click="cancelarMantenimiento" label="Cancelar" color="negative" class="q-ma-sm" />
+                    <q-btn type="submit" label="Editar Mantenimiento" color="primary" class="q-ma-sm" />
+                  </div>
+                </q-form>
+              </div>
+            </q-card-section>
+          </q-card>
+        </q-dialog>
+      </div>
+
+      <q-table flat bordered title="Mantenimientos" title-class="text-green text-weight-bolder text-h5"
+        :rows="filteredRows" :columns="columns" row-key="id">
         <template v-slot:body-cell-opciones="props">
           <q-td :props="props">
             <q-btn @click="cargarMantenimientoParaEdicion(props.row)">✏️</q-btn>
-            <q-btn
-              v-if="props.row.estado == 1"
-              @click="inactivarMantenimiento(props.row._id)"
-            >
+            <q-btn v-if="props.row.estado == 1" @click="inactivarMantenimiento(props.row._id)">
               ❌
             </q-btn>
-            <q-btn v-else @click="activarMantenimiento(props.row._id)"
-              >✅</q-btn
-            >
+            <q-btn v-else @click="activarMantenimiento(props.row._id)">✅</q-btn>
           </q-td>
         </template>
 
         <template class="a" v-slot:body-cell-estado="props">
           <q-td class="b" :props="props">
-            <p
-              :style="{
-                color: props.row.estado === 1 ? 'green' : 'red',
-                margin: 0,
-              }"
-            >
+            <p :style="{
+              color: props.row.estado === 1 ? 'green' : 'red',
+              margin: 0,
+            }">
               {{ props.row.estado === 1 ? "Activo" : "Inactivo" }}
             </p>
           </q-td>

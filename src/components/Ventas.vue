@@ -8,9 +8,10 @@ const useVenta = useStoreVentas();
 
 const codigoProducto = ref("");
 const idVentaSeleccionada = ref(null);
-const fechaVenta = ref("");
+const fecha = ref("");
 const valorUnitario = ref("");
 const cantidad = ref("");
+const valorTotal = ref("");
 
 const selectedOption = ref("Listar Ventas"); // Establecer 'Listar Ventas' como valor por defecto
 const options = [
@@ -109,43 +110,53 @@ const listarVentasPorCodigoProducto = computed(() => {
   }
 });
 
+const mostrarFormularioEditarVenta = ref(false);
+const mostrarFormularioAgregarVenta = ref(false);
+
 function cargarVentaParaEdicion(venta) {
   idVentaSeleccionada.value = venta._id;
-  // Formatear la fecha antes de asignarla al valor de fechaVenta
-  fechaVenta.value = format(new Date(venta.fecha), "yyyy-MM-dd");
+  // Formatear la fecha antes de asignarla al valor de fecha
+  fecha.value = venta.fecha.split("T")[0], // Suponiendo que venta.fecha está en formato ISO8601
   codigoProducto.value = venta.codigoProducto;
   valorUnitario.value = venta.valorUnitario;
   cantidad.value = venta.cantidad;
-  selectedOption.value = 'Editar Venta';
+  valorTotal.value = venta.valorUnitario * venta.cantidad;
+
+  mostrarFormularioEditarVenta.value = true;
+  mostrarFormularioAgregarVenta.value = false;
+    console.log(fecha.value);
 }
+
 async function agregarVenta() {
   const nuevaVenta = {
-    fecha: fechaVenta,
-    codigoProducto: codigoProducto,
-    valorUnitario: valorUnitario,
-    cantidad: cantidad,
-    valorTotal: valorUnitario * cantidad,
+    fecha: fecha.value, // Accede al valor de fecha usando .value
+    codigoProducto: codigoProducto.value, // Accede al valor de codigoProducto usando .value
+    valorUnitario: valorUnitario.value, // Accede al valor de valorUnitario usando .value
+    cantidad: cantidad.value, // Accede al valor de cantidad usando .value
+    valorTotal: valorUnitario.value * cantidad.value, // Calcula el valor total
   };
+  console.log(nuevaVenta);
 
   try {
     const response = await useVenta.postVentas(nuevaVenta);
     if (response.status === 200) {
       listarVentas();
-      limpiarCampos();
     } else {
       console.error("Error al agregar la venta:", response);
     }
   } catch (error) {
     console.error("Error al agregar la venta:", error);
   }
+  mostrarFormularioAgregarVenta.value = false
 }
+
 async function editarVenta() {
   const ventaEditada = {
-    fecha: fechaVenta,
-    codigoProducto: codigoProducto,
-    valorUnitario: valorUnitario,
-    cantidad: cantidad,
-    valorTotal: valorUnitario * cantidad,
+    fecha: formatDate(fecha.value), // Accede al valor de fecha usando .value
+    codigoProducto: codigoProducto.value, // Accede al valor de codigoProducto usando .value
+    valorUnitario: valorUnitario.value, // Accede al valor de valorUnitario usando .value
+    cantidad: cantidad.value, // Accede al valor de cantidad usando .value
+    valorTotal: valorUnitario.value * cantidad.value, // Calcula el valor total
   };
 
   try {
@@ -167,7 +178,7 @@ async function editarVenta() {
 
 // async function agregarVenta() {
 //   const nuevaVenta = {
-//     fecha: format(new Date(fechaVenta.value), "yyyy-MM-dd"),
+//     fecha: format(new Date(fecha.value), "yyyy-MM-dd"),
 //     codigoProducto: codigoProducto.value.trim(),
 //     valorUnitario: parseFloat(valorUnitario.value),
 //     cantidad: parseInt(cantidad.value),
@@ -200,15 +211,50 @@ async function editarVenta() {
 //     console.error('Error al agregar o editar la venta:', error);
 //   }
 // }
+const formatDate = (dateString) => {
+  if (!dateString) return null;
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  let month = date.getMonth() + 1;
+  let day = date.getDate();
+
+  // Agregar ceros delante si el día o el mes son menores que 10
+  if (month < 10) {
+    month = "0" + month;
+  }
+  if (day < 10) {
+    day = "0" + day;
+  }
+
+  return `${year}-${month}-${day}`;
+};
 
 function limpiarCampos() {
   idVentaSeleccionada.value = null;
-  fechaVenta.value = "";
+  fecha.value = "";
   codigoProducto.value = "";
   valorUnitario.value = "";
   cantidad.value = "";
-  selectedOption.value = 'Agregar Venta';
+  valorTotal.value = "";
 }
+const cancelarEdicion = () => {
+  // Ocultar el formulario de edición
+  mostrarFormularioEditarVenta.value = false;
+  // Limpiar los campos del formulario
+  limpiarCampos();
+};
+
+watch(selectedOption, (newValue) => {
+  listarVentas();
+  if (newValue === "Agregar Venta") {
+    mostrarFormularioAgregarVenta.value = true; // Mostrar el formulario de agregar venta
+    mostrarFormularioEditarVenta.value = false;
+    // limpiarCampos(); // Esto parece ser una función para limpiar los campos, si es necesario, puedes llamarla aquí
+  } else {
+    mostrarFormularioEditarVenta.value = false;
+    mostrarFormularioAgregarVenta.value = false; // Ocultar el formulario de agregar venta si se selecciona otra opción
+  }
+});
 
 onMounted(() => {
   listarVentas();
@@ -232,12 +278,13 @@ onMounted(() => {
       </div>
 
       <!-- Formulario para agregar venta -->
-      <q-form v-if="selectedOption === 'Agregar Venta'" @submit.prevent="agregarVenta">
+      <q-form v-if="mostrarFormularioAgregarVenta" @submit.prevent="agregarVenta">
         <div class="q-pa-md">
           <h2>Agregar Venta</h2>
-          <q-input v-model="fechaVenta" label="Fecha de Venta" type="date" outlined />
+          <q-input v-model="fecha" label="Fecha de Venta" type="date" outlined />
           <q-input v-model="codigoProducto" label="Código del Producto" outlined />
           <q-input v-model="valorUnitario" label="Valor Unitario" type="number" outlined />
+          <q-input v-model="valorTotal" label="Valor Total" type="number" outlined />
           <q-input v-model="cantidad" label="Cantidad" type="number" outlined />
           <q-btn type="submit" label="Guardar Venta" color="primary" class="q-ma-sm" />
           <q-btn label="Limpiar" color="negative" class="q-ma-sm" @click="limpiarCampos" />
@@ -245,14 +292,15 @@ onMounted(() => {
       </q-form>
 
       <!-- Formulario para editar venta -->
-      <q-form v-if="selectedOption === 'Editar Venta'" @submit.prevent="editarVenta">
+      <q-form v-if="mostrarFormularioEditarVenta" @submit.prevent="editarVenta">
         <div class="q-pa-md">
           <h2>Editar Venta</h2>
           <!-- Aquí colocas los campos para editar la venta -->
           <!-- Por ejemplo: -->
-          <q-input v-model="fechaVenta" label="Fecha de Venta" type="date" outlined />
+          <q-input v-model="fecha" label="Fecha de Venta" type="date" outlined />
           <q-input v-model="codigoProducto" label="Código del Producto" outlined />
           <q-input v-model="valorUnitario" label="Valor Unitario" type="number" outlined />
+          <q-input v-model="valorTotal" label="Valor Total" type="number" outlined />
           <q-input v-model="cantidad" label="Cantidad" type="number" outlined />
           <q-btn type="submit" label="Guardar Cambios" color="primary" class="q-ma-sm" />
           <q-btn label="Cancelar" color="negative" class="q-ma-sm" @click="cancelarEdicion" />

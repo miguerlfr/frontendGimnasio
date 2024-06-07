@@ -29,7 +29,6 @@ const columns = ref([
   { name: "estado", label: "Estado", field: "estado", align: "center" },
   { name: "opciones", label: "Opciones", field: "opciones", align: "center" },
 ]);
-
 // Función computada para manejar la lógica de qué datos mostrar
 const filteredRows = computed(() => {
   switch (selectedOption.value) {
@@ -39,14 +38,11 @@ const filteredRows = computed(() => {
       return rows.value;
   }
 });
-
 async function listarPlanes() {
   const r = await usePlan.getPlanes();
   console.log(r.data);
   rows.value = r.data.planes;
 }
-
-// Función computada para filtrar los planes por código
 const listarPlanCodigo = computed(() => {
   if (
     selectedOption.value === "Listar Plan por Código" &&
@@ -60,19 +56,16 @@ const listarPlanCodigo = computed(() => {
     return rows.value; // Devuelve todos los planes si no hay un código especificado
   }
 });
-
 async function listarPlanesActivos(id) {
   const r = await usePlan.getPlanesActivos();
   // console.log(r);
   rows.value = r.data.planesAc;
 }
-
 async function listarPlanesInactivos(id) {
   const r = await usePlan.getPlanesInactivos();
   // console.log(r);
   rows.value = r.data.planesIn;
 }
-
 const actualizarListadoPlanes = () => {
   switch (selectedOption.value) {
     case "Listar Planes Activos":
@@ -86,25 +79,106 @@ const actualizarListadoPlanes = () => {
       break;
   }
 };
-
 async function inactivarPlan(id) {
   const r = await usePlan.putPlanesInactivar(id);
   console.log(r.data);
   actualizarListadoPlanes();
 }
-
 async function activarPlan(id) {
   const r = await usePlan.putPlanesActivar(id);
   console.log(r.data);
   actualizarListadoPlanes();
 }
 
+const mostrarFormularioAgregarPlan = ref(false);
+const mostrarFormularioEditarPlan = ref(false);
+const codigo = ref("");
+const selectedPlanId = ref(null);
+const descripcion = ref("");
+const valor = ref("");
+const dias = ref("");
+
+const estadoOptions = [
+  { label: "Activo" }, // Agrega el valor 'Activo' aquí
+  { label: "Inactivo" }, // Agrega el valor 'Inactivo' aquí
+];
+const estado = ref(estadoOptions.find(option => option.label === "Activo").label);
+const limpiarCamposPlan = () => {
+  codigo.value = "";
+  descripcion.value = "";
+  valor.value = "";
+  dias.value = "";
+};
+const agregarPlan = async () => {
+  try {
+    const datosPlan = {
+      codigo: codigo.value,
+      descripcion: descripcion.value,
+      valor: valor.value,
+      dias: dias.value,
+      estado: estadoOptions.find(option => option.label === estado.value).value,
+    };
+
+    const response = await usePlan.postPlanes(datosPlan);
+    if (response.status === 200) {
+      listarPlanes();
+      estado.value = "Activo";
+      limpiarCamposPlan();
+    } else {
+      console.error('Error al agregar el plan:', response.data);
+    }
+  } catch (error) {
+    console.error('Error al agregar el plan:', error);
+  }
+};
+const editarPlan = async () => {
+  try {
+    const datosPlan = {
+      codigo: codigo.value,
+      descripcion: descripcion.value,
+      valor: valor.value,
+      dias: dias.value,
+    };
+
+    const response = await usePlan.putPlanes(selectedPlanId.value, datosPlan);
+    if (response.status === 200) {
+      listarPlanes();
+      limpiarCamposPlan();
+      mostrarFormularioEditarPlan.value = false;
+    } else {
+      console.error('Error al editar el plan:', response.data);
+    }
+  } catch (error) {
+    console.error('Error al editar el plan:', error);
+  }
+};
+const setPlanToEdit = (plan) => {
+  selectedPlanId.value = plan._id;
+  codigo.value = plan.codigo;
+  descripcion.value = plan.descripcion;
+  valor.value = plan.valor;
+  dias.value = plan.dias;
+  mostrarFormularioAgregarPlan.value = false;
+  mostrarFormularioEditarPlan.value = true;
+};
+const cancelarPlan = () => {
+  limpiarCamposPlan();
+  mostrarFormularioAgregarPlan.value = false;
+  mostrarFormularioEditarPlan.value = false;
+};;
 onMounted(() => {
   listarPlanes();
 });
-
-watch(selectedOption, () => {
+watch(selectedOption, (newValue) => {
   actualizarListadoPlanes();
+  if (newValue === "Agregar Plan") {
+    mostrarFormularioAgregarPlan.value = true;
+    mostrarFormularioEditarPlan.value = false;
+    limpiarCamposPlan()
+  } else {
+    mostrarFormularioEditarPlan.value = false;
+    mostrarFormularioAgregarPlan.value = false;
+  }
 });
 </script>
 
@@ -142,6 +216,31 @@ watch(selectedOption, () => {
         />
       </div>
 
+      <q-form v-if="mostrarFormularioAgregarPlan" @submit.prevent="agregarPlan">
+        <div class="q-pa-md">
+          <h2>Agregar Plan</h2>
+          <q-input v-model="codigo" label="Codigo" outlined />
+          <q-input v-model="descripcion" label="Descripción" outlined />
+          <q-input v-model="valor" label="Valor" type="number" outlined />
+          <q-input v-model="dias" label="Días" outlined />
+          <q-select v-model="estado" label="Estado" outlined :options="estadoOptions" />
+          <q-btn @click="cancelarPlan" class="q-ma-sm" >Cancelar</q-btn>
+          <q-btn type="submit" color="primary" class="q-ma-sm">Agregar Plan</q-btn>
+        </div>
+      </q-form>
+
+      <q-form v-if="mostrarFormularioEditarPlan" @submit.prevent="editarPlan">
+        <div class="q-pa-md">
+          <h2>Editar Plan</h2>
+          <q-input v-model="codigo" label="Codigo" outlined />
+          <q-input v-model="descripcion" label="Descripción" outlined />
+          <q-input v-model="valor" label="Valor" type="number" outlined />
+          <q-input v-model="dias" label="Días" outlined />
+          <q-btn @click="cancelarPlan" class="q-ma-sm" >Cancelar</q-btn>
+          <q-btn type="submit" color="primary" class="q-ma-sm">Guardar cambios</q-btn>
+        </div>
+      </q-form>
+
       <q-table
         flat
         bordered
@@ -153,8 +252,7 @@ watch(selectedOption, () => {
       >
       <template v-slot:body-cell-opciones="props">
           <q-td :props="props">
-            <q-btn @click="putPlanes(props.row._id)">✏️</q-btn>
-            <q-btn
+            <q-btn @click="setPlanToEdit(props.row)">✏️</q-btn>            <q-btn
               v-if="props.row.estado == 1"
               @click="inactivarPlan(props.row._id)"
             >

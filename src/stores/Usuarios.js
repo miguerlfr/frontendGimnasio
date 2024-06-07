@@ -70,7 +70,7 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
             // console.log(token.value);
 			return r;
 		} catch (error) {
-			console.log(error);
+			console.log(error.response.data.msg);
             console.log(email);
 			return error;
 		}
@@ -85,7 +85,7 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
             });
             return r;
         } catch (error) {
-            console.log(error);
+            console.log("Error en postPagos:", error);
             return error;
         }
     };
@@ -97,9 +97,10 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
                     token: token.value
                 }
             });
+            console.log(r);
             return r;
         } catch (error) {
-            console.log(error);
+            console.log("Error en putUsuarios:", error.response.data);
             return error;
         }
     };

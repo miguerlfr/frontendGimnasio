@@ -112,24 +112,21 @@ export const useStorePagos = defineStore("Pago", () => {
             });
             return r;
         } catch (error) {
-            console.log(error);
+            console.log("Error en postPagos:", error.response.data);
             return error;
         }
     };
 
-    const putPagos = async (id, datos) => {
-        try {
-            const r = await axios.put(`http://localhost:4505/api/pagos/${id}`, datos, {
-				headers: {
-                    token: useUsuario.token
-                }
-            });
-            return r;
-        } catch (error) {
-            console.log(error);
-            return error;
-        }
-    };
+const putPagos = async (id, pagoEditado) => {
+  try {
+    const response = await axios.put(`http://localhost:4505/api/pagos/${id}`, pagoEditado);
+    return response;
+  } catch (error) {
+    console.error("Error en putPagos:", error.response ? error.response.data : error.message);
+    throw error;
+  }
+}
+
 
     const putPagosActivar = async (id) => {
         try {

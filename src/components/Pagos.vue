@@ -43,7 +43,6 @@ const columns = ref([
   { name: "opciones", label: "Opciones", field: "opciones", align: "center" },
 ]);
 
-// Función computada para manejar la lógica de qué datos mostrar
 const filteredRows = computed(() => {
   switch (selectedOption.value) {
     case "Listar Pagos por Fecha":
@@ -56,7 +55,6 @@ const filteredRows = computed(() => {
       return rows.value;
   }
 });
-
 async function listarPagos() {
   // Obtener la lista de clientes
   const clientesResponse = await useCliente.getClientes();
@@ -82,7 +80,6 @@ async function listarPagos() {
   // Asignar los pagos actualizados a la variable 'rows'
   rows.value = pagos;
 }
-
 const listarPagosPorFecha = computed(() => {
   if (
     selectedOption.value === "Listar Pagos por Fecha" &&
@@ -102,7 +99,6 @@ const listarPagosPorFecha = computed(() => {
     return rows.value; // Devolver todos los pagos si no se ha seleccionado una fecha
   }
 });
-
 const listarPagosPorPlan = computed(() => {
   const planInput = planC.value.toLowerCase();
   if (selectedOption.value === "Listar Pagos por Plan" && planC.value) {
@@ -113,7 +109,6 @@ const listarPagosPorPlan = computed(() => {
     return rows.value;
   }
 });
-
 const listarPagosPorCliente = computed(() => {
   const clienteInput = nombreCliente.value.toLowerCase();
   if (
@@ -127,10 +122,9 @@ const listarPagosPorCliente = computed(() => {
     return rows.value;
   }
 });
-
 const ActivarInactivarPagos = async () => {
   let pagos = [];
-  
+
   switch (selectedOption.value) {
     case "Listar Pagos Activos":
       pagos = (await usePago.getPagosActivos()).data.pagosAc;
@@ -153,27 +147,186 @@ const ActivarInactivarPagos = async () => {
 
   rows.value = pagos;
 };
-
-
 async function inactivarPago(id) {
+  console.log("Iniciando inactivarPago con ID:", id);
   const r = await usePago.putPagosInactivar(id);
-  console.log(r.data);
+  console.log("Respuesta de inactivarPago:", r.data);
   ActivarInactivarPagos();
 }
-
 async function activarPago(id) {
+  console.log("Iniciando activarPago con ID:", id);
   const r = await usePago.putPagosActivar(id);
-  console.log(r.data);
+  console.log("Respuesta de activarPago:", r.data);
   ActivarInactivarPagos();
 }
 
+
+const idPagoSeleccionada = ref("");
+const clientePago = ref("");
+const planPago = ref("");
+const fechaPago = ref("");
+const valorPago = ref("");
+
+const clientePagoEditar = ref("");
+const planPagoEditar = ref("");
+const fechaPagoEditar = ref("");
+const valorPagoEditar = ref("");
+const mostrarFormularioAgregarPago = ref(false);
+const mostrarFormularioEditarPago = ref(false);
+const estadoOptions = [
+  { label: "Activo" }, // Agrega el valor 'Activo' aquí
+  { label: "Inactivo" }, // Agrega el valor 'Inactivo' aquí
+];
+const estadoPago = ref(estadoOptions.find(option => option.label === "Activo").label);
+
+const limpiarCamposPago = () => {
+  clientePago.value = "";
+  planPago.value = "";
+  fechaPago.value = "";
+  valorPago.value = "";
+};
+
+const formatDate = (dateString) => {
+  if (!dateString) return null;
+  const date = new Date(dateString);
+  date.setDate(date.getDate() + 1); // Sumar un día
+  const year = date.getFullYear();
+  let month = date.getMonth() + 1;
+  let day = date.getDate();
+
+  if (month < 10) {
+    month = "0" + month;
+  }
+  if (day < 10) {
+    day = "0" + day;
+  }
+
+  return `${year}-${month}-${day}`;
+};
+const cancelarEdicionPago = () => {
+  clientePagoEditar.value = "";
+  planPagoEditar.value = "";
+  fechaPagoEditar.value = "";
+  valorPagoEditar.value = "";
+  mostrarFormularioEditarPago.value = false; // Ocultar formulario de edición
+};
+const cargarPagoParaEdicion = (pago) => {
+  idPagoSeleccionada.value = pago._id; // Asegúrate de que este es el campo correcto para el ID del pago
+  clientePagoEditar.value = pago.cliente;
+  planPagoEditar.value = pago.plan;
+  fechaPagoEditar.value = pago.fecha.split("T")[0];
+  valorPagoEditar.value = pago.valor;
+  mostrarFormularioEditarPago.value = true; // Mostrar el formulario de edición
+  mostrarFormularioAgregarPago.value = false; // Ocultar el formulario de agregar pago
+};
+function quitarTildes(texto) {
+  return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+async function obtenerClienteIdPorNombre(nombre) {
+  try {
+    const response = await useCliente.getClientes();
+    const clientes = response.data.clientes;
+
+    // Convertir el nombre ingresado y los nombres de la lista a minúsculas y sin tildes
+    const nombreBuscado = quitarTildes(nombre.toLowerCase());
+
+    // Buscar el cliente en la lista
+    const clienteEncontrado = clientes.find(cliente => quitarTildes(cliente.nombre.toLowerCase()) === nombreBuscado);
+
+    if (clienteEncontrado) {
+      return clienteEncontrado._id;
+    } else {
+      throw new Error('Cliente no encontrado');
+    }
+  } catch (error) {
+    console.error('Error al obtener el ID del cliente:', error);
+    throw error;
+  }
+}
+// const clienteId = ref("")
+// async function obtenerClienteIdPorNombre(nombre) {
+//   try {
+//     const response = await useCliente.getClientes();
+//     const clientes = response.data.clientes;
+//     const nombreBuscado = quitarTildes(nombre.toLowerCase());
+//     const clienteEncontrado = clientes.find(cliente => quitarTildes(cliente.nombre.toLowerCase()) === nombreBuscado);
+
+//     if (clienteEncontrado) {
+//       return clienteEncontrado._id;
+//     } else {
+//       throw new Error('Cliente no encontrado');
+//     }
+//   } catch (error) {
+//     console.error('Error al obtener el ID del cliente:', error);
+//     throw error;
+//   }
+// }
+const agregarPago = async () => {
+  try {
+    const clienteId = await obtenerClienteIdPorNombre(clientePago.value);
+
+    let eA = estadoPago.value === "Activo" ? 1 : 0;
+
+    const nuevoPago = {
+      cliente: clienteId,
+      plan: planPago.value,
+      fecha: fechaPago.value,
+      valor: valorPago.value,
+      estado: eA,
+    };
+
+    const response = await usePago.postPagos(nuevoPago);
+    if (response.status === 200) {
+      listarPagos();
+      eA = estadoOptions.find(option => option.label === "Activo").label; // Estado predeterminado
+      limpiarCamposPago();
+    } else {
+      console.error('Error al agregar el pago:', response.data);
+    }
+  } catch (error) {
+    console.error('Error al agregar el pago:', error);
+  }
+};
+async function editarPago() {
+  if (!idPagoSeleccionada.value) {
+    console.error("Error: El ID del pago no está definido");
+    return;
+  }
+
+  try {
+    const clienteId = await obtenerClienteIdPorNombre(clientePagoEditar.value);
+    const pagoEditado = {
+      cliente: clienteId,
+      plan: planPagoEditar.value,
+      fecha: fechaPagoEditar.value,
+      valor: valorPagoEditar.value,
+    };
+
+    const response = await usePago.putPagos(idPagoSeleccionada.value, pagoEditado);
+    if (response.status === 200) {
+      listarPagos();
+      cancelarEdicionPago(); // Limpiar campos y ocultar formulario después de editar
+    } else {
+      console.error("Error al editar el pago:", response.data);
+    }
+  } catch (error) {
+    console.error("Error al editar el pago:", error);
+  }
+}
 onMounted(() => {
   listarPagos();
 });
-
-watch(selectedOption, () => {
+watch(selectedOption, (newValue) => {
   ActivarInactivarPagos();
+  if (newValue === "Agregar Pago") {
+    mostrarFormularioAgregarPago.value = true;
+    mostrarFormularioEditarPago.value = false;
+  } else {
+    mostrarFormularioEditarPago.value = false;
+    mostrarFormularioAgregarPago.value = false; // Oculta el formulario de editar si no es "Agregar Pago"
+  }
 });
+
 </script>
 
 <template>
@@ -184,66 +337,51 @@ watch(selectedOption, () => {
         <hr style="width: 70%; height: 5px; background-color: green" />
       </div>
 
-      <div
-        class="contSelect"
-        style="margin-left: 5%; text-align: end; margin-right: 5%"
-      >
-        <q-select
-          background-color="green"
-          class="q-my-md"
-          v-model="selectedOption"
-          outlined
-          dense
-          options-dense
-          emit-value
-          :options="options"
-        />
+      <div class="contSelect" style="margin-left: 5%; text-align: end; margin-right: 5%">
+        <q-select background-color="green" class="q-my-md" v-model="selectedOption" outlined dense options-dense
+          emit-value :options="options" />
 
-        <input
-          v-if="selectedOption === 'Listar Pagos por Fecha'"
-          v-model="fechaSeleccionada"
-          class="q-my-md"
-          type="date"
-          name="search"
-          id="fechaSeleccionada"
-        />
+        <input v-if="selectedOption === 'Listar Pagos por Fecha'" v-model="fechaSeleccionada" class="q-my-md"
+          type="date" name="search" id="fechaSeleccionada" />
 
-        <input
-          v-if="selectedOption === 'Listar Pagos por Plan'"
-          v-model="planC"
-          class="q-my-md"
-          type="text"
-          name="search"
-          id="planC"
-          placeholder="Ingrese el plan"
-        />
+        <input v-if="selectedOption === 'Listar Pagos por Plan'" v-model="planC" class="q-my-md" type="text"
+          name="search" id="planC" placeholder="Ingrese el plan" />
 
-        <input
-          v-if="selectedOption === 'Listar Pagos por Cliente'"
-          v-model="nombreCliente"
-          class="q-my-md"
-          type="text"
-          name="search"
-          placeholder="Nombre del cliente"
-        />
+        <input v-if="selectedOption === 'Listar Pagos por Cliente'" v-model="nombreCliente" class="q-my-md" type="text"
+          name="search" placeholder="Nombre del cliente" />
       </div>
 
-      <q-table
-        flat
-        bordered
-        title="Pagos"
-        title-class="text-green text-weight-bolder text-h5"
-        :rows="filteredRows"
-        :columns="columns"
-        row-key="id"
-      >
+      <q-form v-if="mostrarFormularioAgregarPago" @submit.prevent="agregarPago">
+        <div class="q-pa-md">
+          <h2>Agregar Pago</h2>
+          <q-input v-model="clientePago" label="Cliente" outlined />
+          <q-input v-model="planPago" label="Plan" outlined />
+          <q-input v-model="fechaPago" label="Fecha" type="date" outlined />
+          <q-input v-model="valorPago" label="Valor" type="number" outlined />
+          <q-select v-model="estadoPago" label="Estado" outlined :options="estadoOptions" />
+          <q-btn @click="limpiarCamposPago" class="q-ma-sm">Cancelar</q-btn>
+          <q-btn type="submit" color="primary" class="q-ma-sm">Agregar Pago</q-btn>
+        </div>
+      </q-form>
+
+      <q-form v-if="mostrarFormularioEditarPago" @submit.prevent="editarPago">
+        <div class="q-pa-md">
+          <h2>Editar Pago</h2>
+          <q-input v-model="clientePagoEditar" label="Cliente" outlined />
+          <q-input v-model="planPagoEditar" label="Plan" outlined />
+          <q-input v-model="fechaPagoEditar" label="Fecha" type="date" outlined />
+          <q-input v-model="valorPagoEditar" label="Valor" outlined />
+          <q-btn @click="cancelarEdicionPago" class="q-ma-sm">Cancelar</q-btn>
+          <q-btn @click="editarPago" color="primary" class="q-ma-sm">Guardar cambios</q-btn>
+        </div>
+      </q-form>
+
+      <q-table flat bordered title="Pagos" title-class="text-green text-weight-bolder text-h5" :rows="filteredRows"
+        :columns="columns" row-key="id">
         <template v-slot:body-cell-opciones="props">
           <q-td :props="props">
-            <q-btn @click="putPagos(props.row._id)">✏️</q-btn>
-            <q-btn
-              v-if="props.row.estado == 1"
-              @click="inactivarPago(props.row._id)"
-            >
+            <q-btn @click="cargarPagoParaEdicion(props.row)">✏️</q-btn>
+            <q-btn v-if="props.row.estado == 1" @click="inactivarPago(props.row._id)">
               ❌
             </q-btn>
             <q-btn v-else @click="activarPago(props.row._id)">✅</q-btn>
@@ -252,12 +390,10 @@ watch(selectedOption, () => {
 
         <template class="a" v-slot:body-cell-estado="props">
           <q-td class="b" :props="props">
-            <p
-              :style="{
-                color: props.row.estado === 1 ? 'green' : 'red',
-                margin: 0,
-              }"
-            >
+            <p :style="{
+              color: props.row.estado === 1 ? 'green' : 'red',
+              margin: 0,
+            }">
               {{ props.row.estado === 1 ? "Activo" : "Inactivo" }}
             </p>
           </q-td>

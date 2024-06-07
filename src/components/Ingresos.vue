@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { useStoreClientes } from "../stores/Clientes.js";
 import { useStoreIngresos } from "../stores/Ingresos.js";
 import { format } from "date-fns";
@@ -12,7 +12,7 @@ const nombreClienteIngreso = ref("");
 const idIngresoSeleccionado = ref(null);
 const fecha = ref("");
 const sede = ref("");
-const cliente = ref("");
+// const cliente = ref("");
 const clientes = ref([]);
 const nombreCliente = ref("");
 
@@ -97,6 +97,10 @@ const listarIngresoPorNombreCliente = computed(() => {
   }
 });
 
+
+const mostrarFormularioAgregarIngreso = ref(false);
+const mostrarFormularioEditarIngreso = ref(false);
+
 const listarClientes = async () => {
   try {
     const response = await useCliente.getClientes();
@@ -141,24 +145,27 @@ const validarCliente = () => {
 };
 const cargarIngresoParaEdicion = (ingreso) => {
   idIngresoSeleccionado.value = ingreso._id;
-  fecha.value = formatDate(new Date(ingreso.fecha));
+  fecha.value = ingreso.fecha.split("T")[0];
   sede.value = ingreso.sede;
   nombreCliente.value = ingreso.cliente; // Asegúrate de actualizar correctamente el nombre del cliente
-  selectedOption.value = "Editar Ingreso";
+  mostrarFormularioAgregarIngreso.value = false;
+  mostrarFormularioEditarIngreso.value = true;
 };
-// Esta función simula la actualización de un cliente en la base de datos
-const actualizarCliente = async (cliente) => {
-  try {
-    // Aquí iría tu lógica para actualizar el cliente en la base de datos
-    // Por ejemplo, podrías hacer una petición HTTP POST o PUT a tu servidor
 
-    // Simulación de una respuesta exitosa
-    return { status: 200, message: "Cliente actualizado correctamente" };
-  } catch (error) {
-    // En caso de error, maneja la excepción adecuadamente
-    throw new Error("Error al actualizar el cliente: " + error.message);
-  }
-};
+// // Esta función simula la actualización de un cliente en la base de datos
+// const actualizarCliente = async (cliente) => {
+//   try {
+//     // Aquí iría tu lógica para actualizar el cliente en la base de datos
+//     // Por ejemplo, podrías hacer una petición HTTP POST o PUT a tu servidor
+
+//     // Simulación de una respuesta exitosa
+//     return { status: 200, message: "Cliente actualizado correctamente" };
+//   } catch (error) {
+//     // En caso de error, maneja la excepción adecuadamente
+//     throw new Error("Error al actualizar el cliente: " + error.message);
+//   }
+// };
+
 const agregarIngreso = async () => {
   console.log("Nombre del cliente ingresado:", nombreCliente.value);
 
@@ -183,6 +190,7 @@ const agregarIngreso = async () => {
     const response = await useIngreso.postIngresos(nuevoIngreso);
 
     if (response.status === 200) {
+        mostrarFormularioAgregarIngreso.value = false
       listarIngresos();
       limpiarCamposIngreso();
     } else {
@@ -191,6 +199,7 @@ const agregarIngreso = async () => {
   } catch (error) {
     console.error("Error al agregar el ingreso:", error);
   }
+
 };
 const editarIngreso = async () => {
   const clienteId = validarCliente();
@@ -208,6 +217,7 @@ const editarIngreso = async () => {
       ingresoEditado
     );
     if (response.status === 200) {
+      mostrarFormularioEditarIngreso.value = false;
       listarIngresos();
       limpiarCamposIngreso();
       idIngresoSeleccionado.value = null;
@@ -223,11 +233,11 @@ const limpiarCamposIngreso = () => {
   fecha.value = "";
   sede.value = "";
   nombreCliente.value = "";
-  selectedOption.value = "Agregar Ingreso";
 };
 const formatDate = (dateString) => {
   if (!dateString) return null;
   const date = new Date(dateString);
+  date.setDate(date.getDate() + 1); // Sumar un día
   const year = date.getFullYear();
   let month = date.getMonth() + 1;
   let day = date.getDate();
@@ -241,9 +251,27 @@ const formatDate = (dateString) => {
 
   return `${year}-${month}-${day}`;
 };
+const cancelarIngreso = () => {
+  mostrarFormularioAgregarIngreso.value = false;
+  mostrarFormularioEditarIngreso.value = false;
+  limpiarCamposIngreso();
+};
+
+watch(selectedOption, (newValue) => {
+  listarIngresos();
+  if (newValue === "Agregar Ingreso") {
+    limpiarCamposIngreso()
+    mostrarFormularioAgregarIngreso.value = true;
+    mostrarFormularioEditarIngreso.value = false;
+  } else {
+    mostrarFormularioEditarIngreso.value = false;
+    mostrarFormularioAgregarIngreso.value = false;
+  }
+});
+
 onMounted(() => {
-  listarIngresos(), 
-  listarClientes()
+  listarIngresos(),
+    listarClientes()
 });
 </script>
 
@@ -255,95 +283,65 @@ onMounted(() => {
         <hr style="width: 70%; height: 5px; background-color: green" />
       </div>
 
-      <div
-        class="contSelect"
-        style="margin-left: 5%; text-align: end; margin-right: 5%"
-      >
-        <q-select
-          background-color="green"
-          class="q-my-md"
-          v-model="selectedOption"
-          outlined
-          dense
-          options-dense
-          emit-value
-          :options="options"
-        />
+      <div class="contSelect" style="margin-left: 5%; text-align: end; margin-right: 5%">
+        <q-select background-color="green" class="q-my-md" v-model="selectedOption" outlined dense options-dense
+          emit-value :options="options" />
 
-        <input
-          v-if="selectedOption === 'Listar Ingreso del Cliente por su Nombre'"
-          v-model="nombreClienteIngreso"
-          class="q-my-md"
-          type="text"
-          name="search"
-          id="search"
-          @dblclick="selectAllText"
-          placeholder="Nombre del Cliente del Ingreso a buscar"
-        />
+        <input v-if="selectedOption === 'Listar Ingreso del Cliente por su Nombre'" v-model="nombreClienteIngreso"
+          class="q-my-md" type="text" name="search" id="search" @dblclick="selectAllText"
+          placeholder="Nombre del Cliente del Ingreso a buscar" />
       </div>
 
-      <!-- Formulario para agregar ingreso -->
-      <q-form
-        v-if="selectedOption === 'Agregar Ingreso'"
-        @submit.prevent="agregarIngreso"
-      >
-        <div class="q-pa-md">
-          <h2>Agregar Ingreso</h2>
-          <q-input v-model="fecha" label="Fecha" type="date" outlined />
-          <q-input v-model="sede" label="Sede" outlined />
-          <q-input v-model="nombreCliente" label="Cliente" outlined />
-          <q-btn
-            type="submit"
-            label="Guardar Ingreso"
-            color="primary"
-            class="q-ma-sm"
-          />
-          <q-btn
-            label="Limpiar"
-            color="negative"
-            class="q-ma-sm"
-            @click="limpiarCamposIngreso"
-          />
-        </div>
-      </q-form>
+      <div>
 
-      <!-- Formulario para editar ingreso -->
-      <q-form
-        v-if="selectedOption === 'Editar Ingreso'"
-        @submit.prevent="editarIngreso"
-      >
-        <div class="q-pa-md">
-          <h2>Editar Ingreso</h2>
-          <q-input v-model="fecha" label="Fecha" type="date" outlined />
-          <q-input v-model="sede" label="Sede" outlined />
-          <q-input v-model="nombreCliente" label="Cliente" outlined />
-          <q-btn
-            type="submit"
-            label="Guardar Cambios"
-            color="primary"
-            class="q-ma-sm"
-          />
-          <q-btn
-            label="Cancelar"
-            color="negative"
-            class="q-ma-sm"
-            @click="limpiarCamposIngreso"
-          />
-        </div>
-      </q-form>
+    <!-- Dialogo para agregar ingreso -->
+    <q-dialog v-model="mostrarFormularioAgregarIngreso">
+      <q-card>
+        <q-card-section>
+          <div class="text-h6">Agregar Ingreso</div>
+        </q-card-section>
 
-      <q-table
-        flat
-        bordered
-        title="Ingresos"
-        title-class="text-green text-weight-bolder text-h5"
-        :rows="filteredRows"
-        :columns="columns"
-        row-key="id"
-      >
+        <q-card-section>
+          <q-form @submit.prevent="agregarIngreso">
+            <q-input v-model="fecha" label="Fecha" type="date" outlined class="q-mb-md" />
+            <q-input v-model="sede" label="Sede" outlined class="q-mb-md" />
+            <q-input v-model="nombreCliente" label="Cliente" outlined class="q-mb-md" />
+            <div class="q-mt-md">
+              <q-btn @click="cancelarIngreso" label="Cancelar" color="negative" class="q-ma-sm" />
+              <q-btn type="submit" label="Guardar Ingreso" color="primary" class="q-ma-sm" />
+            </div>
+          </q-form>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+
+    <!-- Dialogo para editar ingreso -->
+    <q-dialog v-model="mostrarFormularioEditarIngreso">
+      <q-card>
+        <q-card-section>
+          <div class="text-h6">Editar Ingreso</div>
+        </q-card-section>
+
+        <q-card-section>
+          <q-form @submit.prevent="editarIngreso">
+            <q-input v-model="fecha" label="Fecha" type="date" outlined class="q-mb-md" />
+            <q-input v-model="sede" label="Sede" outlined class="q-mb-md" />
+            <q-input v-model="nombreCliente" label="Cliente" outlined class="q-mb-md" />
+            <div class="q-mt-md">
+              <q-btn @click="cancelarIngreso" label="Cancelar" color="negative" class="q-ma-sm" />
+              <q-btn type="submit" label="Guardar Cambios" color="primary" class="q-ma-sm" />
+            </div>
+          </q-form>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+  </div>
+
+      <q-table flat bordered title="Ingresos" title-class="text-green text-weight-bolder text-h5" :rows="filteredRows"
+        :columns="columns" row-key="id">
         <template v-slot:body-cell-opciones="props">
           <q-td :props="props">
-            <q-btn @click="cargarMantenimientoParaEdicion(props.row)">✏️</q-btn>
+            <q-btn @click="cargarIngresoParaEdicion(props.row)">✏️</q-btn>
           </q-td>
         </template>
       </q-table>

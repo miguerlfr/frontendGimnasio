@@ -14,7 +14,7 @@ export const useStoreMantenimientos = defineStore("Mantenimiento", () => {
             });
             return r;
         } catch (error) {
-            console.log(error);
+            console.log("Error en getMantenimientos:", error.response.data);
             return error;
         }
     };
@@ -28,7 +28,7 @@ export const useStoreMantenimientos = defineStore("Mantenimiento", () => {
             });
             return r;
         } catch (error) {
-            console.log(error);
+            console.log("Error en getMantenimientosID:", error.response.data);
             return error;
         }
     };
@@ -42,7 +42,7 @@ export const useStoreMantenimientos = defineStore("Mantenimiento", () => {
             });
             return r;
         } catch (error) {
-            console.log(error);
+            console.log("Error en getMantenimientosFechas:", error.response.data);
             return error;
         }
     };
@@ -53,7 +53,7 @@ export const useStoreMantenimientos = defineStore("Mantenimiento", () => {
             return r;
         } catch (error) {
             console.error("Error en postMantenimientos:", error);
-            throw error;
+            return error;
         }
     };
     
@@ -67,7 +67,7 @@ export const useStoreMantenimientos = defineStore("Mantenimiento", () => {
             });
             return r;
         } catch (error) {
-            console.log(error);
+            console.log("Error en putMantenimientos:", error.response.data);
             return error;
         }
     };
@@ -81,7 +81,7 @@ export const useStoreMantenimientos = defineStore("Mantenimiento", () => {
             });
             return r;
         } catch (error) {
-            console.log(error);
+            console.log("Error en putMantenimientosActivar:", error.response.data);
             return error;
         }
     };
@@ -95,7 +95,7 @@ export const useStoreMantenimientos = defineStore("Mantenimiento", () => {
             });
             return r;
         } catch (error) {
-            console.log(error);
+            console.log("Error en putMantenimientosInactivar:", error.response.data);
             return error;
         }
     };

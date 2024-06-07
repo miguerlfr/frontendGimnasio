@@ -16,7 +16,6 @@ const options = [
   { label: "Listar Producto por Código", value: "Listar Producto por Código" },
   { label: "Agregar Producto", value: "Agregar Producto" },
 ];
-
 let rows = ref([]);
 const columns = ref([
   { name: "codigo", label: "Código", field: "codigo", align: "center" },
@@ -30,7 +29,6 @@ const columns = ref([
   { name: "cantidad", label: "Cantidad", field: "cantidad", align: "center" },
   { name: "opciones", label: "Opciones", field: "opciones", align: "center" },
 ]);
-
 // Función computada para manejar la lógica de qué datos mostrar
 const filteredRows = computed(() => {
   switch (selectedOption.value) {
@@ -40,7 +38,6 @@ const filteredRows = computed(() => {
       return rows.value;
   }
 });
-
 async function listarProductos() {
   try {
     const r = await useProducto.getProductos();
@@ -50,8 +47,6 @@ async function listarProductos() {
     console.error('Error al obtener los productos:', error);
   }
 }
-
-
 // Función computada para filtrar los productos por código
 const listarProductoCodigo = computed(() => {
   if (
@@ -66,6 +61,8 @@ const listarProductoCodigo = computed(() => {
     return rows.value; // Devuelve todos los productos si no hay un código especificado
   }
 });
+
+
 
 // Agregar un nuevo producto
 async function agregarProducto() {
@@ -86,7 +83,6 @@ async function agregarProducto() {
     console.error("Error al agregar el producto");
   }
 }
-
 // Función para editar un producto
 async function editarProducto() {
   console.log('Editando producto con ID:', idProductoSeleccionado.value);
@@ -114,8 +110,6 @@ async function editarProducto() {
     console.error('El ID del producto seleccionado no es válido.');
   }
 }
-
-
 // Función para cargar los datos de un producto en el formulario para editar
 function cargarProductoParaEdicion(producto) {
   idProductoSeleccionado.value = producto._id;  // Asegúrate de usar _id
@@ -125,16 +119,12 @@ function cargarProductoParaEdicion(producto) {
   cantidadProducto.value = producto.cantidad;
   selectedOption.value = 'Editar Producto';
 }
-
-
-
 // // Función para obtener un producto por su ID
 // function obtenerProductoPorId(id) {
 //   // Supongamos que 'rows.value' contiene la lista de productos
 //   const producto = rows.value.find(producto => producto.id === id);
 //   return producto; // Devuelve el producto encontrado o undefined si no se encuentra
 // }
-
 async function putProductos(id, datos) {
   console.log('ID del producto a editar:', id);
   console.log('datos del producto a editar:', datos); // Verifica el ID recibido
@@ -151,11 +141,6 @@ async function putProductos(id, datos) {
     console.error('El producto no fue encontrado');
   }
 }
-
-
-
-
-
 // Limpiar los campos del formulario
 function limpiarCampos() {
   codigoProducto.value = "";
@@ -163,6 +148,13 @@ function limpiarCampos() {
   valorProducto.value = "";
   cantidadProducto.value = "";
 }
+
+watch(selectedOption, (newValue) => {
+  listarProductos();
+  if (newValue === "Agregar Producto") {
+    limpiarCampos();
+  }
+});
 
 onMounted(() => {
   listarProductos();
@@ -177,41 +169,39 @@ onMounted(() => {
         <hr style="width: 70%; height: 5px; background-color: green" />
       </div>
 
-      <div
-        class="contSelect"
-        style="margin-left: 5%; text-align: end; margin-right: 5%"
-      >
-        <q-select
-          background-color="green"
-          class="q-my-md"
-          v-model="selectedOption"
-          outlined
-          dense
-          options-dense
-          emit-value
-          :options="options"
-        />
+      <div class="contSelect" style="margin-left: 5%; text-align: end; margin-right: 5%">
+        <q-select background-color="green" class="q-my-md" v-model="selectedOption" outlined dense options-dense
+          emit-value :options="options" />
 
-        <input
-          v-if="selectedOption === 'Listar Producto por Código'"
-          v-model="codigoProducto"
-          class="q-my-md"
-          type="text"
-          name="codigoProducto"
-          id="codigoProducto"
-          placeholder="Ingrese el código del producto"
-        />
+        <input v-if="selectedOption === 'Listar Producto por Código'" v-model="codigoProducto" class="q-my-md"
+          type="text" name="codigoProducto" id="codigoProducto" placeholder="Ingrese el código del producto" />
       </div>
 
-      <q-table
-        flat
-        bordered
-        title="Productos"
-        title-class="text-green text-weight-bolder text-h5"
-        :rows="filteredRows"
-        :columns="columns"
-        row-key="id"
-      >
+      <q-page v-if="selectedOption === 'Agregar Producto'">
+    <h3>Agregar Producto</h3>
+    <q-form @submit.prevent="agregarProducto">
+      <q-input v-model="codigoProducto" label="Código del producto" filled required />
+      <q-input v-model="descripcionProducto" label="Descripción del producto" filled required />
+      <q-input v-model="valorProducto" label="Valor del producto" type="number" filled required />
+      <q-input v-model="cantidadProducto" label="Cantidad del producto" type="number" filled required />
+      <q-btn type="submit" label="Agregar Producto" color="primary" />
+    </q-form>
+  </q-page>
+
+  <!-- Formulario para editar un producto -->
+  <q-page v-if="selectedOption === 'Editar Producto'">
+    <h3>Editar Producto</h3>
+    <q-form @submit.prevent="editarProducto">
+      <q-input v-model="codigoProducto" label="Código del producto" filled required />
+      <q-input v-model="descripcionProducto" label="Descripción del producto" filled required />
+      <q-input v-model="valorProducto" label="Valor del producto" type="number" filled required />
+      <q-input v-model="cantidadProducto" label="Cantidad del producto" type="number" filled required />
+      <q-btn type="submit" label="Editar Producto" color="primary" />
+    </q-form>
+  </q-page>
+
+      <q-table flat bordered title="Productos" title-class="text-green text-weight-bolder text-h5" :rows="filteredRows"
+        :columns="columns" row-key="id">
         <template v-slot:body-cell-opciones="props">
           <q-td :props="props">
             <q-btn @click="putProductos(props.row._id)">✏️</q-btn>
@@ -221,30 +211,6 @@ onMounted(() => {
       </q-table>
     </div>
 
-        <!-- Formulario para agregar un nuevo producto -->
-    <div v-if="selectedOption === 'Agregar Producto'">
-      <h3>Agregar Producto</h3>
-      <form @submit.prevent="agregarProducto">
-        <input v-model="codigoProducto" type="text" placeholder="Código del producto" required>
-        <input v-model="descripcionProducto" type="text" placeholder="Descripción del producto" required>
-        <input v-model="valorProducto" type="number" placeholder="Valor del producto" required>
-        <input v-model="cantidadProducto" type="number" placeholder="Cantidad del producto" required>
-        <button type="submit">Agregar Producto</button>
-      </form>
-    </div>
-
-        <!-- Formulario para editar un producto -->
-    <div v-if="selectedOption === 'Editar Producto'">
-      <h3>Editar Producto</h3>
-      <form @submit.prevent="editarProducto">
-        <!-- Aquí puedes mostrar los campos del formulario -->
-        <input v-model="codigoProducto" type="text" placeholder="Código del producto" required>
-        <input v-model="descripcionProducto" type="text" placeholder="Descripción del producto" required>
-        <input v-model="valorProducto" type="number" placeholder="Valor del producto" required>
-        <input v-model="cantidadProducto" type="number" placeholder="Cantidad del producto" required>
-        <button type="submit">Editar Producto</button>
-      </form>
-    </div>
   </div>
 </template>
 

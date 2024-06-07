@@ -36,11 +36,12 @@
 
 <script setup>
 import { ref } from "vue";
+import { useRouter } from "vue-router";
 import { useStoreUsuarios } from "../stores/Usuarios.js";
 import { notifyErrorRequest } from "../routes/routes.js";
 
 const useUsuario = useStoreUsuarios();
-
+const router = useRouter();
 const email = ref("");
 const password = ref("");
 
@@ -49,6 +50,11 @@ async function login() {
     if (isValid) {
         const r = await useUsuario.login(email.value, password.value);
         console.log(r);
+        if (r) {
+            router.push('/Clientes'); // Redirige a la ruta con la barra lateral y la primera página protegida
+        } else {
+            notifyErrorRequest("Error al iniciar sesión. Por favor, verifica tus credenciales.");
+        }
     } else {
         notifyErrorRequest("Por favor, introduce credenciales válidas");
     }

@@ -45,7 +45,7 @@ export const useStoreVentas = defineStore(
 			  });
 			  return r;
 			} catch (error) {
-			  console.log(error);
+			  console.log("error", error);
 			  return error;
 			}
 		  };
