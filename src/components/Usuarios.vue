@@ -230,74 +230,84 @@ const selectAllText = (event) => {
           type="email" name="emailUsuario" id="emailUsuario" placeholder="Ingrese el email del usuario" />
       </div>
 
-      <q-form v-if="mostrarFormularioAgregarUsuarios" @submit.prevent="agregarUsuario">
-        <div class="q-pa-md">
-          <h2>Agregar Usuario</h2>
-          <q-input v-model="sede" label="Sede" outlined @dblclick="selectAllText" />
-          <q-input v-model="nombre" label="Nombre" outlined autocomplete="username" @dblclick="selectAllText" />
-          <q-input v-model="email" label="Email" type="email" outlined autocomplete="email" />
-          <q-input v-model="telefono" label="Telefono" type="tel" outlined autocomplete="tel"
-            @dblclick="selectAllText" />
-            <q-input v-model="password" :type="showPassword ? 'text' : 'password'" placeholder="Password"
-            autocomplete="current-password" @dblclick="selectAllText">
-            <template v-slot:append>
-              <div class="eye-wrapper" @click="togglePasswordVisibility">
-                <div style="display: flex; flex-direction: column;">
-                  <svg class="eye-icon" width="24" height="24" viewBox="0 0 24 24" style="margin-bottom: -13px;">
-                    <!-- Inserta aquí el SVG del ojo abierto -->
-                    <path fill="currentColor"
-                      d="M11.999 4.5c-3.598 0-6.59 2.399-7.633 5.662a.75.75 0 1 0 1.395.548c.808-2.387 3.083-4.21 6.238-4.21 3.17 0 5.45 1.83 6.262 4.236a.75.75 0 1 0 1.387-.556C18.605 6.919 15.614 4.5 11.999 4.5zm0 2.25c1.875 0 3.463 1.299 4.256 3.001a.75.75 0 0 0 1.418-.49C16.729 9.42 14.253 8.25 11.999 8.25s-4.732 1.169-5.674 2.511a.75.75 0 1 0 1.414.487c.776-1.62 2.701-2.748 5.259-2.748zm0 3.375a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5z" />
-                  </svg>
-                  <svg class="eye-icon" width="24" height="24" viewBox="0 0 24 24"
-                    style="transform: rotate(180deg); margin-top: -13px; animation: flip 1s;">
-                    <!-- SVG del ojo al revés -->
-                    <path fill="currentColor"
-                      d="M11.999 4.5c-3.598 0-6.59 2.399-7.633 5.662a.75.75 0 1 0 1.395.548c.808-2.387 3.083-4.21 6.238-4.21 3.17 0 5.45 1.83 6.262 4.236a.75.75 0 1 0 1.387-.556C18.605 6.919 15.614 4.5 11.999 4.5zm0 2.25c1.875 0 3.463 1.299 4.256 3.001a.75.75 0 0 0 1.418-.49C16.729 9.42 14.253 8.25 11.999 8.25s-4.732 1.169-5.674 2.511a.75.75 0 1 0 1.414.487c.776-1.62 2.701-2.748 5.259-2.748zm0 3.375a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5z" />
-                  </svg>
-                </div>
-              </div>
-            </template>
-          </q-input>
-          <q-input v-model="rol" label="Rol" outlined @dblclick="selectAllText" />
-          <q-select v-model="estado" label="Estado" outlined :options="estadoOptions" />
-          <q-btn @click="cancelarUsuario" class="q-ma-sm" >Cancelar</q-btn>
-          <q-btn type="submit" color="primary" class="q-ma-sm" >Agregar Usuario</q-btn>
-        </div>
-      </q-form>
+      <div>
+    <!-- Botones para abrir los formularios -->
+    <!-- <q-btn label="Agregar Usuario" @click="mostrarFormularioAgregarUsuarios = true" />
+    <q-btn label="Editar Usuario" @click="mostrarFormularioEditarUsuarios = true" /> -->
 
-      <q-form v-if="mostrarFormularioEditarUsuarios" @submit.prevent="editarUsuario">
-        <div class="q-pa-md">
-          <h2>Editar Usuario</h2>
-          <q-input v-model="sede" label="Sede" outlined @dblclick="selectAllText" />
-          <q-input v-model="nombre" label="Nombre" outlined autocomplete="username" @dblclick="selectAllText" />
-          <q-input v-model="email" label="Email" type="email" outlined autocomplete="email" />
-          <q-input v-model="telefono" label="Telefono" type="tel" outlined autocomplete="tel"
-            @dblclick="selectAllText" />
-          <q-input v-model="password" :type="showPassword ? 'text' : 'password'" placeholder="Password"
-            autocomplete="current-password" @dblclick="selectAllText">
-            <template v-slot:append>
-              <div class="eye-wrapper" @click="togglePasswordVisibility">
-                <div style="display: flex; flex-direction: column;">
-                  <svg class="eye-icon" width="24" height="24" viewBox="0 0 24 24" style="margin-bottom: -13px;">
-                    <!-- Inserta aquí el SVG del ojo abierto -->
-                    <path fill="currentColor"
-                      d="M11.999 4.5c-3.598 0-6.59 2.399-7.633 5.662a.75.75 0 1 0 1.395.548c.808-2.387 3.083-4.21 6.238-4.21 3.17 0 5.45 1.83 6.262 4.236a.75.75 0 1 0 1.387-.556C18.605 6.919 15.614 4.5 11.999 4.5zm0 2.25c1.875 0 3.463 1.299 4.256 3.001a.75.75 0 0 0 1.418-.49C16.729 9.42 14.253 8.25 11.999 8.25s-4.732 1.169-5.674 2.511a.75.75 0 1 0 1.414.487c.776-1.62 2.701-2.748 5.259-2.748zm0 3.375a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5z" />
-                  </svg>
-                  <svg class="eye-icon" width="24" height="24" viewBox="0 0 24 24"
-                    style="transform: rotate(180deg); margin-top: -13px; animation: flip 1s;">
-                    <!-- SVG del ojo al revés -->
-                    <path fill="currentColor"
-                      d="M11.999 4.5c-3.598 0-6.59 2.399-7.633 5.662a.75.75 0 1 0 1.395.548c.808-2.387 3.083-4.21 6.238-4.21 3.17 0 5.45 1.83 6.262 4.236a.75.75 0 1 0 1.387-.556C18.605 6.919 15.614 4.5 11.999 4.5zm0 2.25c1.875 0 3.463 1.299 4.256 3.001a.75.75 0 0 0 1.418-.49C16.729 9.42 14.253 8.25 11.999 8.25s-4.732 1.169-5.674 2.511a.75.75 0 1 0 1.414.487c.776-1.62 2.701-2.748 5.259-2.748zm0 3.375a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5z" />
-                  </svg>
+    <!-- Formulario para agregar usuario -->
+    <q-dialog v-model="mostrarFormularioAgregarUsuarios">
+      <q-card>
+        <q-card-section>
+          <div class="text-h6">Agregar Usuario</div>
+        </q-card-section>
+        <q-card-section>
+          <q-form @submit.prevent="agregarUsuario">
+            <q-input v-model="sede" label="Sede" outlined @dblclick="selectAllText" />
+            <q-input v-model="nombre" label="Nombre" outlined autocomplete="username" @dblclick="selectAllText" />
+            <q-input v-model="email" label="Email" type="email" outlined autocomplete="email" />
+            <q-input v-model="telefono" label="Telefono" type="tel" outlined autocomplete="tel" @dblclick="selectAllText" />
+            <q-input v-model="password" :type="showPassword ? 'text' : 'password'" placeholder="Password" autocomplete="current-password" @dblclick="selectAllText">
+              <template v-slot:append>
+                <div class="eye-wrapper" @click="togglePasswordVisibility">
+                  <div style="display: flex; flex-direction: column;">
+                    <svg class="eye-icon" width="24" height="24" viewBox="0 0 24 24" style="margin-bottom: -13px;">
+                      <!-- Inserta aquí el SVG del ojo abierto -->
+                      <path fill="currentColor" d="M11.999 4.5c-3.598 0-6.59 2.399-7.633 5.662a.75.75 0 1 0 1.395.548c.808-2.387 3.083-4.21 6.238-4.21 3.17 0 5.45 1.83 6.262 4.236a.75.75 0 1 0 1.387-.556C18.605 6.919 15.614 4.5 11.999 4.5zm0 2.25c1.875 0 3.463 1.299 4.256 3.001a.75.75 0 0 0 1.418-.49C16.729 9.42 14.253 8.25 11.999 8.25s-4.732 1.169-5.674 2.511a.75.75 0 1 0 1.414.487c.776-1.62 2.701-2.748 5.259-2.748zm0 3.375a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5z" />
+                    </svg>
+                    <svg class="eye-icon" width="24" height="24" viewBox="0 0 24 24" style="transform: rotate(180deg); margin-top: -13px; animation: flip 1s;">
+                      <!-- SVG del ojo al revés -->
+                      <path fill="currentColor" d="M11.999 4.5c-3.598 0-6.59 2.399-7.633 5.662a.75.75 0 1 0 1.395.548c.808-2.387 3.083-4.21 6.238-4.21 3.17 0 5.45 1.83 6.262 4.236a.75.75 0 1 0 1.387-.556C18.605 6.919 15.614 4.5 11.999 4.5zm0 2.25c1.875 0 3.463 1.299 4.256 3.001a.75.75 0 0 0 1.418-.49C16.729 9.42 14.253 8.25 11.999 8.25s-4.732 1.169-5.674 2.511a.75.75 0 1 0 1.414.487c.776-1.62 2.701-2.748 5.259-2.748zm0 3.375a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5z" />
+                    </svg>
+                  </div>
                 </div>
-              </div>
-            </template>
-          </q-input>
-          <q-input v-model="rol" label="Rol" outlined @dblclick="selectAllText" />
-          <q-btn @click="cancelarUsuario" class="q-ma-sm" >Cancelar</q-btn>
-          <q-btn type="submit" color="primary" class="q-ma-sm" >Editar Usuario</q-btn>
-        </div>
-      </q-form>
+              </template>
+            </q-input>
+            <q-input v-model="rol" label="Rol" outlined @dblclick="selectAllText" />
+            <q-select v-model="estado" label="Estado" outlined :options="estadoOptions" />
+            <q-btn @click="cancelarUsuario" class="q-ma-sm">Cancelar</q-btn>
+            <q-btn type="submit" color="primary" class="q-ma-sm">Agregar Usuario</q-btn>
+          </q-form>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+
+    <!-- Formulario para editar usuario -->
+    <q-dialog v-model="mostrarFormularioEditarUsuarios">
+      <q-card>
+        <q-card-section>
+          <div class="text-h6">Editar Usuario</div>
+        </q-card-section>
+        <q-card-section>
+          <q-form @submit.prevent="editarUsuario">
+            <q-input v-model="sede" label="Sede" outlined @dblclick="selectAllText" />
+            <q-input v-model="nombre" label="Nombre" outlined autocomplete="username" @dblclick="selectAllText" />
+            <q-input v-model="email" label="Email" type="email" outlined autocomplete="email" />
+            <q-input v-model="telefono" label="Telefono" type="tel" outlined autocomplete="tel" @dblclick="selectAllText" />
+            <q-input v-model="password" :type="showPassword ? 'text' : 'password'" placeholder="Password" autocomplete="current-password" @dblclick="selectAllText">
+              <template v-slot:append>
+                <div class="eye-wrapper" @click="togglePasswordVisibility">
+                  <div style="display: flex; flex-direction: column;">
+                    <svg class="eye-icon" width="24" height="24" viewBox="0 0 24 24" style="margin-bottom: -13px;">
+                      <!-- Inserta aquí el SVG del ojo abierto -->
+                      <path fill="currentColor" d="M11.999 4.5c-3.598 0-6.59 2.399-7.633 5.662a.75.75 0 1 0 1.395.548c.808-2.387 3.083-4.21 6.238-4.21 3.17 0 5.45 1.83 6.262 4.236a.75.75 0 1 0 1.387-.556C18.605 6.919 15.614 4.5 11.999 4.5zm0 2.25c1.875 0 3.463 1.299 4.256 3.001a.75.75 0 0 0 1.418-.49C16.729 9.42 14.253 8.25 11.999 8.25s-4.732 1.169-5.674 2.511a.75.75 0 1 0 1.414.487c.776-1.62 2.701-2.748 5.259-2.748zm0 3.375a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5z" />
+                    </svg>
+                    <svg class="eye-icon" width="24" height="24" viewBox="0 0 24 24" style="transform: rotate(180deg); margin-top: -13px; animation: flip 1s;">
+                      <!-- SVG del ojo al revés -->
+                      <path fill="currentColor" d="M11.999 4.5c-3.598 0-6.59 2.399-7.633 5.662a.75.75 0 1 0 1.395.548c.808-2.387 3.083-4.21 6.238-4.21 3.17 0 5.45 1.83 6.262 4.236a.75.75 0 1 0 1.387-.556C18.605 6.919 15.614 4.5 11.999 4.5zm0 2.25c1.875 0 3.463 1.299 4.256 3.001a.75.75 0 0 0 1.418-.49C16.729 9.42 14.253 8.25 11.999 8.25s-4.732 1.169-5.674 2.511a.75.75 0 1 0 1.414.487c.776-1.62 2.701-2.748 5.259-2.748zm0 3.375a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5z" />
+                    </svg>
+                  </div>
+                </div>
+              </template>
+            </q-input>
+            <q-input v-model="rol" label="Rol" outlined @dblclick="selectAllText" />
+            <q-btn @click="cancelarUsuario" class="q-ma-sm">Cancelar</q-btn>
+            <q-btn type="submit" color="primary" class="q-ma-sm">Editar Usuario</q-btn>
+          </q-form>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+  </div>
 
       <q-table flat bordered title="Usuarios" title-class="text-green text-weight-bolder text-h5" :rows="filteredRows"
         :columns="columns" row-key="id">

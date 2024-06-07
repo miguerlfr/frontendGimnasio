@@ -216,30 +216,67 @@ watch(selectedOption, (newValue) => {
         />
       </div>
 
-      <q-form v-if="mostrarFormularioAgregarPlan" @submit.prevent="agregarPlan">
-        <div class="q-pa-md">
-          <h2>Agregar Plan</h2>
-          <q-input v-model="codigo" label="Codigo" outlined />
-          <q-input v-model="descripcion" label="Descripción" outlined />
-          <q-input v-model="valor" label="Valor" type="number" outlined />
-          <q-input v-model="dias" label="Días" outlined />
-          <q-select v-model="estado" label="Estado" outlined :options="estadoOptions" />
-          <q-btn @click="cancelarPlan" class="q-ma-sm" >Cancelar</q-btn>
-          <q-btn type="submit" color="primary" class="q-ma-sm">Agregar Plan</q-btn>
-        </div>
-      </q-form>
+      <div>
+    <!-- Botones para abrir diálogos -->
+    <!-- <q-btn label="Agregar Plan" @click="mostrarFormularioAgregarPlan = true" />
+    <q-btn label="Editar Plan" @click="mostrarFormularioEditarPlan = true" /> -->
 
-      <q-form v-if="mostrarFormularioEditarPlan" @submit.prevent="editarPlan">
-        <div class="q-pa-md">
-          <h2>Editar Plan</h2>
-          <q-input v-model="codigo" label="Codigo" outlined />
-          <q-input v-model="descripcion" label="Descripción" outlined />
-          <q-input v-model="valor" label="Valor" type="number" outlined />
-          <q-input v-model="dias" label="Días" outlined />
-          <q-btn @click="cancelarPlan" class="q-ma-sm" >Cancelar</q-btn>
-          <q-btn type="submit" color="primary" class="q-ma-sm">Guardar cambios</q-btn>
-        </div>
-      </q-form>
+    <!-- Dialogo para agregar plan -->
+    <q-dialog v-model="mostrarFormularioAgregarPlan">
+      <q-card>
+        <q-card-section>
+          <div class="text-h6">Agregar Plan</div>
+        </q-card-section>
+
+        <q-card-section>
+          <div class="q-pa-md">
+            <q-form @submit.prevent="agregarPlan">
+              <!-- Campos del formulario de agregar plan -->
+              <q-input v-model="codigo" label="Código" outlined class="q-mb-md" />
+              <q-input v-model="descripcion" label="Descripción" outlined class="q-mb-md" />
+              <q-input v-model="valor" label="Valor" type="number" outlined class="q-mb-md" />
+              <q-input v-model="dias" label="Días" outlined class="q-mb-md" />
+              <q-select v-model="estado" label="Estado" outlined :options="estadoOptions" class="q-mb-md" />
+
+              <!-- Botones de acción -->
+              <div class="q-mt-md">
+                <q-btn @click="cancelarPlan" label="Cancelar" color="negative" class="q-mr-sm" />
+                <q-btn type="submit" label="Agregar Plan" color="primary" />
+              </div>
+            </q-form>
+          </div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+
+    <!-- Dialogo para editar plan -->
+    <q-dialog v-model="mostrarFormularioEditarPlan">
+      <q-card>
+        <q-card-section>
+          <div class="text-h6">Editar Plan</div>
+        </q-card-section>
+
+        <q-card-section>
+          <div class="q-pa-md">
+            <q-form @submit.prevent="editarPlan">
+              <!-- Campos del formulario de editar plan -->
+              <q-input v-model="codigoEditar" label="Código" outlined class="q-mb-md" />
+              <q-input v-model="descripcionEditar" label="Descripción" outlined class="q-mb-md" />
+              <q-input v-model="valorEditar" label="Valor" type="number" outlined class="q-mb-md" />
+              <q-input v-model="diasEditar" label="Días" outlined class="q-mb-md" />
+              <q-select v-model="estadoEditar" label="Estado" outlined :options="estadoOptions" class="q-mb-md" />
+
+              <!-- Botones de acción -->
+              <div class="q-mt-md">
+                <q-btn @click="cancelarEdicionPlan" label="Cancelar" color="negative" class="q-mr-sm" />
+                <q-btn type="submit" label="Guardar cambios" color="primary" />
+              </div>
+            </q-form>
+          </div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+  </div>
 
       <q-table
         flat

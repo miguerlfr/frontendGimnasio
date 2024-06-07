@@ -62,7 +62,13 @@ const listarProductoCodigo = computed(() => {
   }
 });
 
+const mostrarFormularioAgregarProducto = ref(false)
+const mostrarFormularioEditarProducto = ref(false)
 
+const cambiarFormulario = (agregar) => {
+  mostrarFormularioAgregarProducto.value = agregar;
+  mostrarFormularioEditarProducto.value = !agregar;
+};
 
 // Agregar un nuevo producto
 async function agregarProducto() {
@@ -117,8 +123,16 @@ function cargarProductoParaEdicion(producto) {
   descripcionProducto.value = producto.descripcion;
   valorProducto.value = producto.valor;
   cantidadProducto.value = producto.cantidad;
-  selectedOption.value = 'Editar Producto';
+
+  // Cambiar al formulario de edición
+  cambiarFormulario(false);
 }
+const cancelarProducto = () => {
+  // Cancelar la acción de agregar o editar producto
+  mostrarFormularioAgregarProducto.value = false;
+  mostrarFormularioEditarProducto.value = false;
+  limpiarCamposProducto();
+};
 // // Función para obtener un producto por su ID
 // function obtenerProductoPorId(id) {
 //   // Supongamos que 'rows.value' contiene la lista de productos
@@ -152,7 +166,12 @@ function limpiarCampos() {
 watch(selectedOption, (newValue) => {
   listarProductos();
   if (newValue === "Agregar Producto") {
+    mostrarFormularioEditarProducto.value = false;
+    mostrarFormularioAgregarProducto.value = true;
     limpiarCampos();
+  } else {
+    mostrarFormularioEditarProducto.value = false;
+    mostrarFormularioAgregarProducto.value = false;
   }
 });
 
@@ -177,28 +196,59 @@ onMounted(() => {
           type="text" name="codigoProducto" id="codigoProducto" placeholder="Ingrese el código del producto" />
       </div>
 
-      <q-page v-if="selectedOption === 'Agregar Producto'">
-    <h3>Agregar Producto</h3>
-    <q-form @submit.prevent="agregarProducto">
-      <q-input v-model="codigoProducto" label="Código del producto" filled required />
-      <q-input v-model="descripcionProducto" label="Descripción del producto" filled required />
-      <q-input v-model="valorProducto" label="Valor del producto" type="number" filled required />
-      <q-input v-model="cantidadProducto" label="Cantidad del producto" type="number" filled required />
-      <q-btn type="submit" label="Agregar Producto" color="primary" />
-    </q-form>
-  </q-page>
+  <div>
+    <!-- Botones para abrir diálogos -->
+    <!-- <q-btn label="Agregar Producto" @click="mostrarFormularioAgregarProducto = true" />
+    <q-btn label="Editar Producto" @click="mostrarFormularioEditarProducto = true" /> -->
 
-  <!-- Formulario para editar un producto -->
-  <q-page v-if="selectedOption === 'Editar Producto'">
-    <h3>Editar Producto</h3>
-    <q-form @submit.prevent="editarProducto">
-      <q-input v-model="codigoProducto" label="Código del producto" filled required />
-      <q-input v-model="descripcionProducto" label="Descripción del producto" filled required />
-      <q-input v-model="valorProducto" label="Valor del producto" type="number" filled required />
-      <q-input v-model="cantidadProducto" label="Cantidad del producto" type="number" filled required />
-      <q-btn type="submit" label="Editar Producto" color="primary" />
-    </q-form>
-  </q-page>
+    <!-- Diálogo para agregar producto -->
+    <q-dialog v-model="mostrarFormularioAgregarProducto">
+      <q-card>
+        <q-card-section>
+          <div class="text-h6">Agregar Producto</div>
+        </q-card-section>
+
+        <q-card-section>
+          <q-form @submit.prevent="agregarProducto">
+            <q-input v-model="codigoProducto" label="Código del producto" filled required class="q-mb-md" />
+            <q-input v-model="descripcionProducto" label="Descripción del producto" filled required class="q-mb-md" />
+            <q-input v-model="valorProducto" label="Valor del producto" type="number" filled required class="q-mb-md" />
+            <q-input v-model="cantidadProducto" label="Cantidad del producto" type="number" filled required class="q-mb-md" />
+
+            <!-- Botones de acción -->
+            <div class="q-mt-md">
+              <q-btn @click="cancelarProducto" label="Cancelar" color="negative" class="q-mr-sm" />
+              <q-btn type="submit" label="Agregar Producto" color="primary" />
+            </div>
+          </q-form>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+
+    <!-- Diálogo para editar producto -->
+    <q-dialog v-model="mostrarFormularioEditarProducto">
+      <q-card>
+        <q-card-section>
+          <div class="text-h6">Editar Producto</div>
+        </q-card-section>
+
+        <q-card-section>
+          <q-form @submit.prevent="editarProducto">
+            <q-input v-model="codigoProducto" label="Código del producto" filled required class="q-mb-md" />
+            <q-input v-model="descripcionProducto" label="Descripción del producto" filled required class="q-mb-md" />
+            <q-input v-model="valorProducto" label="Valor del producto" type="number" filled required class="q-mb-md" />
+            <q-input v-model="cantidadProducto" label="Cantidad del producto" type="number" filled required class="q-mb-md" />
+
+            <!-- Botones de acción -->
+            <div class="q-mt-md">
+              <q-btn @click="cancelarProducto" label="Cancelar" color="negative" class="q-mr-sm" />
+              <q-btn type="submit" label="Guardar Cambios" color="primary" />
+            </div>
+          </q-form>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+  </div>
 
       <q-table flat bordered title="Productos" title-class="text-green text-weight-bolder text-h5" :rows="filteredRows"
         :columns="columns" row-key="id">

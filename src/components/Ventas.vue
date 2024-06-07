@@ -277,35 +277,51 @@ onMounted(() => {
           class="q-my-md" type="text" name="search" id="search" placeholder="Ingrese el código del producto" />
       </div>
 
-      <!-- Formulario para agregar venta -->
-      <q-form v-if="mostrarFormularioAgregarVenta" @submit.prevent="agregarVenta">
-        <div class="q-pa-md">
-          <h2>Agregar Venta</h2>
-          <q-input v-model="fecha" label="Fecha de Venta" type="date" outlined />
-          <q-input v-model="codigoProducto" label="Código del Producto" outlined />
-          <q-input v-model="valorUnitario" label="Valor Unitario" type="number" outlined />
-          <q-input v-model="valorTotal" label="Valor Total" type="number" outlined />
-          <q-input v-model="cantidad" label="Cantidad" type="number" outlined />
-          <q-btn type="submit" label="Guardar Venta" color="primary" class="q-ma-sm" />
-          <q-btn label="Limpiar" color="negative" class="q-ma-sm" @click="limpiarCampos" />
-        </div>
-      </q-form>
+      <div>
+    <!-- Botones para abrir los formularios -->
+    <!-- <q-btn label="Agregar Venta" @click="mostrarFormularioAgregarVenta = true" />
+    <q-btn label="Editar Venta" @click="mostrarFormularioEditarVenta = true" /> -->
 
-      <!-- Formulario para editar venta -->
-      <q-form v-if="mostrarFormularioEditarVenta" @submit.prevent="editarVenta">
-        <div class="q-pa-md">
-          <h2>Editar Venta</h2>
-          <!-- Aquí colocas los campos para editar la venta -->
-          <!-- Por ejemplo: -->
-          <q-input v-model="fecha" label="Fecha de Venta" type="date" outlined />
-          <q-input v-model="codigoProducto" label="Código del Producto" outlined />
-          <q-input v-model="valorUnitario" label="Valor Unitario" type="number" outlined />
-          <q-input v-model="valorTotal" label="Valor Total" type="number" outlined />
-          <q-input v-model="cantidad" label="Cantidad" type="number" outlined />
-          <q-btn type="submit" label="Guardar Cambios" color="primary" class="q-ma-sm" />
-          <q-btn label="Cancelar" color="negative" class="q-ma-sm" @click="cancelarEdicion" />
-        </div>
-      </q-form>
+    <!-- Formulario para agregar venta -->
+    <q-dialog v-model="mostrarFormularioAgregarVenta">
+      <q-card>
+        <q-card-section>
+          <div class="text-h6">Agregar Venta</div>
+        </q-card-section>
+        <q-card-section>
+          <q-form @submit.prevent="agregarVenta">
+            <q-input v-model="fecha" label="Fecha de Venta" type="date" outlined />
+            <q-input v-model="codigoProducto" label="Código del Producto" outlined />
+            <q-input v-model="valorUnitario" label="Valor Unitario" type="number" outlined />
+            <q-input v-model="valorTotal" label="Valor Total" type="number" outlined />
+            <q-input v-model="cantidad" label="Cantidad" type="number" outlined />
+            <q-btn type="submit" label="Guardar Venta" color="primary" class="q-ma-sm" />
+            <q-btn label="Limpiar" color="negative" class="q-ma-sm" @click="limpiarCampos" />
+          </q-form>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+
+    <!-- Formulario para editar venta -->
+    <q-dialog v-model="mostrarFormularioEditarVenta">
+      <q-card>
+        <q-card-section>
+          <div class="text-h6">Editar Venta</div>
+        </q-card-section>
+        <q-card-section>
+          <q-form @submit.prevent="editarVenta">
+            <q-input v-model="fecha" label="Fecha de Venta" type="date" outlined />
+            <q-input v-model="codigoProducto" label="Código del Producto" outlined />
+            <q-input v-model="valorUnitario" label="Valor Unitario" type="number" outlined />
+            <q-input v-model="valorTotal" label="Valor Total" type="number" outlined />
+            <q-input v-model="cantidad" label="Cantidad" type="number" outlined />
+            <q-btn type="submit" label="Guardar Cambios" color="primary" class="q-ma-sm" />
+            <q-btn label="Cancelar" color="negative" class="q-ma-sm" @click="cancelarEdicion" />
+          </q-form>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+  </div>
 
       <q-table flat bordered title="Ventas" title-class="text-green text-weight-bolder text-h5"
         :rows="listarVentasPorCodigoProducto" :columns="columns" row-key="id">
