@@ -2,13 +2,15 @@ import { defineStore } from "pinia";
 import axios from "axios";
 import { ref } from "vue";
 
+const url = "https://backendgimnasio-ip8j.onrender.com"
+
 export const useStoreUsuarios = defineStore("Usuario", () => {
     let token = ref("")
     let user = ref("")
 
     const getUsuarios = async () => {
         try {
-            const r = await axios.get("http://localhost:4505/api/usuarios", {
+            const r = await axios.get(`${url}/api/usuarios`, {
                 headers: {
                     token: token.value
                 }
@@ -22,7 +24,7 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
 
     const getUsuariosActivos = async () => {
         try {
-            const r = await axios.get("http://localhost:4505/api/usuarios/activos", {
+            const r = await axios.get(`${url}/api/usuarios/activos`, {
                 headers: {
                     token: token.value
                 }
@@ -36,7 +38,7 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
 
     const getUsuariosInactivos = async () => {
         try {
-            const r = await axios.get("http://localhost:4505/api/usuarios/inactivos", {
+            const r = await axios.get(`${url}/api/usuarios/inactivos`, {
                 headers: {
                     token: token.value
                 }
@@ -50,7 +52,7 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
 
     const getUsuariosID = async (id) => {
         try {
-            const r = await axios.get(`http://localhost:4505/api/usuarios/${id}`, {
+            const r = await axios.get(`${url}/api/usuarios/${id}`, {
                 headers: {
                     token: token.value
                 }
@@ -64,7 +66,7 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
 
     const login = async (email, password) => {
         try {
-            const r = await axios.post("http://localhost:4505/api/usuarios/login", {email, password});
+            const r = await axios.post(`${url}/api/usuarios/login`, {email, password});
             token.value = r.data.token
             user.value = r.data.usuario
             // console.log(token.value);
@@ -78,7 +80,7 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
 
     const postUsuarios = async (datos) => {
         try {
-            const r = await axios.post("http://localhost:4505/api/usuarios", datos, {
+            const r = await axios.post(`${url}/api/usuarios`, datos, {
                 headers: {
                     token: token.value
                 }
@@ -92,7 +94,7 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
 
     const putUsuarios = async (id, datos) => {
         try {
-            const r = await axios.put(`http://localhost:4505/api/usuarios/${id}`, datos, {
+            const r = await axios.put(`${url}/api/usuarios/${id}`, datos, {
                 headers: {
                     token: token.value
                 }
@@ -107,7 +109,7 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
 
     const putUsuariosActivar = async (id) => {
         try {
-            const r = await axios.put(`http://localhost:4505/api/usuarios/activar/${id}`, null, {
+            const r = await axios.put(`${url}/api/usuarios/activar/${id}`, null, {
                 headers: {
                     token: token.value
                 }
@@ -121,7 +123,7 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
 
     const putUsuariosInactivar = async (id) => {
         try {
-            const r = await axios.put(`http://localhost:4505/api/usuarios/inactivar/${id}`, null, {
+            const r = await axios.put(`${url}/api/usuarios/inactivar/${id}`, null, {
                 headers: {
                     token: token.value
                 }

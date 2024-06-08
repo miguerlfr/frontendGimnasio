@@ -7,7 +7,7 @@ import { format } from "date-fns";
 const useVenta = useStoreVentas();
 
 const codigoProducto = ref("");
-const idVentaSeleccionada = ref(null);
+const idVentaSeleccionada = ref("");
 const fecha = ref("");
 const valorUnitario = ref("");
 const cantidad = ref("");
@@ -113,33 +113,20 @@ const listarVentasPorCodigoProducto = computed(() => {
 const mostrarFormularioEditarVenta = ref(false);
 const mostrarFormularioAgregarVenta = ref(false);
 
-function cargarVentaParaEdicion(venta) {
-  idVentaSeleccionada.value = venta._id;
-  // Formatear la fecha antes de asignarla al valor de fecha
-  fecha.value = venta.fecha.split("T")[0], // Suponiendo que venta.fecha está en formato ISO8601
-  codigoProducto.value = venta.codigoProducto;
-  valorUnitario.value = venta.valorUnitario;
-  cantidad.value = venta.cantidad;
-  valorTotal.value = venta.valorUnitario * venta.cantidad;
-
-  mostrarFormularioEditarVenta.value = true;
-  mostrarFormularioAgregarVenta.value = false;
-    console.log(fecha.value);
-}
-
 async function agregarVenta() {
   const nuevaVenta = {
     fecha: fecha.value, // Accede al valor de fecha usando .value
     codigoProducto: codigoProducto.value, // Accede al valor de codigoProducto usando .value
     valorUnitario: valorUnitario.value, // Accede al valor de valorUnitario usando .value
     cantidad: cantidad.value, // Accede al valor de cantidad usando .value
-    valorTotal: valorUnitario.value * cantidad.value, // Calcula el valor total
+    valorTotal: (valorUnitario.value * cantidad.value), // Calcula el valor total
   };
   console.log(nuevaVenta);
 
   try {
     const response = await useVenta.postVentas(nuevaVenta);
     if (response.status === 200) {
+      limpiarCampos()
       listarVentas();
     } else {
       console.error("Error al agregar la venta:", response);
@@ -150,24 +137,51 @@ async function agregarVenta() {
   mostrarFormularioAgregarVenta.value = false
 }
 
-async function editarVenta() {
-  const ventaEditada = {
-    fecha: formatDate(fecha.value), // Accede al valor de fecha usando .value
+function cargarVentaParaEdicion(venta) {
+  idVentaSeleccionada.value = venta._id;
+  // Formatear la fecha antes de asignarla al valor de fecha
+  fecha.value = venta.fecha.split("T")[0], // Suponiendo que venta.fecha está en formato ISO8601
+    codigoProducto.value = venta.codigoProducto;
+  valorUnitario.value = venta.valorUnitario;
+  cantidad.value = venta.cantidad;
+  valorTotal.value = venta.valorUnitario * venta.cantidad;
+
+  mostrarFormularioEditarVenta.value = true;
+  mostrarFormularioAgregarVenta.value = false;
+  console.log("Datos a editar", {
+    id: idVentaSeleccionada.value,
+    fecha: fecha.value, // Accede al valor de fecha usando .value
     codigoProducto: codigoProducto.value, // Accede al valor de codigoProducto usando .value
     valorUnitario: valorUnitario.value, // Accede al valor de valorUnitario usando .value
     cantidad: cantidad.value, // Accede al valor de cantidad usando .value
     valorTotal: valorUnitario.value * cantidad.value, // Calcula el valor total
+  });
+}
+
+
+async function editarVenta() {
+
+  const ventaEditada = {
+    id: idVentaSeleccionada.value,
+    fecha: fecha.value,
+    codigoProducto: codigoProducto.value,
+    valorUnitario: parseFloat(valorUnitario.value), // Convertir a número
+    cantidad: parseInt(cantidad.value),
+    valorTotal: valorUnitario.value * cantidad.value,
   };
+
+
+  console.log("Datos a editar editados", ventaEditada);
 
   try {
     const response = await useVenta.putVentas(
-      idVentaSeleccionada,
+      idVentaSeleccionada.value,
       ventaEditada
     );
     if (response.status === 200) {
       listarVentas();
       limpiarCampos();
-      idVentaSeleccionada = null;
+      idVentaSeleccionada.value = "";
     } else {
       console.error("Error al editar la venta:", response);
     }
@@ -211,26 +225,10 @@ async function editarVenta() {
 //     console.error('Error al agregar o editar la venta:', error);
 //   }
 // }
-const formatDate = (dateString) => {
-  if (!dateString) return null;
-  const date = new Date(dateString);
-  const year = date.getFullYear();
-  let month = date.getMonth() + 1;
-  let day = date.getDate();
 
-  // Agregar ceros delante si el día o el mes son menores que 10
-  if (month < 10) {
-    month = "0" + month;
-  }
-  if (day < 10) {
-    day = "0" + day;
-  }
-
-  return `${year}-${month}-${day}`;
-};
 
 function limpiarCampos() {
-  idVentaSeleccionada.value = null;
+  idVentaSeleccionada.value = "";
   fecha.value = "";
   codigoProducto.value = "";
   valorUnitario.value = "";
@@ -247,10 +245,11 @@ const cancelarEdicion = () => {
 watch(selectedOption, (newValue) => {
   listarVentas();
   if (newValue === "Agregar Venta") {
+    // limpiarCampos(); // Esto parece ser una función para limpiar los campos, si es necesario, puedes llamarla aquí
     mostrarFormularioAgregarVenta.value = true; // Mostrar el formulario de agregar venta
     mostrarFormularioEditarVenta.value = false;
-    // limpiarCampos(); // Esto parece ser una función para limpiar los campos, si es necesario, puedes llamarla aquí
   } else {
+    // limpiarCampos(); // Esto parece ser una función para limpiar los campos, si es necesario, puedes llamarla aquí
     mostrarFormularioEditarVenta.value = false;
     mostrarFormularioAgregarVenta.value = false; // Ocultar el formulario de agregar venta si se selecciona otra opción
   }
@@ -278,50 +277,52 @@ onMounted(() => {
       </div>
 
       <div>
-    <!-- Botones para abrir los formularios -->
-    <!-- <q-btn label="Agregar Venta" @click="mostrarFormularioAgregarVenta = true" />
+        <!-- Botones para abrir los formularios -->
+        <!-- <q-btn label="Agregar Venta" @click="mostrarFormularioAgregarVenta = true" />
     <q-btn label="Editar Venta" @click="mostrarFormularioEditarVenta = true" /> -->
 
-    <!-- Formulario para agregar venta -->
-    <q-dialog v-model="mostrarFormularioAgregarVenta">
-      <q-card>
-        <q-card-section>
-          <div class="text-h6">Agregar Venta</div>
-        </q-card-section>
-        <q-card-section>
-          <q-form @submit.prevent="agregarVenta">
-            <q-input v-model="fecha" label="Fecha de Venta" type="date" outlined />
-            <q-input v-model="codigoProducto" label="Código del Producto" outlined />
-            <q-input v-model="valorUnitario" label="Valor Unitario" type="number" outlined />
-            <q-input v-model="valorTotal" label="Valor Total" type="number" outlined />
-            <q-input v-model="cantidad" label="Cantidad" type="number" outlined />
-            <q-btn type="submit" label="Guardar Venta" color="primary" class="q-ma-sm" />
-            <q-btn label="Limpiar" color="negative" class="q-ma-sm" @click="limpiarCampos" />
-          </q-form>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
+        <!-- Formulario para agregar venta -->
+        <q-dialog v-model="mostrarFormularioAgregarVenta">
+          <q-card>
+            <q-card-section>
+              <div class="text-h6">Agregar Venta</div>
+            </q-card-section>
+            <q-card-section>
+              <q-form @submit.prevent="agregarVenta">
+                <q-input v-model="fecha" label="Fecha de Venta" type="date" outlined />
+                <q-input v-model="codigoProducto" label="Código del Producto" outlined />
+                <q-input v-model="valorUnitario" label="Valor Unitario" type="number" outlined />
+                <q-input v-model="valorTotal" label="Valor Total" type="number" outlined v-show="!valorTotal"
+                  style="display: none;" />
+                <q-input v-model="cantidad" label="Cantidad" type="number" outlined />
+                <q-btn type="submit" label="Guardar Venta" color="primary" class="q-ma-sm" />
+                <q-btn label="Limpiar" color="negative" class="q-ma-sm" @click="limpiarCampos" />
+              </q-form>
+            </q-card-section>
+          </q-card>
+        </q-dialog>
 
-    <!-- Formulario para editar venta -->
-    <q-dialog v-model="mostrarFormularioEditarVenta">
-      <q-card>
-        <q-card-section>
-          <div class="text-h6">Editar Venta</div>
-        </q-card-section>
-        <q-card-section>
-          <q-form @submit.prevent="editarVenta">
-            <q-input v-model="fecha" label="Fecha de Venta" type="date" outlined />
-            <q-input v-model="codigoProducto" label="Código del Producto" outlined />
-            <q-input v-model="valorUnitario" label="Valor Unitario" type="number" outlined />
-            <q-input v-model="valorTotal" label="Valor Total" type="number" outlined />
-            <q-input v-model="cantidad" label="Cantidad" type="number" outlined />
-            <q-btn type="submit" label="Guardar Cambios" color="primary" class="q-ma-sm" />
-            <q-btn label="Cancelar" color="negative" class="q-ma-sm" @click="cancelarEdicion" />
-          </q-form>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
-  </div>
+        <!-- Formulario para editar venta -->
+        <q-dialog v-model="mostrarFormularioEditarVenta">
+          <q-card>
+            <q-card-section>
+              <div class="text-h6">Editar Venta</div>
+            </q-card-section>
+            <q-card-section>
+              <q-form @submit.prevent="editarVenta">
+                <q-input v-model="fecha" label="Fecha de Venta" type="date" outlined />
+                <q-input v-model="codigoProducto" label="Código del Producto" outlined />
+                <q-input v-model="valorUnitario" label="Valor Unitario" type="number" outlined />
+                <q-input v-model="valorTotal" label="Valor Total" type="number" outlined v-show="!valorTotal"
+                  style="display: none;" />
+                <q-input v-model="cantidad" label="Cantidad" type="number" outlined />
+                <q-btn type="submit" label="Guardar Cambios" color="primary" class="q-ma-sm" />
+                <q-btn label="Cancelar" color="negative" class="q-ma-sm" @click="cancelarEdicion" />
+              </q-form>
+            </q-card-section>
+          </q-card>
+        </q-dialog>
+      </div>
 
       <q-table flat bordered title="Ventas" title-class="text-green text-weight-bolder text-h5"
         :rows="listarVentasPorCodigoProducto" :columns="columns" row-key="id">

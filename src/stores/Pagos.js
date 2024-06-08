@@ -2,26 +2,28 @@ import { defineStore } from "pinia";
 import axios from "axios";
 import { useStoreUsuarios } from "../stores/Usuarios.js";
 
+const url = "https://backendgimnasio-ip8j.onrender.com"
+
 export const useStorePagos = defineStore("Pago", () => {
     const useUsuario = useStoreUsuarios();
 
-	const getPagos = async () => {
-		try {
-			const r = await axios.get(`http://localhost:4505/api/pagos`, {
-				headers: {
-					token: useUsuario.token,
-				},
-			});
-			return r;
-		} catch (error) {
-			console.log(error);
-			return error;
-		}
-	};
+    const getPagos = async () => {
+        try {
+            const r = await axios.get(`${url}/api/pagos`, {
+                headers: {
+                    token: useUsuario.token,
+                },
+            });
+            return r;
+        } catch (error) {
+            console.log(error);
+            return error;
+        }
+    };
 
     const getPagosActivos = async () => {
         try {
-            const r = await axios.get("http://localhost:4505/api/pagos/activos", {
+            const r = await axios.get(`${url}/api/pagos/activos`, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -35,7 +37,7 @@ export const useStorePagos = defineStore("Pago", () => {
 
     const getPagosInactivos = async () => {
         try {
-            const r = await axios.get("http://localhost:4505/api/pagos/inactivos", {
+            const r = await axios.get(`${url}/api/pagos/inactivos`, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -49,7 +51,7 @@ export const useStorePagos = defineStore("Pago", () => {
 
     const getPagosID = async (id) => {
         try {
-            const r = await axios.get(`http://localhost:4505/api/pagos/${id}`, {
+            const r = await axios.get(`${url}/api/pagos/${id}`, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -63,7 +65,7 @@ export const useStorePagos = defineStore("Pago", () => {
 
     const getPagosFecha = async (fecha) => {
         try {
-            const r = await axios.get(`http://localhost:4505/api/pagos/fecha/${fecha}`, {
+            const r = await axios.get(`${url}/api/pagos/fecha/${fecha}`, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -77,7 +79,7 @@ export const useStorePagos = defineStore("Pago", () => {
 
     const getPagosPlan = async (plan) => {
         try {
-            const r = await axios.get(`http://localhost:4505/api/pagos/pago/${plan}`, {
+            const r = await axios.get(`${url}/api/pagos/pago/${plan}`, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -91,7 +93,7 @@ export const useStorePagos = defineStore("Pago", () => {
 
     const getPagosCliente = async (cliente) => {
         try {
-            const r = await axios.get(`http://localhost:4505/api/pagos/pagoo/${cliente}`, {
+            const r = await axios.get(`${url}/api/pagos/pagoo/${cliente}`, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -105,7 +107,7 @@ export const useStorePagos = defineStore("Pago", () => {
 
     const postPagos = async (datos) => {
         try {
-            const r = await axios.post(`http://localhost:4505/api/pagos`, datos, {
+            const r = await axios.post(`${url}/api/pagos`, datos, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -117,20 +119,19 @@ export const useStorePagos = defineStore("Pago", () => {
         }
     };
 
-const putPagos = async (id, pagoEditado) => {
-  try {
-    const response = await axios.put(`http://localhost:4505/api/pagos/${id}`, pagoEditado);
-    return response;
-  } catch (error) {
-    console.error("Error en putPagos:", error.response ? error.response.data : error.message);
-    throw error;
-  }
-}
-
+    const putPagos = async (id, pagoEditado) => {
+        try {
+            const response = await axios.put(`${url}/api/pagos/${id}`, pagoEditado);
+            return response;
+        } catch (error) {
+            console.error("Error en putPagos:", error.response ? error.response.data : error.message);
+            throw error;
+        }
+    }
 
     const putPagosActivar = async (id) => {
         try {
-            const r = await axios.put(`http://localhost:4505/api/pagos/activar/${id}`, null, {
+            const r = await axios.put(`${url}/api/pagos/activar/${id}`, null, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -144,7 +145,7 @@ const putPagos = async (id, pagoEditado) => {
 
     const putPagosInactivar = async (id) => {
         try {
-            const r = await axios.put(`http://localhost:4505/api/pagos/inactivar/${id}`, null, {
+            const r = await axios.put(`${url}/api/pagos/inactivar/${id}`, null, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -156,8 +157,8 @@ const putPagos = async (id, pagoEditado) => {
         }
     };
 
-	return {
-		getPagos,
+    return {
+        getPagos,
         getPagosActivos,
         getPagosInactivos,
         getPagosID,
@@ -170,6 +171,6 @@ const putPagos = async (id, pagoEditado) => {
         putPagosInactivar
     };
 },
-{
-    persist: true,
-});
+    {
+        persist: true,
+    });

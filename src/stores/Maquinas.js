@@ -2,12 +2,14 @@ import { defineStore } from "pinia";
 import axios from "axios";
 import { useStoreUsuarios } from "../stores/Usuarios.js";
 
+const url = "https://backendgimnasio-ip8j.onrender.com"
+
 export const useStoreMaquinas = defineStore("Maquina", () => {
     const useUsuario = useStoreUsuarios();
 
     const getMaquinas = async () => {
         try {
-            const r = await axios.get("http://localhost:4505/api/maquinas", {
+            const r = await axios.get(`${url}/api/maquinas`, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -21,7 +23,7 @@ export const useStoreMaquinas = defineStore("Maquina", () => {
 
     const getMaquinasActivas = async () => {
         try {
-            const r = await axios.get("http://localhost:4505/api/maquinas/activos", {
+            const r = await axios.get(`${url}/api/maquinas/activos`, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -35,7 +37,7 @@ export const useStoreMaquinas = defineStore("Maquina", () => {
 
     const getMaquinasInactivas = async () => {
         try {
-            const r = await axios.get("http://localhost:4505/api/maquinas/inactivos", {
+            const r = await axios.get(`${url}/api/maquinas/inactivos`, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -49,7 +51,7 @@ export const useStoreMaquinas = defineStore("Maquina", () => {
 
     const getMaquinasID = async (id) => {
         try {
-            const r = await axios.get(`http://localhost:4505/api/maquinas/${id}`, {
+            const r = await axios.get(`${url}/api/maquinas/${id}`, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -63,7 +65,7 @@ export const useStoreMaquinas = defineStore("Maquina", () => {
 
     const postMaquinas = async (datos) => {
         try {
-            const r = await axios.post(`http://localhost:4505/api/maquinas`, datos, {
+            const r = await axios.post(`${url}/api/maquinas`, datos, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -77,7 +79,7 @@ export const useStoreMaquinas = defineStore("Maquina", () => {
 
     const putMaquinas = async (id, datos) => {
         try {
-            const r = await axios.put(`http://localhost:4505/api/maquinas/${id}`, datos, {
+            const r = await axios.put(`${url}/api/maquinas/${id}`, datos, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -91,7 +93,7 @@ export const useStoreMaquinas = defineStore("Maquina", () => {
 
     const putMaquinasActivar = async (id) => {
         try {
-            const r = await axios.put(`http://localhost:4505/api/maquinas/activar/${id}`, {
+            const r = await axios.put(`${url}/api/maquinas/activar/${id}`, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -105,7 +107,7 @@ export const useStoreMaquinas = defineStore("Maquina", () => {
 
     const putMaquinasInactivar = async (id) => {
         try {
-            const r = await axios.put(`http://localhost:4505/api/maquinas/inactivar/${id}`, {
+            const r = await axios.put(`${url}/api/maquinas/inactivar/${id}`, {
                 headers: {
                     token: useUsuario.token
                 }

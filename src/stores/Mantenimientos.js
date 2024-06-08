@@ -2,12 +2,14 @@ import { defineStore } from "pinia";
 import axios from "axios";
 import { useStoreUsuarios } from "../stores/Usuarios.js";
 
+const url = "https://backendgimnasio-ip8j.onrender.com"
+
 export const useStoreMantenimientos = defineStore("Mantenimiento", () => {
     const useUsuario = useStoreUsuarios();
 
     const getMantenimientos = async () => {
         try {
-            const r = await axios.get("http://localhost:4505/api/mantenimientos", {
+            const r = await axios.get(`${url}/api/mantenimientos`, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -21,7 +23,7 @@ export const useStoreMantenimientos = defineStore("Mantenimiento", () => {
 
     const getMantenimientosID = async (id) => {
         try {
-            const r = await axios.get(`http://localhost:4505/api/mantenimientos/${id}`, {
+            const r = await axios.get(`${url}/api/mantenimientos/${id}`, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -35,7 +37,7 @@ export const useStoreMantenimientos = defineStore("Mantenimiento", () => {
 
     const getMantenimientosFechas = async (fechaInicio, fechaFin) => {
         try {
-            const r = await axios.get(`http://localhost:4505/api/mantenimientos/fechas/${fechaInicio}/${fechaFin}`, {
+            const r = await axios.get(`${url}/api/mantenimientos/fechas/${fechaInicio}/${fechaFin}`, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -49,7 +51,7 @@ export const useStoreMantenimientos = defineStore("Mantenimiento", () => {
 
     const postMantenimientos = async (datos) => {
         try {
-            const r = await axios.post('http://localhost:4505/api/mantenimientos', datos);
+            const r = await axios.post(`${url}/api/mantenimientos`, datos);
             return r;
         } catch (error) {
             console.error("Error en postMantenimientos:", error);
@@ -60,7 +62,7 @@ export const useStoreMantenimientos = defineStore("Mantenimiento", () => {
 
     const putMantenimientos = async (id, datos) => {
         try {
-            const r = await axios.put(`http://localhost:4505/api/mantenimientos/${id}`, datos, {
+            const r = await axios.put(`${url}/api/mantenimientos/${id}`, datos, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -74,7 +76,7 @@ export const useStoreMantenimientos = defineStore("Mantenimiento", () => {
 
     const putMantenimientosActivar = async (id) => {
         try {
-            const r = await axios.put(`http://localhost:4505/api/mantenimientos/activar/${id}`, {
+            const r = await axios.put(`${url}/api/mantenimientos/activar/${id}`, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -88,7 +90,7 @@ export const useStoreMantenimientos = defineStore("Mantenimiento", () => {
 
     const putMantenimientosInactivar = async (id) => {
         try {
-            const r = await axios.put(`http://localhost:4505/api/mantenimientos/inactivar/${id}`, {
+            const r = await axios.put(`${url}/api/mantenimientos/inactivar/${id}`, {
                 headers: {
                     token: useUsuario.token
                 }

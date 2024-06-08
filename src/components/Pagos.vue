@@ -187,29 +187,10 @@ const limpiarCamposPago = () => {
   valorPago.value = "";
 };
 
-const formatDate = (dateString) => {
-  if (!dateString) return null;
-  const date = new Date(dateString);
-  date.setDate(date.getDate() + 1); // Sumar un día
-  const year = date.getFullYear();
-  let month = date.getMonth() + 1;
-  let day = date.getDate();
-
-  if (month < 10) {
-    month = "0" + month;
-  }
-  if (day < 10) {
-    day = "0" + day;
-  }
-
-  return `${year}-${month}-${day}`;
-};
 const cancelarEdicionPago = () => {
-  clientePagoEditar.value = "";
-  planPagoEditar.value = "";
-  fechaPagoEditar.value = "";
-  valorPagoEditar.value = "";
-  mostrarFormularioEditarPago.value = false; // Ocultar formulario de edición
+  limpiarCamposPago()
+  mostrarFormularioEditarPago.value = false;
+  mostrarFormularioAgregarPago.value = false;
 };
 const cargarPagoParaEdicion = (pago) => {
   idPagoSeleccionada.value = pago._id; // Asegúrate de que este es el campo correcto para el ID del pago
@@ -376,7 +357,7 @@ watch(selectedOption, (newValue) => {
 
               <!-- Botones de acción -->
               <div class="q-mt-md">
-                <q-btn @click="limpiarCamposPago" label="Cancelar" color="negative" class="q-mr-sm" />
+                <q-btn @click="cancelarEdicionPago" label="Cancelar" color="negative" class="q-mr-sm" />
                 <q-btn type="submit" label="Agregar Pago" color="primary" />
               </div>
             </q-form>
@@ -400,7 +381,6 @@ watch(selectedOption, (newValue) => {
               <q-input v-model="planPagoEditar" label="Plan" outlined class="q-mb-md" />
               <q-input v-model="fechaPagoEditar" label="Fecha" type="date" outlined class="q-mb-md" />
               <q-input v-model="valorPagoEditar" label="Valor" type="number" outlined class="q-mb-md" />
-              <q-select v-model="estadoPagoEditar" label="Estado" outlined :options="estadoOptions" class="q-mb-md" />
 
               <!-- Botones de acción -->
               <div class="q-mt-md">

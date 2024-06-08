@@ -93,7 +93,7 @@ async function activarPlan(id) {
 const mostrarFormularioAgregarPlan = ref(false);
 const mostrarFormularioEditarPlan = ref(false);
 const codigo = ref("");
-const selectedPlanId = ref(null);
+const selectedPlanId = ref("");
 const descripcion = ref("");
 const valor = ref("");
 const dias = ref("");
@@ -131,16 +131,31 @@ const agregarPlan = async () => {
     console.error('Error al agregar el plan:', error);
   }
 };
+
+const setPlanToEdit = (plan) => {
+  selectedPlanId.value = plan._id;
+  codigo.value = plan.codigo;
+  descripcion.value = plan.descripcion; // Utiliza plan.descripcion en lugar de plan.descripción
+  valor.value = plan.valor;
+  dias.value = plan.dias;
+  mostrarFormularioAgregarPlan.value = false;
+  mostrarFormularioEditarPlan.value = true;
+};
+
 const editarPlan = async () => {
   try {
     const datosPlan = {
+      _id: selectedPlanId.value,
       codigo: codigo.value,
       descripcion: descripcion.value,
       valor: valor.value,
       dias: dias.value,
     };
 
+    console.log("Datos", datosPlan);
+
     const response = await usePlan.putPlanes(selectedPlanId.value, datosPlan);
+    console.log("response", response);
     if (response.status === 200) {
       listarPlanes();
       limpiarCamposPlan();
@@ -152,15 +167,7 @@ const editarPlan = async () => {
     console.error('Error al editar el plan:', error);
   }
 };
-const setPlanToEdit = (plan) => {
-  selectedPlanId.value = plan._id;
-  codigo.value = plan.codigo;
-  descripcion.value = plan.descripcion;
-  valor.value = plan.valor;
-  dias.value = plan.dias;
-  mostrarFormularioAgregarPlan.value = false;
-  mostrarFormularioEditarPlan.value = true;
-};
+
 const cancelarPlan = () => {
   limpiarCamposPlan();
   mostrarFormularioAgregarPlan.value = false;
@@ -178,6 +185,7 @@ watch(selectedOption, (newValue) => {
   } else {
     mostrarFormularioEditarPlan.value = false;
     mostrarFormularioAgregarPlan.value = false;
+    limpiarCamposPlan()
   }
 });
 </script>
@@ -260,15 +268,14 @@ watch(selectedOption, (newValue) => {
           <div class="q-pa-md">
             <q-form @submit.prevent="editarPlan">
               <!-- Campos del formulario de editar plan -->
-              <q-input v-model="codigoEditar" label="Código" outlined class="q-mb-md" />
-              <q-input v-model="descripcionEditar" label="Descripción" outlined class="q-mb-md" />
-              <q-input v-model="valorEditar" label="Valor" type="number" outlined class="q-mb-md" />
-              <q-input v-model="diasEditar" label="Días" outlined class="q-mb-md" />
-              <q-select v-model="estadoEditar" label="Estado" outlined :options="estadoOptions" class="q-mb-md" />
+              <q-input v-model="codigo" label="Código" outlined class="q-mb-md" />
+              <q-input v-model="descripcion" label="Descripción" outlined class="q-mb-md" />
+              <q-input v-model="valor" label="Valor" type="number" outlined class="q-mb-md" />
+              <q-input v-model="dias" label="Días" outlined class="q-mb-md" />
 
               <!-- Botones de acción -->
               <div class="q-mt-md">
-                <q-btn @click="cancelarEdicionPlan" label="Cancelar" color="negative" class="q-mr-sm" />
+                <q-btn @click="cancelarPlan" label="Cancelar" color="negative" class="q-mr-sm" />
                 <q-btn type="submit" label="Guardar cambios" color="primary" />
               </div>
             </q-form>

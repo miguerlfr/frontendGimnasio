@@ -2,15 +2,17 @@ import { defineStore } from "pinia";
 import axios from "axios";
 import { useStoreUsuarios } from "../stores/Usuarios.js";
 
+const url = "https://backendgimnasio-ip8j.onrender.com"
+
 export const useStoreClientes = defineStore("Cliente", () => {
     const useUsuario = useStoreUsuarios();
 
     const getClientes = async () => {
         try {
-            const r = await axios.get("http://localhost:4505/api/clientes", {
-                headers: {
-                    token: useUsuario.token
-                }
+            const r = await axios.get(`${url}/api/clientes`, {
+                // headers: {
+                //     token: useUsuario.token
+                // }
             });
             return r;
         } catch (error) {
@@ -21,7 +23,7 @@ export const useStoreClientes = defineStore("Cliente", () => {
 
     const getClientesActivos = async () => {
         try {
-            const r = await axios.get("http://localhost:4505/api/clientes/activos", {
+            const r = await axios.get(`${url}/api/clientes/activos`, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -35,7 +37,7 @@ export const useStoreClientes = defineStore("Cliente", () => {
 
     const getClientesInactivos = async () => {
         try {
-            const r = await axios.get("http://localhost:4505/api/clientes/inactivos", {
+            const r = await axios.get(`${url}/api/clientes/inactivos`, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -49,7 +51,7 @@ export const useStoreClientes = defineStore("Cliente", () => {
 
     const getClientesID = async (id) => {
         try {
-            const r = await axios.get(`http://localhost:4505/api/clientes/${id}`, {
+            const r = await axios.get(`${url}/api/clientes/${id}`, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -63,7 +65,7 @@ export const useStoreClientes = defineStore("Cliente", () => {
 
     const getClientesSeguimientoID = async (id) => {
         try {
-            const r = await axios.get(`http://localhost:4505/api/clientes/seguimiento/${id}`, {
+            const r = await axios.get(`${url}/api/clientes/seguimiento/${id}`, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -77,7 +79,7 @@ export const useStoreClientes = defineStore("Cliente", () => {
 
     const getClientesPlan = async (plan) => {
         try {
-            const r = await axios.get(`http://localhost:4505/api/clientes/plan/${plan}`, {
+            const r = await axios.get(`${url}/api/clientes/plan/${plan}`, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -91,7 +93,7 @@ export const useStoreClientes = defineStore("Cliente", () => {
 
     const getClientesCumpleaños = async (fecha) => {
         try {
-            const r = await axios.get(`http://localhost:4505/api/clientes/cumpleanos/${fecha}`, {
+            const r = await axios.get(`${url}/api/clientes/cumpleanos/${fecha}`, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -105,7 +107,7 @@ export const useStoreClientes = defineStore("Cliente", () => {
 
     const getClientesIngresaron = async (fecha) => {
         try {
-            const r = await axios.get(`http://localhost:4505/api/clientes/ingresaron/${fecha}`, {
+            const r = await axios.get(`${url}/api/clientes/ingresaron/${fecha}`, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -119,7 +121,7 @@ export const useStoreClientes = defineStore("Cliente", () => {
 
     const postClientes = async (datos) => {
         try {
-            const r = await axios.post(`http://localhost:4505/api/clientes`, datos, {
+            const r = await axios.post(`${url}/api/clientes`, datos, {
                 headers: {
                     'Content-Type': 'application/json', // Asegúrate de configurar el encabezado Content-Type correctamente
                     'Authorization': `Bearer ${useUsuario.token}` // Si estás usando tokens JWT para autenticación
@@ -135,7 +137,7 @@ export const useStoreClientes = defineStore("Cliente", () => {
 
     const putClientes = async (id, datos) => {
         try {
-            const r = await axios.put(`http://localhost:4505/api/clientes/${id}`, datos, {
+            const r = await axios.put(`${url}/api/clientes/${id}`, datos, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -149,7 +151,7 @@ export const useStoreClientes = defineStore("Cliente", () => {
 
     const putClientesActivar = async (id) => {
         try {
-            const r = await axios.put(`http://localhost:4505/api/clientes/activar/${id}`, {
+            const r = await axios.put(`${url}/api/clientes/activar/${id}`, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -163,7 +165,7 @@ export const useStoreClientes = defineStore("Cliente", () => {
 
     const putClientesInactivar = async (id) => {
         try {
-            const r = await axios.put(`http://localhost:4505/api/clientes/inactivar/${id}`, {
+            const r = await axios.put(`${url}/api/clientes/inactivar/${id}`, {
                 headers: {
                     token: useUsuario.token
                 }

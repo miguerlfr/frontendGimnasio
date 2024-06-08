@@ -93,12 +93,12 @@ const filteredRows = computed(() => {
 async function listarMantenimientos() {
   const productosResponse = await useMaquina.getMaquinas();
   const productos = productosResponse.data.maquinas;
-  console.log(productos);
+  // console.log(productos);
 
   // Obtener la lista de ventas
   const ventasResponse = await useMantenimiento.getMantenimientos();
   const ventas = ventasResponse.data.mantenimientos;
-  console.log(ventas);
+  // console.log(ventas);
 
   // Iterar sobre cada venta y asignar el descripcion del producto correspondiente
   ventas.forEach((venta) => {
@@ -158,7 +158,7 @@ const listarMaquinas = async () => {
     const response = await useMaquina.getMaquinas(); // Ajusta según tu API de servicio
     if (response.data) {
       maquinas.value = response.data.maquinas; // Ajusta según la estructura de respuesta de tu API
-      console.log("Maquinas listadas:", maquinas.value);
+      // console.log("Maquinas listadas:", maquinas.value);
       // Verifica si selectedMachine y selectedMachine.value están definidos
     } else {
       console.error("La respuesta no contiene datos:", response);
@@ -206,7 +206,7 @@ const agregarMantenimiento = async () => {
 
     const idMaquinaSeleccionada = select.id;
 
-    console.log("ID de la máquina seleccionada:", idMaquinaSeleccionada);
+    // console.log("ID de la máquina seleccionada:", idMaquinaSeleccionada);
 
     // Verifica si fecha.value tiene un valor válido antes de continuar
     if (!fecha.value) {
@@ -229,7 +229,7 @@ const agregarMantenimiento = async () => {
       estado: eA
     };
 
-    console.log("id", idMaquinaSeleccionada);
+    // console.log("id", idMaquinaSeleccionada);
 
     const resultado = await useMantenimiento.postMantenimientos(mantenimientoData);
     listarMantenimientos();
@@ -369,7 +369,7 @@ watch(selectedOption, (newValue) => {
   if (newValue === "Agregar Mantenimiento" || newValue === "Agregar Mantenimiento" && mostrarFormularioAgregarMantenimiento.value === false) {
     mostrarFormularioAgregarMantenimiento.value = true; // Asignar el valor a la propiedad value
     mostrarFormularioEditarMantenimiento.value = false; // Asegurarse de asignar a la propiedad value
-    // limpiarCampos()
+    limpiarCampos()
   } else {
     mostrarFormularioEditarMantenimiento.value = false; // Asegurarse de asignar a la propiedad value
     mostrarFormularioAgregarMantenimiento.value = false; // Asignar el valor a la propiedad value

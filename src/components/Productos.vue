@@ -4,6 +4,8 @@ import { useStoreProductos } from "../stores/Productos.js";
 
 const useProducto = useStoreProductos();
 
+const listarCodigo = ref("")
+
 const codigoProducto = ref("");
 const descripcionProducto = ref("");
 const valorProducto = ref("");
@@ -51,9 +53,9 @@ async function listarProductos() {
 const listarProductoCodigo = computed(() => {
   if (
     selectedOption.value === "Listar Producto por Código" &&
-    codigoProducto.value
+    listarCodigo.value
   ) {
-    const codigoInput = codigoProducto.value; // Obtener el código ingresado por el usuario
+    const codigoInput = listarCodigo.value; // Obtener el código ingresado por el usuario
     return rows.value.filter((producto) =>
       producto.codigo.toString().includes(codigoInput)
     );
@@ -131,7 +133,7 @@ const cancelarProducto = () => {
   // Cancelar la acción de agregar o editar producto
   mostrarFormularioAgregarProducto.value = false;
   mostrarFormularioEditarProducto.value = false;
-  limpiarCamposProducto();
+  limpiarCampos();
 };
 // // Función para obtener un producto por su ID
 // function obtenerProductoPorId(id) {
@@ -164,7 +166,7 @@ function limpiarCampos() {
 }
 
 watch(selectedOption, (newValue) => {
-  listarProductos();
+  listarProductos()
   if (newValue === "Agregar Producto") {
     mostrarFormularioEditarProducto.value = false;
     mostrarFormularioAgregarProducto.value = true;
@@ -192,8 +194,8 @@ onMounted(() => {
         <q-select background-color="green" class="q-my-md" v-model="selectedOption" outlined dense options-dense
           emit-value :options="options" />
 
-        <input v-if="selectedOption === 'Listar Producto por Código'" v-model="codigoProducto" class="q-my-md"
-          type="text" name="codigoProducto" id="codigoProducto" placeholder="Ingrese el código del producto" />
+        <input v-if="selectedOption === 'Listar Producto por Código'" v-model="listarCodigo" class="q-my-md"
+          type="text" name="listarCodigo" id="listarCodigo" placeholder="Ingrese el código del producto" />
       </div>
 
   <div>
