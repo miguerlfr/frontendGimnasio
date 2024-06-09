@@ -307,24 +307,6 @@ const limpiarCampos = () => {
   fechaVencimientoCliente.value = '';
   seguimientoCliente.value = [{ fecha: '', peso: '', imc: '', brazo: '', pierna: '', cintura: '', estatura: '' }];
 };
-const formatDate = (dateString) => {
-  if (!dateString) return null;
-  const date = new Date(dateString);
-  date.setDate(date.getDate() + 1); // Sumar un día
-  const year = date.getFullYear();
-  let month = date.getMonth() + 1;
-  let day = date.getDate();
-
-  // Agregar ceros delante si el día o el mes son menores que 10
-  if (month < 10) {
-    month = "0" + month;
-  }
-  if (day < 10) {
-    day = "0" + day;
-  }
-
-  return `${year}-${month}-${day}`;
-};
 
 async function agregarCliente() {
   let eA = "";
@@ -377,9 +359,9 @@ async function agregarCliente() {
 async function editarCliente() {
   const clienteEditado = {
     nombre: nombreCliente.value,
-    fechaIngreso: formatDate(fechaIngresoCliente.value),
+    fechaIngreso: fechaIngresoCliente.value,
     documento: documentoCliente.value,
-    fechaNacimiento: formatDate(fechaNacimientoCliente.value),
+    fechaNacimiento: fechaNacimientoCliente.value,
     edad: edadCliente.value,
     direccion: direccionCliente.value,
     telefono: telefonoCliente.value,

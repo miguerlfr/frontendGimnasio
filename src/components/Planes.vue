@@ -6,6 +6,10 @@ const usePlan = useStorePlanes();
 
 const codigoPlan = ref("");
 
+function formatoNumerico(numero) {
+  return typeof numero === 'number' ? numero.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : undefined;
+}
+
 const selectedOption = ref("Listar Planes"); // Establecer 'Listar Planes' como valor por defecto
 const options = [
   { label: "Listar Planes", value: "Listar Planes" },
@@ -24,8 +28,8 @@ const columns = ref([
     field: "descripcion",
     align: "center",
   },
-  { name: "valor", label: "Valor", field: "valor", align: "center" },
-  { name: "dias", label: "Días", field: "dias", align: "center" },
+  { name: "valor", label: "Valor", field: (row) => formatoNumerico(row.valor), align: "center" },
+  { name: "dias", label: "Días", field: (row) => formatoNumerico(row.dias), align: "center" },
   { name: "estado", label: "Estado", field: "estado", align: "center" },
   { name: "opciones", label: "Opciones", field: "opciones", align: "center" },
 ]);

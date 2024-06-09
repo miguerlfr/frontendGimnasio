@@ -6,6 +6,10 @@ const useSede = useStoreSedes();
 
 const codigoSede = ref("")
 
+function formatoNumerico(numero) {
+    return typeof numero === 'number' ? numero.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : undefined;
+}
+
 const selectedOption = ref("Listar Sedes"); // Establecer 'Listar Sedes' como valor por defecto
 const options = [
   { label: "Listar Sedes", value: "Listar Sedes" },
@@ -23,7 +27,7 @@ const columns = ref([
     field: "direccion",
     align: "center",
   },
-  { name: "codigo", label: "Código", field: "codigo", align: "center" },
+  { name: "codigo", label: "Código", field: (row) => formatoNumerico(row.codigo), align: "center" },
   { name: "horario", label: "Horario", field: "horario", align: "center" },
   { name: "ciudad", label: "Ciudad", field: "ciudad", align: "center" },
   { name: "telefono", label: "Teléfono", field: "telefono", align: "center" },

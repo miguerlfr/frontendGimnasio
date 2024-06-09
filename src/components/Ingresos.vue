@@ -2,16 +2,42 @@
 import { ref, onMounted, computed, watch } from "vue";
 import { useStoreClientes } from "../stores/Clientes.js";
 import { useStoreIngresos } from "../stores/Ingresos.js";
+import { useStoreSedes } from "../stores/Sedes.js";
 import { format } from "date-fns";
 import { Notify } from "quasar";
 
 const useCliente = useStoreClientes();
 const useIngreso = useStoreIngresos();
+const useSede = useStoreSedes();
 
 const nombreClienteIngreso = ref("");
 const idIngresoSeleccionado = ref(null);
 const fecha = ref("");
-const sede = ref("");
+const sede = ref("")
+
+const sedes = ref([])
+
+async function listarSedes() {
+  try {
+    const r = await useSede.getSedes();
+    if (r.data && r.data.sedes) {
+      sedes.value = r.data.sedes;
+      console.log("Sedes listadas:", sedes.value);
+    } else {
+      console.error("La respuesta no contiene la propiedad 'sedes'.", r.data);
+    }
+  } catch (error) {
+    console.error("Error al listar las sedes:", error);
+  }
+}
+
+const sedeOptions = computed(() => {
+  return sedes.value.map((sede) => ({
+    label: sede.nombre,
+    id: sede._id,
+  }));
+});
+
 // const cliente = ref("");
 const clientes = ref([]);
 const nombreCliente = ref("");
@@ -58,30 +84,46 @@ const filteredRows = computed(() => {
 });
 
 async function listarIngresos() {
-  // Obtener la lista de clientes
-  const clientesResponse = await useCliente.getClientes();
-  const clientes = clientesResponse.data.clientes;
+  try {
+    // Realizar todas las llamadas de forma simultánea
+    const [clientesResponse, ingresosResponse, sedesResponse] = await Promise.all([
+      useCliente.getClientes(),
+      useIngreso.getIngresos(),
+      useSede.getSedes()
+    ]);
 
-  // Obtener la lista de ingresos
-  const ingresosResponse = await useIngreso.getIngresos();
-  const ingresos = ingresosResponse.data.ingresos;
+    // Extraer los datos de las respuestas
+    const clientes = clientesResponse.data.clientes;
+    const ingresos = ingresosResponse.data.ingresos;
+    const sedes = sedesResponse.data.sedes;
 
-  // Iterar sobre cada ingreso y asignar el nombre del cliente correspondiente
-  ingresos.forEach((ingreso) => {
-    // Buscar el cliente correspondiente al ingreso por su _id
-    const cliente = clientes.find((c) => c._id === ingreso.cliente);
+    console.log("Clientes:", clientes);
+    console.log("Ingresos:", ingresos);
+    console.log("Sedes:", sedes);
 
-    // Si se encontró el cliente, asignar su nombre al ingreso
-    if (cliente) {
-      ingreso.cliente = cliente.nombre; // Suponiendo que `nombre` es la propiedad que contiene el nombre del cliente
-    } else {
-      ingreso.cliente = "Cliente no encontrado"; // Si no se encuentra el cliente, asignar un valor predeterminado
-    }
-  });
+    // Iterar sobre cada ingreso y asignar el nombre del cliente correspondiente
+    ingresos.forEach((ingreso) => {
+      // Buscar el cliente correspondiente al ingreso por su _id
+      const cliente = clientes.find((c) => c._id === ingreso.cliente);
+      const sede = sedes.find((s) => s._id === ingreso.sede); // Cambiar a comparar por _id en lugar de nombre
 
-  // Asignar los ingresos actualizados a la variable 'rows'
-  rows.value = ingresos;
+      // Si se encontró el cliente, asignar su nombre al ingreso
+      if (cliente && sede) { // Asegúrate de que tanto el cliente como la sede sean encontrados
+        ingreso.cliente = cliente.nombre;
+        ingreso.sede = sede.nombre; // Asignar el nombre de la sede en lugar de su _id
+      } else {
+        ingreso.cliente = "Cliente no encontrado"; // Si no se encuentra el cliente, asignar un valor predeterminado
+        ingreso.sede = "Sede no encontrada";
+      }
+    });
+
+    // Asignar los ingresos actualizados a la variable 'rows'
+    rows.value = ingresos;
+  } catch (error) {
+    console.error("Error al listar ingresos:", error);
+  }
 }
+
 
 const listarIngresoPorNombreCliente = computed(() => {
   if (
@@ -169,6 +211,19 @@ const cargarIngresoParaEdicion = (ingreso) => {
 const agregarIngreso = async () => {
   console.log("Nombre del cliente ingresado:", nombreCliente.value);
 
+    // Buscar la máquina seleccionada por su descripción
+    const select = sede.value
+    const nombre = select.nombre
+
+    // Verificar si se encontró la máquina seleccionada
+    if (!select) {
+      console.log("Máquina seleccionada:", nombre);
+      console.error("Máquina seleccionada no encontrada");
+      return;
+    }
+
+    const idSede = select.id;
+  
   const clienteId = validarCliente();
   if (!clienteId) return;
 
@@ -181,9 +236,10 @@ const agregarIngreso = async () => {
   // Crear un nuevo ingreso
   const nuevoIngreso = {
     fecha: fechaActual,
-    sede: sede.value,
+    sede: idSede,
     cliente: clienteId,
   };
+  console.log(idSede);
 
   try {
     // Utilizar useIngreso.postIngresos para agregar el nuevo ingreso
@@ -202,12 +258,26 @@ const agregarIngreso = async () => {
 
 };
 const editarIngreso = async () => {
+
+    // Buscar la máquina seleccionada por su descripción
+    const select = sede.value
+    const nombre = select.nombre
+
+    // Verificar si se encontró la máquina seleccionada
+    if (!select) {
+      console.log("Máquina seleccionada:", nombre);
+      console.error("Máquina seleccionada no encontrada");
+      return;
+    }
+
+    const idSede = select.id;
+
   const clienteId = validarCliente();
   if (!clienteId) return;
 
   const ingresoEditado = {
-    fecha: formatDate(fecha.value),
-    sede: sede.value,
+    fecha: fecha.value,
+    sede: idSede,
     cliente: clienteId,
   };
 
@@ -234,23 +304,6 @@ const limpiarCamposIngreso = () => {
   sede.value = "";
   nombreCliente.value = "";
 };
-const formatDate = (dateString) => {
-  if (!dateString) return null;
-  const date = new Date(dateString);
-  date.setDate(date.getDate() + 1); // Sumar un día
-  const year = date.getFullYear();
-  let month = date.getMonth() + 1;
-  let day = date.getDate();
-
-  if (month < 10) {
-    month = "0" + month;
-  }
-  if (day < 10) {
-    day = "0" + day;
-  }
-
-  return `${year}-${month}-${day}`;
-};
 const cancelarIngreso = () => {
   mostrarFormularioAgregarIngreso.value = false;
   mostrarFormularioEditarIngreso.value = false;
@@ -271,7 +324,8 @@ watch(selectedOption, (newValue) => {
 
 onMounted(() => {
   listarIngresos(),
-    listarClientes()
+  listarClientes(),
+  listarSedes()
 });
 </script>
 
@@ -308,7 +362,7 @@ onMounted(() => {
             <q-card-section>
               <q-form @submit.prevent="agregarIngreso">
                 <q-input v-model="fecha" label="Fecha" type="date" outlined class="q-mb-md" />
-                <q-input v-model="sede" label="Sede" outlined class="q-mb-md" />
+                <q-select v-model="sede" label="Sede" outlined :options="sedeOptions" class="q-mb-md" />
                 <q-input v-model="nombreCliente" label="Cliente" outlined class="q-mb-md" />
                 <div class="q-mt-md">
                   <q-btn @click="cancelarIngreso" label="Cancelar" color="negative" class="q-ma-sm" />
@@ -329,7 +383,7 @@ onMounted(() => {
             <q-card-section>
               <q-form @submit.prevent="editarIngreso">
                 <q-input v-model="fecha" label="Fecha" type="date" outlined class="q-mb-md" />
-                <q-input v-model="sede" label="Sede" outlined class="q-mb-md" />
+                <q-select v-model="sede" label="Sede" outlined :options="sedeOptions" class="q-mb-md" />
                 <q-input v-model="nombreCliente" label="Cliente" outlined class="q-mb-md" />
                 <div class="q-mt-md">
                   <q-btn @click="cancelarIngreso" label="Cancelar" color="negative" class="q-ma-sm" />

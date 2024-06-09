@@ -11,6 +11,10 @@ const fechaSeleccionada = ref("");
 const planC = ref("");
 const nombreCliente = ref("");
 
+function formatoNumerico(numero) {
+  return typeof numero === 'number' ? numero.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : undefined;
+}
+
 const selectedOption = ref("Listar Pagos"); // Establecer 'Listar Pagos' como valor por defecto
 const options = [
   { label: "Listar Pagos", value: "Listar Pagos" },
@@ -38,7 +42,12 @@ const columns = ref([
     },
     align: "center",
   },
-  { name: "valor", label: "Valor", field: "valor", align: "center" },
+  {
+    name: "valor",
+    label: "Valor",
+    field: (row) => formatoNumerico(row.valor),
+    align: "center"
+  },
   { name: "estado", label: "Estado", field: "estado", align: "center" },
   { name: "opciones", label: "Opciones", field: "opciones", align: "center" },
 ]);

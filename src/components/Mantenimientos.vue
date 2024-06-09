@@ -10,6 +10,10 @@ const useMantenimiento = useStoreMantenimientos();
 const nombreMaquinaMantenimiento = ref("");
 const fechaSeleccionada = ref("");
 
+function formatoNumerico(numero) {
+    return typeof numero === 'number' ? numero.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : undefined;
+}
+
 const selectedOption = ref("Listar Mantenimientos"); // Establecer 'Listar Mantenimientos' como valor por defecto
 const options = [
   { label: "Listar Mantenimientos", value: "Listar Mantenimientos" },
@@ -61,7 +65,7 @@ const columns = ref([
   {
     name: "precio",
     label: "Precio",
-    field: "precio",
+    field: (row) => formatoNumerico(row.precio),
     align: "center",
   },
   {
@@ -244,7 +248,7 @@ const editarMantenimiento = async () => {
   console.log("ID de mantenimiento seleccionado:", idMantenimientoSeleccionado.value);
   console.log("Datos a enviar:", {
     idMaquina: idMaquina.value,
-    fecha: formatDate(fecha.value),
+    fecha: fecha.value,
     descripcion: descripcion.value,
     responsable: responsable.value,
     precio: precio.value,
@@ -267,7 +271,7 @@ const editarMantenimiento = async () => {
 
   const mantenimientoEditado = {
     idMaquina: idMaquinaSeleccionada,
-    fecha: formatDate(fecha.value),
+    fecha: fecha.value,
     descripcion: descripcion.value,
     responsable: responsable.value,
     precio: precio.value,
@@ -326,24 +330,7 @@ const cargarMantenimientoParaEdicion = (mantenimiento) => {
   // Cambiar al formulario de edición
   cambiarFormulario(false);
 };
-const formatDate = (dateString) => {
-  if (!dateString) return null;
-  const date = new Date(dateString);
-  date.setDate(date.getDate() + 1); // Sumar un día
-  const year = date.getFullYear();
-  let month = date.getMonth() + 1;
-  let day = date.getDate();
 
-  // Agregar ceros delante si el día o el mes son menores que 10
-  if (month < 10) {
-    month = "0" + month;
-  }
-  if (day < 10) {
-    day = "0" + day;
-  }
-
-  return `${year}-${month}-${day}`;
-};
 const cancelarMantenimiento = () => {
   mostrarFormularioAgregarMantenimiento.value = false;
   mostrarFormularioEditarMantenimiento.value = false;

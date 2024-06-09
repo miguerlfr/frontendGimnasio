@@ -12,6 +12,10 @@ const valorProducto = ref("");
 const cantidadProducto = ref("");
 const idProductoSeleccionado = ref(null);
 
+function formatoNumerico(numero) {
+  return typeof numero === 'number' ? numero.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : undefined;
+}
+
 const selectedOption = ref("Listar Productos"); // Establecer 'Listar Productos' como valor por defecto
 const options = [
   { label: "Listar Productos", value: "Listar Productos" },
@@ -27,8 +31,8 @@ const columns = ref([
     field: "descripcion",
     align: "center",
   },
-  { name: "valor", label: "Valor", field: "valor", align: "center" },
-  { name: "cantidad", label: "Cantidad", field: "cantidad", align: "center" },
+  { name: "valor", label: "Valor", field: (row) => formatoNumerico(row.valor), align: "center" },
+  { name: "cantidad", label: "Cantidad", field: (row) => formatoNumerico(row.cantidad), align: "center" },
   { name: "opciones", label: "Opciones", field: "opciones", align: "center" },
 ]);
 // Función computada para manejar la lógica de qué datos mostrar
