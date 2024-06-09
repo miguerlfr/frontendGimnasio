@@ -23,7 +23,7 @@ const options = [
     label: "Listar Ingreso del Cliente por su Nombre",
     value: "Listar Ingreso del Cliente por su Nombre",
   },
-  { label: "Agregar Ingreso", value: "Agregar Ingreso" },
+  // { label: "Agregar Ingreso", value: "Agregar Ingreso" },
 ];
 
 let rows = ref([]);
@@ -190,7 +190,7 @@ const agregarIngreso = async () => {
     const response = await useIngreso.postIngresos(nuevoIngreso);
 
     if (response.status === 200) {
-        mostrarFormularioAgregarIngreso.value = false
+      mostrarFormularioAgregarIngreso.value = false
       listarIngresos();
       limpiarCamposIngreso();
     } else {
@@ -293,49 +293,53 @@ onMounted(() => {
       </div>
 
       <div>
+        <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
+          <q-btn label="Agregar Ingreso" @click="mostrarFormularioAgregarIngreso = true" />
+          <!-- <q-btn label="Editar Ingreso" @click="mostrarFormularioEditarIngreso = true" /> -->
+        </div>
 
-    <!-- Dialogo para agregar ingreso -->
-    <q-dialog v-model="mostrarFormularioAgregarIngreso">
-      <q-card>
-        <q-card-section>
-          <div class="text-h6">Agregar Ingreso</div>
-        </q-card-section>
+        <!-- Dialogo para agregar ingreso -->
+        <q-dialog v-model="mostrarFormularioAgregarIngreso">
+          <q-card>
+            <q-card-section>
+              <div class="text-h6">Agregar Ingreso</div>
+            </q-card-section>
 
-        <q-card-section>
-          <q-form @submit.prevent="agregarIngreso">
-            <q-input v-model="fecha" label="Fecha" type="date" outlined class="q-mb-md" />
-            <q-input v-model="sede" label="Sede" outlined class="q-mb-md" />
-            <q-input v-model="nombreCliente" label="Cliente" outlined class="q-mb-md" />
-            <div class="q-mt-md">
-              <q-btn @click="cancelarIngreso" label="Cancelar" color="negative" class="q-ma-sm" />
-              <q-btn type="submit" label="Guardar Ingreso" color="primary" class="q-ma-sm" />
-            </div>
-          </q-form>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
+            <q-card-section>
+              <q-form @submit.prevent="agregarIngreso">
+                <q-input v-model="fecha" label="Fecha" type="date" outlined class="q-mb-md" />
+                <q-input v-model="sede" label="Sede" outlined class="q-mb-md" />
+                <q-input v-model="nombreCliente" label="Cliente" outlined class="q-mb-md" />
+                <div class="q-mt-md">
+                  <q-btn @click="cancelarIngreso" label="Cancelar" color="negative" class="q-ma-sm" />
+                  <q-btn type="submit" label="Guardar Ingreso" color="primary" class="q-ma-sm" />
+                </div>
+              </q-form>
+            </q-card-section>
+          </q-card>
+        </q-dialog>
 
-    <!-- Dialogo para editar ingreso -->
-    <q-dialog v-model="mostrarFormularioEditarIngreso">
-      <q-card>
-        <q-card-section>
-          <div class="text-h6">Editar Ingreso</div>
-        </q-card-section>
+        <!-- Dialogo para editar ingreso -->
+        <q-dialog v-model="mostrarFormularioEditarIngreso">
+          <q-card>
+            <q-card-section>
+              <div class="text-h6">Editar Ingreso</div>
+            </q-card-section>
 
-        <q-card-section>
-          <q-form @submit.prevent="editarIngreso">
-            <q-input v-model="fecha" label="Fecha" type="date" outlined class="q-mb-md" />
-            <q-input v-model="sede" label="Sede" outlined class="q-mb-md" />
-            <q-input v-model="nombreCliente" label="Cliente" outlined class="q-mb-md" />
-            <div class="q-mt-md">
-              <q-btn @click="cancelarIngreso" label="Cancelar" color="negative" class="q-ma-sm" />
-              <q-btn type="submit" label="Guardar Cambios" color="primary" class="q-ma-sm" />
-            </div>
-          </q-form>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
-  </div>
+            <q-card-section>
+              <q-form @submit.prevent="editarIngreso">
+                <q-input v-model="fecha" label="Fecha" type="date" outlined class="q-mb-md" />
+                <q-input v-model="sede" label="Sede" outlined class="q-mb-md" />
+                <q-input v-model="nombreCliente" label="Cliente" outlined class="q-mb-md" />
+                <div class="q-mt-md">
+                  <q-btn @click="cancelarIngreso" label="Cancelar" color="negative" class="q-ma-sm" />
+                  <q-btn type="submit" label="Guardar Cambios" color="primary" class="q-ma-sm" />
+                </div>
+              </q-form>
+            </q-card-section>
+          </q-card>
+        </q-dialog>
+      </div>
 
       <q-table flat bordered title="Ingresos" title-class="text-green text-weight-bolder text-h5" :rows="filteredRows"
         :columns="columns" row-key="id">

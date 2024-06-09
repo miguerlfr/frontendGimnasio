@@ -61,7 +61,7 @@ const options = ref([
     label: "Listar Clientes por Fecha de Ingreso",
     value: "Listar Clientes por Fecha de Ingreso",
   },
-  { label: "Agregar Cliente", value: "Agregar Cliente" },
+  // { label: "Agregar Cliente", value: "Agregar Cliente" },
 ]);
 
 let rows = ref([]);
@@ -468,6 +468,10 @@ watch(selectedOption, (newValue) => {
     mostrarFormularioAgregarCliente.value = true;
     mostrarFormularioEditarCliente.value = false;
     limpiarCampos();
+  } else if (newValue === "Agregar Cliente" && !mostrarFormularioAgregarCliente.value) {
+    mostrarFormularioAgregarCliente.value = true;
+    mostrarFormularioEditarCliente.value = false;
+    limpiarCampos();
   } else {
     mostrarFormularioEditarCliente.value = false;
     mostrarFormularioAgregarCliente.value = false;
@@ -507,7 +511,11 @@ watch(selectedOption, (newValue) => {
       </div>
 
       <div>
-
+        <!-- Botones para abrir diálogos -->
+        <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-my-md">
+          <q-btn label="Agregar Cliente" @click="mostrarFormularioAgregarCliente = true" />
+          <!-- <q-btn label="Editar Cliente" @click="mostrarFormularioEditarCliente = true" /> -->
+        </div>
         <!-- Dialogo para agregar cliente -->
         <q-dialog v-model="mostrarFormularioAgregarCliente">
           <q-card>
@@ -532,7 +540,7 @@ watch(selectedOption, (newValue) => {
                 <q-input v-model="fechaVencimientoCliente" label="Fecha de Vencimiento" type="date" filled required
                   class="q-mb-md" />
 
-                <q-card-section  class="text-h5">Seguimiento</q-card-section>
+                <q-card-section class="text-h5">Seguimiento</q-card-section>
                 <div v-for="(item, index) in seguimientoCliente" :key="index">
                   <q-input v-model="seguimientoCliente[index].fecha" :label="'Fecha de Seguimiento ' + (index + 1)"
                     type="date" filled class="q-mb-md" />
@@ -577,7 +585,7 @@ watch(selectedOption, (newValue) => {
                 <q-input v-model="fechaVencimientoCliente" label="Fecha de Vencimiento" type="date" filled required
                   class="q-mb-md" />
 
-                <q-card-section  class="text-h5">Seguimiento</q-card-section>
+                <q-card-section class="text-h5">Seguimiento</q-card-section>
                 <div v-for="(item, index) in seguimientoCliente" :key="index">
                   <q-input v-model="seguimientoCliente[index].fecha" :label="'Fecha de Seguimiento ' + (index + 1)"
                     type="date" filled class="q-mb-md" />

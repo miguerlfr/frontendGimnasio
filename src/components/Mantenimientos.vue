@@ -21,7 +21,7 @@ const options = [
     label: "Listar Mantenimientos por Fecha",
     value: "Listar Mantenimientos por Fecha",
   },
-  { label: "Agregar Mantenimiento", value: "Agregar Mantenimiento" },
+  // { label: "Agregar Mantenimiento", value: "Agregar Mantenimiento" },
 ];
 
 let rows = ref([]);
@@ -251,22 +251,22 @@ const editarMantenimiento = async () => {
   });
 
   const select = selectedMachine.value
-    const label = select.label
+  const label = select.label
 
-    // Verificar si se encontró la máquina seleccionada
-    if (!select) {
-      console.log("Máquina seleccionada:", label);
-      console.error("Máquina seleccionada no encontrada");
-      return;
-    }
+  // Verificar si se encontró la máquina seleccionada
+  if (!select) {
+    console.log("Máquina seleccionada:", label);
+    console.error("Máquina seleccionada no encontrada");
+    return;
+  }
 
-    const idMaquinaSeleccionada = select.id;
+  const idMaquinaSeleccionada = select.id;
 
-console.log("ID de la máquina seleccionada:", idMaquinaSeleccionada);
+  console.log("ID de la máquina seleccionada:", idMaquinaSeleccionada);
 
 
   const mantenimientoEditado = {
-      idMaquina: idMaquinaSeleccionada,
+    idMaquina: idMaquinaSeleccionada,
     fecha: formatDate(fecha.value),
     descripcion: descripcion.value,
     responsable: responsable.value,
@@ -319,7 +319,7 @@ const cargarMantenimientoParaEdicion = (mantenimiento) => {
   idMantenimientoSeleccionado.value = mantenimiento._id; // Asegúrate de que el ID está siendo seleccionado
   selectedMachine.value = mantenimiento.idMaquina;
   fecha.value = mantenimiento.fecha.split("T")[0],// Manejar la fecha nula
-  descripcion.value = mantenimiento.descripcion;
+    descripcion.value = mantenimiento.descripcion;
   responsable.value = mantenimiento.responsable;
   precio.value = mantenimiento.precio;
 
@@ -401,6 +401,10 @@ watch(selectedOption, (newValue) => {
       </div>
 
       <div>
+        <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
+          <q-btn label="Agregar Mantenimiento" @click="mostrarFormularioAgregarMantenimiento = true" />
+          <!-- <q-btn label="Editar Mantenimiento" @click="mostrarFormularioEditarMantenimiento = true" /> -->
+        </div>
         <!-- Dialogo para agregar mantenimiento -->
         <q-dialog v-model="mostrarFormularioAgregarMantenimiento">
           <q-card>

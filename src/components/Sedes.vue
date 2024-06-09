@@ -12,7 +12,7 @@ const options = [
   { label: "Listar Sede por Código", value: "Listar Sede por Código" },
   { label: "Listar Sedes Activas", value: "Listar Sedes Activas" },
   { label: "Listar Sedes Inactivas", value: "Listar Sedes Inactivas" },
-  { label: "Agregar Sede", value: "Agregar Sede" },
+  // { label: "Agregar Sede", value: "Agregar Sede" },
 ];
 let rows = ref([]);
 const columns = ref([
@@ -185,7 +185,7 @@ const mostrarDatosParaEditar = (sedes) => {
   horario.value = sedes.horario;
   ciudad.value = sedes.ciudad;
   telefono.value = sedes.telefono;
-  
+
   mostrarFormularioAgregarSedes.value = false;
   mostrarFormularioEditarSedes.value = true;
 };
@@ -228,6 +228,12 @@ watch(selectedOption, (newValue) => {
       </div>
 
       <div>
+        <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
+          <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
+            <q-btn label="Agregar Sede" @click="mostrarFormularioAgregarSedes = true" />
+          </div>
+
+        </div>
         <!-- Dialogo para agregar sede -->
         <q-dialog v-model="mostrarFormularioAgregarSedes">
           <q-card>

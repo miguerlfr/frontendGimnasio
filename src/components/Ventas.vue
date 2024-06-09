@@ -20,7 +20,7 @@ const options = [
     label: "Listar Ventas por Código del Producto",
     value: "Listar Ventas por Código del Producto",
   },
-  { label: "Agregar Venta", value: "Agregar Venta" },
+  // { label: "Agregar Venta", value: "Agregar Venta" },
 ];
 
 let rows = ref([]);
@@ -277,9 +277,10 @@ onMounted(() => {
       </div>
 
       <div>
-        <!-- Botones para abrir los formularios -->
-        <!-- <q-btn label="Agregar Venta" @click="mostrarFormularioAgregarVenta = true" />
-    <q-btn label="Editar Venta" @click="mostrarFormularioEditarVenta = true" /> -->
+        <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
+          <q-btn label="Agregar Venta" @click="mostrarFormularioAgregarVenta = true" />
+          <!-- <q-btn label="Editar Venta" @click="mostrarFormularioEditarVenta = true" /> -->
+        </div>
 
         <!-- Formulario para agregar venta -->
         <q-dialog v-model="mostrarFormularioAgregarVenta">

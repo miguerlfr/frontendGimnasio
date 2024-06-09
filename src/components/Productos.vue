@@ -16,7 +16,7 @@ const selectedOption = ref("Listar Productos"); // Establecer 'Listar Productos'
 const options = [
   { label: "Listar Productos", value: "Listar Productos" },
   { label: "Listar Producto por Código", value: "Listar Producto por Código" },
-  { label: "Agregar Producto", value: "Agregar Producto" },
+  // { label: "Agregar Producto", value: "Agregar Producto" },
 ];
 let rows = ref([]);
 const columns = ref([
@@ -194,63 +194,70 @@ onMounted(() => {
         <q-select background-color="green" class="q-my-md" v-model="selectedOption" outlined dense options-dense
           emit-value :options="options" />
 
-        <input v-if="selectedOption === 'Listar Producto por Código'" v-model="listarCodigo" class="q-my-md"
-          type="text" name="listarCodigo" id="listarCodigo" placeholder="Ingrese el código del producto" />
+        <input v-if="selectedOption === 'Listar Producto por Código'" v-model="listarCodigo" class="q-my-md" type="text"
+          name="listarCodigo" id="listarCodigo" placeholder="Ingrese el código del producto" />
       </div>
 
-  <div>
-    <!-- Botones para abrir diálogos -->
-    <!-- <q-btn label="Agregar Producto" @click="mostrarFormularioAgregarProducto = true" />
-    <q-btn label="Editar Producto" @click="mostrarFormularioEditarProducto = true" /> -->
+      <div>
+        <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
+          <q-btn label="Agregar Producto" @click="mostrarFormularioAgregarProducto = true" />
+          <!-- <q-btn label="Editar Producto" @click="mostrarFormularioEditarProducto = true" /> -->
+        </div>
 
-    <!-- Diálogo para agregar producto -->
-    <q-dialog v-model="mostrarFormularioAgregarProducto">
-      <q-card>
-        <q-card-section>
-          <div class="text-h6">Agregar Producto</div>
-        </q-card-section>
+        <!-- Diálogo para agregar producto -->
+        <q-dialog v-model="mostrarFormularioAgregarProducto">
+          <q-card>
+            <q-card-section>
+              <div class="text-h6">Agregar Producto</div>
+            </q-card-section>
 
-        <q-card-section>
-          <q-form @submit.prevent="agregarProducto">
-            <q-input v-model="codigoProducto" label="Código del producto" filled required class="q-mb-md" />
-            <q-input v-model="descripcionProducto" label="Descripción del producto" filled required class="q-mb-md" />
-            <q-input v-model="valorProducto" label="Valor del producto" type="number" filled required class="q-mb-md" />
-            <q-input v-model="cantidadProducto" label="Cantidad del producto" type="number" filled required class="q-mb-md" />
+            <q-card-section>
+              <q-form @submit.prevent="agregarProducto">
+                <q-input v-model="codigoProducto" label="Código del producto" filled required class="q-mb-md" />
+                <q-input v-model="descripcionProducto" label="Descripción del producto" filled required
+                  class="q-mb-md" />
+                <q-input v-model="valorProducto" label="Valor del producto" type="number" filled required
+                  class="q-mb-md" />
+                <q-input v-model="cantidadProducto" label="Cantidad del producto" type="number" filled required
+                  class="q-mb-md" />
 
-            <!-- Botones de acción -->
-            <div class="q-mt-md">
-              <q-btn @click="cancelarProducto" label="Cancelar" color="negative" class="q-mr-sm" />
-              <q-btn type="submit" label="Agregar Producto" color="primary" />
-            </div>
-          </q-form>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
+                <!-- Botones de acción -->
+                <div class="q-mt-md">
+                  <q-btn @click="cancelarProducto" label="Cancelar" color="negative" class="q-mr-sm" />
+                  <q-btn type="submit" label="Agregar Producto" color="primary" />
+                </div>
+              </q-form>
+            </q-card-section>
+          </q-card>
+        </q-dialog>
 
-    <!-- Diálogo para editar producto -->
-    <q-dialog v-model="mostrarFormularioEditarProducto">
-      <q-card>
-        <q-card-section>
-          <div class="text-h6">Editar Producto</div>
-        </q-card-section>
+        <!-- Diálogo para editar producto -->
+        <q-dialog v-model="mostrarFormularioEditarProducto">
+          <q-card>
+            <q-card-section>
+              <div class="text-h6">Editar Producto</div>
+            </q-card-section>
 
-        <q-card-section>
-          <q-form @submit.prevent="editarProducto">
-            <q-input v-model="codigoProducto" label="Código del producto" filled required class="q-mb-md" />
-            <q-input v-model="descripcionProducto" label="Descripción del producto" filled required class="q-mb-md" />
-            <q-input v-model="valorProducto" label="Valor del producto" type="number" filled required class="q-mb-md" />
-            <q-input v-model="cantidadProducto" label="Cantidad del producto" type="number" filled required class="q-mb-md" />
+            <q-card-section>
+              <q-form @submit.prevent="editarProducto">
+                <q-input v-model="codigoProducto" label="Código del producto" filled required class="q-mb-md" />
+                <q-input v-model="descripcionProducto" label="Descripción del producto" filled required
+                  class="q-mb-md" />
+                <q-input v-model="valorProducto" label="Valor del producto" type="number" filled required
+                  class="q-mb-md" />
+                <q-input v-model="cantidadProducto" label="Cantidad del producto" type="number" filled required
+                  class="q-mb-md" />
 
-            <!-- Botones de acción -->
-            <div class="q-mt-md">
-              <q-btn @click="cancelarProducto" label="Cancelar" color="negative" class="q-mr-sm" />
-              <q-btn type="submit" label="Guardar Cambios" color="primary" />
-            </div>
-          </q-form>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
-  </div>
+                <!-- Botones de acción -->
+                <div class="q-mt-md">
+                  <q-btn @click="cancelarProducto" label="Cancelar" color="negative" class="q-mr-sm" />
+                  <q-btn type="submit" label="Guardar Cambios" color="primary" />
+                </div>
+              </q-form>
+            </q-card-section>
+          </q-card>
+        </q-dialog>
+      </div>
 
       <q-table flat bordered title="Productos" title-class="text-green text-weight-bolder text-h5" :rows="filteredRows"
         :columns="columns" row-key="id">

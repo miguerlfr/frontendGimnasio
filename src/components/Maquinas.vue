@@ -13,7 +13,7 @@ const options = [
   { label: "Listar Máquina por Código", value: "Listar Máquina por Código" },
   { label: "Listar Máquinas Activas", value: "Listar Máquinas Activas" },
   { label: "Listar Máquinas Inactivas", value: "Listar Máquinas Inactivas" },
-  { label: "Agregar Máquina", value: "Agregar Máquina" },
+  // { label: "Agregar Máquina", value: "Agregar Máquina" },
 ];
 
 let rows = ref([]);
@@ -32,7 +32,7 @@ const columns = ref([
     field: (row) => {
       const fecha = new Date(row.fechaIngreso);
       fecha.setDate(fecha.getDate() + 1);
-      
+
       const fechaFormateada = format(fecha, "dd/MM/yyyy");
       return fechaFormateada;
     },
@@ -275,34 +275,39 @@ watch(selectedOption, (newValue) => {
       </div>
 
       <div>
-            <!-- Dialogo para agregar máquina -->
-    <q-dialog v-model="mostrarFormularioAgregarMaquina">
-      <q-card>
-        <q-card-section>
-          <div class="text-h6">Agregar Máquina</div>
-        </q-card-section>
+        <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
+          <q-btn label="Agregar Máquina" @click="mostrarFormularioAgregarMaquina = true" />
+          <!-- <q-btn label="Editar Máquina" @click="mostrarFormularioEditarMaquina = true" /> -->
+        </div>
+        <!-- Dialogo para agregar máquina -->
+        <q-dialog v-model="mostrarFormularioAgregarMaquina">
+          <q-card>
+            <q-card-section>
+              <div class="text-h6">Agregar Máquina</div>
+            </q-card-section>
 
-        <q-card-section>
-          <div class="q-pa-md">
-            <q-form @submit.prevent="agregarMaquina">
-              <!-- Campos del formulario de agregar máquina -->
-              <q-input v-model="codigo" label="Código" outlined class="q-mb-md" />
-              <q-input v-model="sede" label="Sede" outlined class="q-mb-md" />
-              <q-input v-model="descripcion" label="Descripción" outlined class="q-mb-md" />
-              <q-input v-model="fechaIngreso" label="Fecha de Ingreso" type="date" outlined class="q-mb-md" />
-              <q-input v-model="fechaUltMan" label="Fecha de Último Mantenimiento" type="date" outlined class="q-mb-md" />
-              <q-select v-model="estadoM" label="Estado" outlined :options="estadoOptions" filled class="q-mb-md" />
+            <q-card-section>
+              <div class="q-pa-md">
+                <q-form @submit.prevent="agregarMaquina">
+                  <!-- Campos del formulario de agregar máquina -->
+                  <q-input v-model="codigo" label="Código" outlined class="q-mb-md" />
+                  <q-input v-model="sede" label="Sede" outlined class="q-mb-md" />
+                  <q-input v-model="descripcion" label="Descripción" outlined class="q-mb-md" />
+                  <q-input v-model="fechaIngreso" label="Fecha de Ingreso" type="date" outlined class="q-mb-md" />
+                  <q-input v-model="fechaUltMan" label="Fecha de Último Mantenimiento" type="date" outlined
+                    class="q-mb-md" />
+                  <q-select v-model="estadoM" label="Estado" outlined :options="estadoOptions" filled class="q-mb-md" />
 
-              <!-- Botones de acción -->
-              <div class="q-mt-md">
-                <q-btn @click="cancelarMaquina" label="Cancelar" color="negative" class="q-ma-sm" />
-                <q-btn type="submit" label="Agregar Máquina" color="primary" class="q-ma-sm" />
+                  <!-- Botones de acción -->
+                  <div class="q-mt-md">
+                    <q-btn @click="cancelarMaquina" label="Cancelar" color="negative" class="q-ma-sm" />
+                    <q-btn type="submit" label="Agregar Máquina" color="primary" class="q-ma-sm" />
+                  </div>
+                </q-form>
               </div>
-            </q-form>
-          </div>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
+            </q-card-section>
+          </q-card>
+        </q-dialog>
 
         <!-- Dialogo para editar máquina -->
         <q-dialog v-model="mostrarFormularioEditarMaquina">

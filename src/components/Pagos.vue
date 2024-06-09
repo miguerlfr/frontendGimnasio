@@ -20,7 +20,7 @@ const options = [
   { label: "Listar Pagos por Cliente", value: "Listar Pagos por Cliente" },
   { label: "Listar Pagos Activos", value: "Listar Pagos Activos" },
   { label: "Listar Pagos Inactivos", value: "Listar Pagos Inactivos" },
-  { label: "Agregar Pago", value: "Agregar Pago" },
+  // { label: "Agregar Pago", value: "Agregar Pago" },
 ];
 
 let rows = ref([]);
@@ -334,65 +334,66 @@ watch(selectedOption, (newValue) => {
       </div>
 
       <div>
-    <!-- Botones para abrir diálogos -->
-    <!-- <q-btn label="Agregar Pago" @click="mostrarFormularioAgregarPago = true" />
-    <q-btn label="Editar Pago" @click="mostrarFormularioEditarPago = true" /> -->
+        <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
+          <q-btn label="Agregar Pago" @click="mostrarFormularioAgregarPago = true" />
+          <!-- <q-btn label="Editar Pago" @click="mostrarFormularioEditarPago = true" /> -->
+        </div>
 
-    <!-- Dialogo para agregar pago -->
-    <q-dialog v-model="mostrarFormularioAgregarPago">
-      <q-card>
-        <q-card-section>
-          <div class="text-h6">Agregar Pago</div>
-        </q-card-section>
+        <!-- Dialogo para agregar pago -->
+        <q-dialog v-model="mostrarFormularioAgregarPago">
+          <q-card>
+            <q-card-section>
+              <div class="text-h6">Agregar Pago</div>
+            </q-card-section>
 
-        <q-card-section>
-          <div class="q-pa-md">
-            <q-form @submit.prevent="agregarPago">
-              <!-- Campos del formulario de agregar pago -->
-              <q-input v-model="clientePago" label="Cliente" outlined class="q-mb-md" />
-              <q-input v-model="planPago" label="Plan" outlined class="q-mb-md" />
-              <q-input v-model="fechaPago" label="Fecha" type="date" outlined class="q-mb-md" />
-              <q-input v-model="valorPago" label="Valor" type="number" outlined class="q-mb-md" />
-              <q-select v-model="estadoPago" label="Estado" outlined :options="estadoOptions" class="q-mb-md" />
+            <q-card-section>
+              <div class="q-pa-md">
+                <q-form @submit.prevent="agregarPago">
+                  <!-- Campos del formulario de agregar pago -->
+                  <q-input v-model="clientePago" label="Cliente" outlined class="q-mb-md" />
+                  <q-input v-model="planPago" label="Plan" outlined class="q-mb-md" />
+                  <q-input v-model="fechaPago" label="Fecha" type="date" outlined class="q-mb-md" />
+                  <q-input v-model="valorPago" label="Valor" type="number" outlined class="q-mb-md" />
+                  <q-select v-model="estadoPago" label="Estado" outlined :options="estadoOptions" class="q-mb-md" />
 
-              <!-- Botones de acción -->
-              <div class="q-mt-md">
-                <q-btn @click="cancelarEdicionPago" label="Cancelar" color="negative" class="q-mr-sm" />
-                <q-btn type="submit" label="Agregar Pago" color="primary" />
+                  <!-- Botones de acción -->
+                  <div class="q-mt-md">
+                    <q-btn @click="cancelarEdicionPago" label="Cancelar" color="negative" class="q-mr-sm" />
+                    <q-btn type="submit" label="Agregar Pago" color="primary" />
+                  </div>
+                </q-form>
               </div>
-            </q-form>
-          </div>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
+            </q-card-section>
+          </q-card>
+        </q-dialog>
 
-    <!-- Dialogo para editar pago -->
-    <q-dialog v-model="mostrarFormularioEditarPago">
-      <q-card>
-        <q-card-section>
-          <div class="text-h6">Editar Pago</div>
-        </q-card-section>
+        <!-- Dialogo para editar pago -->
+        <q-dialog v-model="mostrarFormularioEditarPago">
+          <q-card>
+            <q-card-section>
+              <div class="text-h6">Editar Pago</div>
+            </q-card-section>
 
-        <q-card-section>
-          <div class="q-pa-md">
-            <q-form @submit.prevent="editarPago">
-              <!-- Campos del formulario de editar pago -->
-              <q-input v-model="clientePagoEditar" label="Cliente" outlined class="q-mb-md" />
-              <q-input v-model="planPagoEditar" label="Plan" outlined class="q-mb-md" />
-              <q-input v-model="fechaPagoEditar" label="Fecha" type="date" outlined class="q-mb-md" />
-              <q-input v-model="valorPagoEditar" label="Valor" type="number" outlined class="q-mb-md" />
+            <q-card-section>
+              <div class="q-pa-md">
+                <q-form @submit.prevent="editarPago">
+                  <!-- Campos del formulario de editar pago -->
+                  <q-input v-model="clientePagoEditar" label="Cliente" outlined class="q-mb-md" />
+                  <q-input v-model="planPagoEditar" label="Plan" outlined class="q-mb-md" />
+                  <q-input v-model="fechaPagoEditar" label="Fecha" type="date" outlined class="q-mb-md" />
+                  <q-input v-model="valorPagoEditar" label="Valor" type="number" outlined class="q-mb-md" />
 
-              <!-- Botones de acción -->
-              <div class="q-mt-md">
-                <q-btn @click="cancelarEdicionPago" label="Cancelar" color="negative" class="q-mr-sm" />
-                <q-btn type="submit" label="Guardar cambios" color="primary" />
+                  <!-- Botones de acción -->
+                  <div class="q-mt-md">
+                    <q-btn @click="cancelarEdicionPago" label="Cancelar" color="negative" class="q-mr-sm" />
+                    <q-btn type="submit" label="Guardar cambios" color="primary" />
+                  </div>
+                </q-form>
               </div>
-            </q-form>
-          </div>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
-  </div>
+            </q-card-section>
+          </q-card>
+        </q-dialog>
+      </div>
 
       <q-table flat bordered title="Pagos" title-class="text-green text-weight-bolder text-h5" :rows="filteredRows"
         :columns="columns" row-key="id">

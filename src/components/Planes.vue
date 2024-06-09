@@ -12,7 +12,7 @@ const options = [
   { label: "Listar Plan por Código", value: "Listar Plan por Código" },
   { label: "Listar Planes Activos", value: "Listar Planes Activos" },
   { label: "Listar Planes Inactivos", value: "Listar Planes Inactivos" },
-  { label: "Agregar Plan", value: "Agregar Plan" },
+  // { label: "Agregar Plan", value: "Agregar Plan" },
 ];
 
 let rows = ref([]);
@@ -198,108 +198,82 @@ watch(selectedOption, (newValue) => {
         <hr style="width: 70%; height: 5px; background-color: green" />
       </div>
 
-      <div
-        class="contSelect"
-        style="margin-left: 5%; text-align: end; margin-right: 5%"
-      >
-        <q-select
-          background-color="green"
-          class="q-my-md"
-          v-model="selectedOption"
-          outlined
-          dense
-          options-dense
-          emit-value
-          :options="options"
-        />
+      <div class="contSelect" style="margin-left: 5%; text-align: end; margin-right: 5%">
+        <q-select background-color="green" class="q-my-md" v-model="selectedOption" outlined dense options-dense
+          emit-value :options="options" />
 
-        <input
-          v-if="selectedOption === 'Listar Plan por Código'"
-          v-model="codigoPlan"
-          class="q-my-md"
-          type="text"
-          name="search"
-          id="codigoPlan"
-          placeholder="Ingrese el código del plan"
-        />
+        <input v-if="selectedOption === 'Listar Plan por Código'" v-model="codigoPlan" class="q-my-md" type="text"
+          name="search" id="codigoPlan" placeholder="Ingrese el código del plan" />
       </div>
 
       <div>
-    <!-- Botones para abrir diálogos -->
-    <!-- <q-btn label="Agregar Plan" @click="mostrarFormularioAgregarPlan = true" />
-    <q-btn label="Editar Plan" @click="mostrarFormularioEditarPlan = true" /> -->
+        <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
+          <q-btn label="Agregar Plan" @click="mostrarFormularioAgregarPlan = true" />
+          <!-- <q-btn label="Editar Plan" @click="mostrarFormularioEditarPlan = true" /> -->
+        </div>
 
-    <!-- Dialogo para agregar plan -->
-    <q-dialog v-model="mostrarFormularioAgregarPlan">
-      <q-card>
-        <q-card-section>
-          <div class="text-h6">Agregar Plan</div>
-        </q-card-section>
+        <!-- Dialogo para agregar plan -->
+        <q-dialog v-model="mostrarFormularioAgregarPlan">
+          <q-card>
+            <q-card-section>
+              <div class="text-h6">Agregar Plan</div>
+            </q-card-section>
 
-        <q-card-section>
-          <div class="q-pa-md">
-            <q-form @submit.prevent="agregarPlan">
-              <!-- Campos del formulario de agregar plan -->
-              <q-input v-model="codigo" label="Código" outlined class="q-mb-md" />
-              <q-input v-model="descripcion" label="Descripción" outlined class="q-mb-md" />
-              <q-input v-model="valor" label="Valor" type="number" outlined class="q-mb-md" />
-              <q-input v-model="dias" label="Días" outlined class="q-mb-md" />
-              <q-select v-model="estado" label="Estado" outlined :options="estadoOptions" class="q-mb-md" />
+            <q-card-section>
+              <div class="q-pa-md">
+                <q-form @submit.prevent="agregarPlan">
+                  <!-- Campos del formulario de agregar plan -->
+                  <q-input v-model="codigo" label="Código" outlined class="q-mb-md" />
+                  <q-input v-model="descripcion" label="Descripción" outlined class="q-mb-md" />
+                  <q-input v-model="valor" label="Valor" type="number" outlined class="q-mb-md" />
+                  <q-input v-model="dias" label="Días" outlined class="q-mb-md" />
+                  <q-select v-model="estado" label="Estado" outlined :options="estadoOptions" class="q-mb-md" />
 
-              <!-- Botones de acción -->
-              <div class="q-mt-md">
-                <q-btn @click="cancelarPlan" label="Cancelar" color="negative" class="q-mr-sm" />
-                <q-btn type="submit" label="Agregar Plan" color="primary" />
+                  <!-- Botones de acción -->
+                  <div class="q-mt-md">
+                    <q-btn @click="cancelarPlan" label="Cancelar" color="negative" class="q-mr-sm" />
+                    <q-btn type="submit" label="Agregar Plan" color="primary" />
+                  </div>
+                </q-form>
               </div>
-            </q-form>
-          </div>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
+            </q-card-section>
+          </q-card>
+        </q-dialog>
 
-    <!-- Dialogo para editar plan -->
-    <q-dialog v-model="mostrarFormularioEditarPlan">
-      <q-card>
-        <q-card-section>
-          <div class="text-h6">Editar Plan</div>
-        </q-card-section>
+        <!-- Dialogo para editar plan -->
+        <q-dialog v-model="mostrarFormularioEditarPlan">
+          <q-card>
+            <q-card-section>
+              <div class="text-h6">Editar Plan</div>
+            </q-card-section>
 
-        <q-card-section>
-          <div class="q-pa-md">
-            <q-form @submit.prevent="editarPlan">
-              <!-- Campos del formulario de editar plan -->
-              <q-input v-model="codigo" label="Código" outlined class="q-mb-md" />
-              <q-input v-model="descripcion" label="Descripción" outlined class="q-mb-md" />
-              <q-input v-model="valor" label="Valor" type="number" outlined class="q-mb-md" />
-              <q-input v-model="dias" label="Días" outlined class="q-mb-md" />
+            <q-card-section>
+              <div class="q-pa-md">
+                <q-form @submit.prevent="editarPlan">
+                  <!-- Campos del formulario de editar plan -->
+                  <q-input v-model="codigo" label="Código" outlined class="q-mb-md" />
+                  <q-input v-model="descripcion" label="Descripción" outlined class="q-mb-md" />
+                  <q-input v-model="valor" label="Valor" type="number" outlined class="q-mb-md" />
+                  <q-input v-model="dias" label="Días" outlined class="q-mb-md" />
 
-              <!-- Botones de acción -->
-              <div class="q-mt-md">
-                <q-btn @click="cancelarPlan" label="Cancelar" color="negative" class="q-mr-sm" />
-                <q-btn type="submit" label="Guardar cambios" color="primary" />
+                  <!-- Botones de acción -->
+                  <div class="q-mt-md">
+                    <q-btn @click="cancelarPlan" label="Cancelar" color="negative" class="q-mr-sm" />
+                    <q-btn type="submit" label="Guardar cambios" color="primary" />
+                  </div>
+                </q-form>
               </div>
-            </q-form>
-          </div>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
-  </div>
+            </q-card-section>
+          </q-card>
+        </q-dialog>
+      </div>
 
-      <q-table
-        flat
-        bordered
-        title="Planes"
-        title-class="text-green text-weight-bolder text-h5"
-        :rows="filteredRows"
-        :columns="columns"
-        row-key="id"
-      >
-      <template v-slot:body-cell-opciones="props">
+      <q-table flat bordered title="Planes" title-class="text-green text-weight-bolder text-h5" :rows="filteredRows"
+        :columns="columns" row-key="id">
+        <template v-slot:body-cell-opciones="props">
           <q-td :props="props">
-            <q-btn @click="setPlanToEdit(props.row)">✏️</q-btn>            <q-btn
-              v-if="props.row.estado == 1"
-              @click="inactivarPlan(props.row._id)"
-            >
+            <q-btn @click="setPlanToEdit(props.row)">✏️</q-btn> <q-btn v-if="props.row.estado == 1"
+              @click="inactivarPlan(props.row._id)">
               ❌
             </q-btn>
             <q-btn v-else @click="activarPlan(props.row._id)">✅</q-btn>
@@ -308,12 +282,10 @@ watch(selectedOption, (newValue) => {
 
         <template class="a" v-slot:body-cell-estado="props">
           <q-td class="b" :props="props">
-            <p
-              :style="{
-                color: props.row.estado === 1 ? 'green' : 'red',
-                margin: 0,
-              }"
-            >
+            <p :style="{
+              color: props.row.estado === 1 ? 'green' : 'red',
+              margin: 0,
+            }">
               {{ props.row.estado === 1 ? "Activo" : "Inactivo" }}
             </p>
           </q-td>
