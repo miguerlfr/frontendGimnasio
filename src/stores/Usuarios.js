@@ -78,7 +78,7 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
 			return r;
 		} catch (error) {
 			console.log(error.response.data.msg);
-            console.log("Email", email);
+            console.log("Email:", email);
             console.log("Contraseña:", password);
             Notify.create({
                 type: "negative",
