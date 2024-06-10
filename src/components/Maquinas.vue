@@ -1,9 +1,11 @@
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
 import { useStoreMaquinas } from "../stores/Maquinas.js";
+import { useStoreSedes } from "../stores/Sedes.js";
 import { format } from "date-fns";
 
 const useMaquina = useStoreMaquinas();
+const useSede = useStoreSedes();
 
 const codigoMaquina = ref("");
 
@@ -64,10 +66,39 @@ const filteredRows = computed(() => {
 });
 
 async function listarMaquinas() {
-  const r = await useMaquina.getMaquinas();
-  // console.log(r.data);
-  rows.value = r.data.maquinas;
+  try {
+    const [maquinasR, sedesR] = await Promise.all([
+      useMaquina.getMaquinas(),
+      useSede.getSedes()
+    ]);
+
+    // Extraer los datos de las respuestas
+    const maquinas = maquinasR.data.maquinas;
+    const sedes = sedesR.data.sedes;
+
+    console.log("Maquinas:", maquinas);
+    console.log("Sedes:", sedes);
+
+    // Iterar sobre cada máquina y asignar el nombre de la sede correspondiente
+    maquinas.forEach((maquina) => {
+      // Buscar la sede correspondiente a la máquina por su ID
+      const sede = sedes.find((s) => s._id === maquina.sede); // Asumiendo que 'maquina.sede' contiene el ID de la sede
+
+      // Si se encontró la sede, asignar su nombre a la máquina
+      if (sede) {
+        maquina.sede = sede.nombre; // Asignar el nombre de la sede
+      } else {
+        maquina.sede = "Sede no encontrada"; // Si no se encuentra la sede, asignar un valor predeterminado
+      }
+    });
+
+    // Asignar las máquinas actualizadas a la variable 'rows'
+    rows.value = maquinas;
+  } catch (error) {
+    console.error("Error al listar las máquinas:", error);
+  }
 }
+
 
 async function listarMaquinasActivas() {
   const r = await useMaquina.getMaquinasActivas();
@@ -128,13 +159,31 @@ const sede = ref("");
 const descripcion = ref("");
 const fechaIngreso = ref("");
 const fechaUltMan = ref("");
+const idMaquinaParaEditar = ref(null);
 
-const codigoEditar = ref("");
-const sedeEditar = ref("");
-const descripcionEditar = ref("");
-const fechaIngresoEditar = ref("");
-const fechaUltManEditar = ref("");
-const maquinaParaEditar = ref(null);
+const sedes = ref([])
+
+async function listarSedes() {
+  try {
+    const r = await useSede.getSedes();
+    if (r.data && r.data.sedes) {
+      sedes.value = r.data.sedes;
+      // console.log("Sedes listadas:", sedes.value);
+    } else {
+      console.error("La respuesta no contiene la propiedad 'sedes'.", r.data);
+    }
+  } catch (error) {
+    console.error("Error al listar las sedes:", error);
+  }
+}
+
+const sedeOptions = computed(() => {
+  return sedes.value.map((sede) => ({
+    label: sede.nombre,
+    id: sede._id,
+  }));
+});
+
 
 // Opciones para el estado de la máquina
 // Opciones para el estado de la máquina
@@ -156,6 +205,20 @@ const limpiarCampos = () => {
 
 // Método para agregar una nueva máquina
 async function agregarMaquina() {
+
+    // Buscar la máquina seleccionada por su descripción
+    const select = sede.value
+    const label = select.label
+
+    // Verificar si se encontró la máquina seleccionada
+    if (!select) {
+      console.log("Máquina seleccionada:", label);
+      console.error("Máquina seleccionada no encontrada", select);
+      return;
+    }
+
+    const idSede = select.id;
+  
   let eA = "";
   if (estadoM.value === "Activo") {
     eA = 1;
@@ -165,14 +228,14 @@ async function agregarMaquina() {
 
   const nuevaMaquina = {
     codigo: codigo.value,
-    sede: sede.value,
+    sede: idSede,
     descripcion: descripcion.value,
     fechaIngreso: fechaIngreso.value,
     fechaUltMan: fechaUltMan.value,
     estado: eA,
   };
 
-  console.log(nuevaMaquina);
+  console.log("Datos editados agregados", nuevaMaquina);
 
   try {
     // Realizar una solicitud POST al servidor para agregar la nueva máquina
@@ -192,22 +255,42 @@ async function agregarMaquina() {
   }
 }
 
+const mostrarFormularioEditarMaquina = ref(false);
+const mostrarFormularioAgregarMaquina = ref(false);
+
 const editarMaquina = async () => {
+// console.log(sede.value);
+
+    const select = sede.value
+    const label = select.label
+
+    // Verificar si se encontró la máquina seleccionada
+    if (!select) {
+      return;
+      }
+    console.error("Máquina seleccionada no encontrada", select);
+    console.log("sede seleccionada:", label);
+
+    const idSede = select.id;
+
   const maquinaEditada = {
-    codigo: codigoEditar.value,
-    sede: sedeEditar.value,
-    descripcion: descripcionEditar.value,
-    fechaIngreso: new Date(fechaIngresoEditar.value),
-    fechaUltMan: new Date(fechaUltManEditar.value),
+    id: idMaquinaParaEditar.value,
+    codigo: codigo.value,
+    sede: idSede,
+    descripcion: descripcion.value,
+    fechaIngreso: fechaIngreso.value,
+    fechaUltMan: fechaUltMan.value,
   };
 
+  console.log("maquina Edit", maquinaEditada);
+
   try {
-    const response = await useMaquina.putMaquinas(maquinaParaEditar.value.id, maquinaEditada);
+    const response = await useMaquina.putMaquinas(idMaquinaParaEditar.value, maquinaEditada);
     if (response.status === 200) {
       listarMaquinas();
-      maquinaParaEditar.value = null;
+      idMaquinaParaEditar.value = null;
       mostrarFormularioEditarMaquina.value = false;
-      mostrarFormularioAgregarMaquina.value = true;
+      mostrarFormularioAgregarMaquina.value = false;
       limpiarCampos();
     } else {
       console.error("Error al editar la maquina:", response);
@@ -217,16 +300,26 @@ const editarMaquina = async () => {
   }
 };
 
-const mostrarFormularioEditarMaquina = ref(false);
-const mostrarFormularioAgregarMaquina = ref(false);
+
 
 const cargarMaquinaParaEdicion = (maquina) => {
-  maquinaParaEditar.value = maquina;
-  codigoEditar.value = maquina.codigo;
-  sedeEditar.value = maquina.sede;
-  descripcionEditar.value = maquina.descripcion;
-  fechaIngresoEditar.value = maquina.fechaIngreso.split("T")[0];
-  fechaUltManEditar.value = maquina.fechaUltMan.split("T")[0];
+  // Asignar los valores de la máquina seleccionada a los campos del formulario
+  idMaquinaParaEditar.value = maquina._id;
+  codigo.value = maquina.codigo;
+  sede.value = maquina.sede;
+  descripcion.value = maquina.descripcion;
+  fechaIngreso.value = maquina.fechaIngreso.split("T")[0];
+  fechaUltMan.value = maquina.fechaUltMan.split("T")[0];
+
+  // Registrar en la consola los datos cargados para verificación
+  console.log("Datos cargados para edición:", {
+    id: idMaquinaParaEditar.value,
+    codigo: codigo.value,
+    sede: sede.value,
+    descripcion: descripcion.value,
+    fechaIngreso: fechaIngreso.value,
+    fechaUltMan: fechaUltMan.value,
+  });
 
   // Mostrar el formulario de edición y ocultar el formulario de agregar
   mostrarFormularioEditarMaquina.value = true;
@@ -243,6 +336,7 @@ const cancelarMaquina = () => {
 };
 onMounted(() => {
   listarMaquinas();
+  listarSedes();
 });
 
 watch(selectedOption, (newValue) => {
@@ -253,6 +347,8 @@ watch(selectedOption, (newValue) => {
     // limpiarCampos();
   } else {
     mostrarFormularioAgregarMaquina.value = false;
+    mostrarFormularioEditarMaquina.value = false;
+    
   }
 });
 
@@ -291,7 +387,7 @@ watch(selectedOption, (newValue) => {
                 <q-form @submit.prevent="agregarMaquina">
                   <!-- Campos del formulario de agregar máquina -->
                   <q-input v-model="codigo" label="Código" outlined class="q-mb-md" />
-                  <q-input v-model="sede" label="Sede" outlined class="q-mb-md" />
+                <q-select v-model="sede" label="Sede" outlined :options="sedeOptions" class="q-mb-md" />
                   <q-input v-model="descripcion" label="Descripción" outlined class="q-mb-md" />
                   <q-input v-model="fechaIngreso" label="Fecha de Ingreso" type="date" outlined class="q-mb-md" />
                   <q-input v-model="fechaUltMan" label="Fecha de Último Mantenimiento" type="date" outlined
@@ -320,11 +416,11 @@ watch(selectedOption, (newValue) => {
               <div class="q-pa-md">
                 <q-form @submit.prevent="editarMaquina">
                   <!-- Campos del formulario de editar máquina -->
-                  <q-input v-model="codigoEditar" label="Código" outlined :disabled="true" class="q-mb-md" />
-                  <q-input v-model="sedeEditar" label="Sede" outlined class="q-mb-md" />
-                  <q-input v-model="descripcionEditar" label="Descripción" outlined class="q-mb-md" />
-                  <q-input v-model="fechaIngresoEditar" label="Fecha de Ingreso" type="date" outlined class="q-mb-md" />
-                  <q-input v-model="fechaUltManEditar" label="Fecha de Último Mantenimiento" type="date" outlined
+                  <q-input v-model="codigo" label="Código" outlined :disabled="true" class="q-mb-md" />
+                <q-select v-model="sede" label="Sede" outlined :options="sedeOptions" class="q-mb-md" />
+                  <q-input v-model="descripcion" label="Descripción" outlined class="q-mb-md" />
+                  <q-input v-model="fechaIngreso" label="Fecha de Ingreso" type="date" outlined class="q-mb-md" />
+                  <q-input v-model="fechaUltMan" label="Fecha de Último Mantenimiento" type="date" outlined
                     class="q-mb-md" />
                   <!-- Botones de acción -->
                   <div class="q-mt-md">

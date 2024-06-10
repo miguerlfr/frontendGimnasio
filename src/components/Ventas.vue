@@ -1,10 +1,11 @@
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
 import { useStoreVentas } from "../stores/Ventas.js";
-// import { useStoreProductos } from "../stores/Productos.js";
+import { useStoreProductos } from "../stores/Productos.js";
 import { format } from "date-fns";
 
 const useVenta = useStoreVentas();
+const useProducto = useStoreProductos();
 
 const codigoProducto = ref("");
 const idVentaSeleccionada = ref("");
@@ -23,6 +24,10 @@ const options = [
   // { label: "Agregar Venta", value: "Agregar Venta" },
 ];
 
+function formatoNumerico(numero) {
+  return typeof numero === 'number' ? numero.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : undefined;
+}
+
 let rows = ref([]);
 const columns = ref([
   {
@@ -38,63 +43,78 @@ const columns = ref([
   },
   {
     name: "codigoProducto",
-    label: "Código Producto",
+    label: "Producto",
     field: "codigoProducto",
     align: "center",
   },
   {
     name: "valorUnitario",
     label: "Valor Unitario",
-    field: "valorUnitario",
+    field: (row) => formatoNumerico(row.valorUnitario),
     align: "center",
   },
-  { name: "cantidad", label: "Cantidad", field: "cantidad", align: "center" },
+  { name: "cantidad", label: "Cantidad", field: (row) => formatoNumerico(row.cantidad), align: "center" },
   {
     name: "valorTotal",
     label: "Valor Total",
-    field: "valorTotal",
+    field: (row) => formatoNumerico(row.valorTotal),
     align: "center",
   },
   { name: "opciones", label: "Opciones", field: "opciones", align: "center" },
 ]);
 
-async function listarVentas() {
-  const r = await useVenta.getVentas();
-  rows.value = r.data.ventas;
+const productos = ref([])
+
+async function listarProductos() {
+  try {
+    const r = await useProducto.getProductos();
+    if (r.data && r.data.productos) {
+      productos.value = r.data.productos;
+      // console.log("productos listadas:", productos.value);
+    } else {
+      console.error("La respuesta no contiene la propiedad 'productos'.", r.data);
+    }
+  } catch (error) {
+    console.error("Error al listar las productos:", error);
+  }
 }
 
-// import { useStoreProductos } from "../stores/Productos.js";
-// const useProducto = useStoreProductos();
+const productoOptions = computed(() => {
+  return productos.value.map((producto) => ({
+    label: producto.descripcion,
+    id: producto._id,
+  }));
+});
 
-// async function listarVentas() {
-//   // Obtener la lista de productos
-//   const productosResponse = await useProducto.getProductos();
-//   const productos = productosResponse.data.productos;
-//   console.log(productos);
+async function listarVentas() {
+  // Obtener la lista de productos
+  const productosResponse = await useProducto.getProductos();
+  const productos = productosResponse.data.productos;
+  console.log("produc", productos);
 
-//   // Obtener la lista de ventas
-//   const ventasResponse = await useVenta.getVentas();
-//   const ventas = ventasResponse.data.ventas;
-//   console.log(ventas);
+  // Obtener la lista de ventas
+  const ventasResponse = await useVenta.getVentas();
+  const ventas = ventasResponse.data.ventas;
+  console.log("ventas", ventas);
 
-//   // Iterar sobre cada venta y asignar el descripcion del producto correspondiente
-//   ventas.forEach((venta) => {
-//     // Buscar el producto correspondiente al venta por su codigo
-//     const producto = productos.find(
-//       (c) => c.codigo.toString() === venta.codigoProducto.toString()
-//     );
+  // Iterar sobre cada venta y asignar el descripcion del producto correspondiente
+  ventas.forEach((venta) => {
+    // Buscar el producto correspondiente al venta por su codigo
+    const producto = productos.find((c) => c.descripcion.toString() === venta.codigoProducto.toString());
 
-//     // Si se encontró el producto, asignar su descripcion al venta
-//     if (producto) {
-//       venta.codigoProducto = producto.descripcion; // Suponiendo que `descripcion` es la propiedad que contiene el descripcion del producto
-//     } else {
-//       venta.codigoProducto = "producto no encontrado"; // Si no se encuentra el producto, asignar un valor predeterminado
-//     }
-//   });
 
-//   // Asignar los ventas actualizados a la variable 'rows'
-//   rows.value = ventas;
-// }
+    // Si se encontró el producto, asignar su descripcion al venta
+    if (producto) {
+      venta.codigoProducto = producto.descripcion;
+      venta.valorUnitario = producto.valor
+    } else {
+      venta.codigoProducto = "producto no encontrado";
+    }
+  });
+
+  // Asignar los ventas actualizados a la variable 'rows'
+  rows.value = ventas;
+}
 
 const listarVentasPorCodigoProducto = computed(() => {
   if (
@@ -114,13 +134,45 @@ const mostrarFormularioEditarVenta = ref(false);
 const mostrarFormularioAgregarVenta = ref(false);
 
 async function agregarVenta() {
+
+  const select = codigoProducto.value
+    const label = select.label
+
+    // Verificar si se encontró la máquina seleccionada
+    if (!select) {
+      console.error("Máquina seleccionada no encontrada", select);
+      return;
+      }
+    // console.log("sede seleccionada:", label);
+
+    // const idSede = select.id;
+
+
+    const sele = codigoProducto.value;
+    const labe = sele.label;
+    console.log("Plan seleccionado:", labe);
+    let valo = "";
+
+    for (const producto of productos.value) {
+      if (producto.descripcion === labe) {
+        valo = producto.valor;
+        break; // Exit the loop once a match is found
+      }
+    }
+
+    const valoReal = valo;
+    console.log("Valor real:", valoReal);
+
+
+
   const nuevaVenta = {
     fecha: fecha.value, // Accede al valor de fecha usando .value
-    codigoProducto: codigoProducto.value, // Accede al valor de codigoProducto usando .value
-    valorUnitario: valorUnitario.value, // Accede al valor de valorUnitario usando .value
+    codigoProducto: label, // Accede al valor de codigoProducto usando .value
+    valorUnitario: valo, // Accede al valor de valo usando .value
     cantidad: cantidad.value, // Accede al valor de cantidad usando .value
-    valorTotal: (valorUnitario.value * cantidad.value), // Calcula el valor total
+    valorTotal: (valo * cantidad.value), // Calcula el valor total
   };
+
   console.log(nuevaVenta);
 
   try {
@@ -141,14 +193,14 @@ function cargarVentaParaEdicion(venta) {
   idVentaSeleccionada.value = venta._id;
   // Formatear la fecha antes de asignarla al valor de fecha
   fecha.value = venta.fecha.split("T")[0], // Suponiendo que venta.fecha está en formato ISO8601
-    codigoProducto.value = venta.codigoProducto;
+  codigoProducto.value = venta.codigoProducto;
   valorUnitario.value = venta.valorUnitario;
   cantidad.value = venta.cantidad;
   valorTotal.value = venta.valorUnitario * venta.cantidad;
 
   mostrarFormularioEditarVenta.value = true;
   mostrarFormularioAgregarVenta.value = false;
-  console.log("Datos a editar", {
+  console.log("Cargar", {
     id: idVentaSeleccionada.value,
     fecha: fecha.value, // Accede al valor de fecha usando .value
     codigoProducto: codigoProducto.value, // Accede al valor de codigoProducto usando .value
@@ -161,17 +213,48 @@ function cargarVentaParaEdicion(venta) {
 
 async function editarVenta() {
 
+  const select = codigoProducto.value
+  console.log(select);
+    const label = select.label
+
+    // Verificar si se encontró la máquina seleccionada
+    if (!select) {
+      console.error("Máquina seleccionada no encontrada", select);
+      return;
+      }
+    console.log("sede seleccionada:", label);
+
+    // const idSede = select.id;
+
+
+    const sele = codigoProducto.value;
+    const labe = sele.label;
+    console.log("Plan seleccionado:", labe);
+    let valo = "";
+
+    for (const producto of productos.value) {
+      if (producto.descripcion === labe) {
+        valo = producto.valor;
+        break; // Exit the loop once a match is found
+      }
+    }
+
+    const valoReal = valo;
+    console.log("Valor real:", valoReal);
+
+
+
   const ventaEditada = {
     id: idVentaSeleccionada.value,
     fecha: fecha.value,
-    codigoProducto: codigoProducto.value,
-    valorUnitario: parseFloat(valorUnitario.value), // Convertir a número
+    codigoProducto: label,
+    valorUnitario: parseFloat(valo), // Convertir a número
     cantidad: parseInt(cantidad.value),
-    valorTotal: valorUnitario.value * cantidad.value,
+    valorTotal: valo * cantidad.value,
   };
 
 
-  console.log("Datos a editar editados", ventaEditada);
+  console.log("Editar", ventaEditada);
 
   try {
     const response = await useVenta.putVentas(
@@ -257,6 +340,7 @@ watch(selectedOption, (newValue) => {
 
 onMounted(() => {
   listarVentas();
+  listarProductos();
 });
 </script>
 
@@ -291,10 +375,9 @@ onMounted(() => {
             <q-card-section>
               <q-form @submit.prevent="agregarVenta">
                 <q-input v-model="fecha" label="Fecha de Venta" type="date" outlined />
-                <q-input v-model="codigoProducto" label="Código del Producto" outlined />
-                <q-input v-model="valorUnitario" label="Valor Unitario" type="number" outlined />
-                <q-input v-model="valorTotal" label="Valor Total" type="number" outlined v-show="!valorTotal"
-                  style="display: none;" />
+                <q-select v-model="codigoProducto" label="Código Producto" outlined :options="productoOptions" class="q-mb-md" />
+                <q-input v-model="valorUnitario" label="Valor Unitario" type="number" outlined  style="display: none;" />
+                <q-input v-model="valorTotal" label="Valor Total" type="number" outlined style="display: none;" />
                 <q-input v-model="cantidad" label="Cantidad" type="number" outlined />
                 <q-btn type="submit" label="Guardar Venta" color="primary" class="q-ma-sm" />
                 <q-btn label="Limpiar" color="negative" class="q-ma-sm" @click="limpiarCampos" />
@@ -312,10 +395,9 @@ onMounted(() => {
             <q-card-section>
               <q-form @submit.prevent="editarVenta">
                 <q-input v-model="fecha" label="Fecha de Venta" type="date" outlined />
-                <q-input v-model="codigoProducto" label="Código del Producto" outlined />
-                <q-input v-model="valorUnitario" label="Valor Unitario" type="number" outlined />
-                <q-input v-model="valorTotal" label="Valor Total" type="number" outlined v-show="!valorTotal"
-                  style="display: none;" />
+                <q-select v-model="codigoProducto" label="Código Producto" outlined :options="productoOptions" class="q-mb-md" />
+                <q-input v-model="valorUnitario" label="Valor Unitario" type="number" outlined  style="display: none;" />
+                <q-input v-model="valorTotal" label="Valor Total" type="number" outlined style="display: none;" />
                 <q-input v-model="cantidad" label="Cantidad" type="number" outlined />
                 <q-btn type="submit" label="Guardar Cambios" color="primary" class="q-ma-sm" />
                 <q-btn label="Cancelar" color="negative" class="q-ma-sm" @click="cancelarEdicion" />

@@ -1,8 +1,10 @@
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
 import { useStoreUsuarios } from "../stores/Usuarios.js";
+import { useStoreSedes } from "../stores/Sedes.js";
 
 const useUsuario = useStoreUsuarios();
+const useSede = useStoreSedes();
 
 const emailUsuario = ref("");
 
@@ -17,7 +19,11 @@ const options = [
   { label: "Listar Usuarios Inactivos", value: "Listar Usuarios Inactivos" },
   // { label: "Agregar Usuario", value: "Agregar Usuario" },
 ];
-
+const rolOptions = [
+  { label: "Administrador" }, 
+  { label: "Recepcionista" }, 
+  { label: "Instructor" }
+];
 let rows = ref([]);
 const columns = ref([
   { name: "sede", label: "Sede", field: "sede", align: "center" },
@@ -38,9 +44,37 @@ const filteredRows = computed(() => {
   }
 });
 async function listarUsuarios() {
-  const r = await useUsuario.getUsuarios();
-  console.log(r.data);
-  rows.value = r.data.usuarios;
+  try {
+    const [usuariosR, sedesR] = await Promise.all([
+      useUsuario.getUsuarios(),
+      useSede.getSedes()
+    ]);
+
+    // Extraer los datos de las respuestas
+    const usuarios = usuariosR.data.usuarios;
+    const sedes = sedesR.data.sedes;
+
+    console.log("usuarios:", usuarios);
+    console.log("Sedes:", sedes);
+
+    // Iterar sobre cada usuario y asignar el nombre de la sede correspondiente
+    usuarios.forEach((usuario) => {
+      // Buscar la sede correspondiente al usuario por su ID
+      const sede = sedes.find((s) => s._id === usuario.sede); // Asumiendo que 'usuario.sede' contiene el ID de la sede
+
+      // Si se encontró la sede, asignar su nombre al usuario
+      if (sede) {
+        usuario.sede = sede.nombre; // Asignar el nombre de la sede
+      } else {
+        usuario.sede = "Sede no encontrada"; // Si no se encuentra la sede, asignar un valor predeterminado
+      }
+    });
+
+    // Asignar los usuarios actualizados a la variable 'rows'
+    rows.value = usuarios;
+  } catch (error) {
+    console.error("Error al listar los usuarios:", error);
+  }
 }
 // Función computada para filtrar los usuarios por email
 const listarClienteEmail = computed(() => {
@@ -93,6 +127,30 @@ const estadoOptions = [
   { label: "Activo", value: 1 },
   { label: "Inactivo", value: 0 },
 ];
+
+const sedes = ref([])
+
+async function listarSedes() {
+  try {
+    const r = await useSede.getSedes();
+    if (r.data && r.data.sedes) {
+      sedes.value = r.data.sedes;
+      // console.log("Sedes listadas:", sedes.value);
+    } else {
+      console.error("La respuesta no contiene la propiedad 'sedes'.", r.data);
+    }
+  } catch (error) {
+    console.error("Error al listar las sedes:", error);
+  }
+}
+
+const sedeOptions = computed(() => {
+  return sedes.value.map((sede) => ({
+    label: sede.nombre,
+    id: sede._id,
+  }));
+});
+
 const estado = ref(estadoOptions.find(option => option.label === "Activo").label);
 
 const limpiarCamposUsuario = () => {
@@ -105,15 +163,41 @@ const limpiarCamposUsuario = () => {
 };
 const agregarUsuario = async () => {
   try {
+
+    // Buscar la máquina seleccionada por su descripción
+    const select = sede.value
+    const label = select.label
+
+    // Verificar si se encontró la máquina seleccionada
+    if (!select) {
+      console.error("Máquina seleccionada no encontrada", select);
+      console.log("Máquina seleccionada:", label);
+      return;
+      }
+
+    const idSede = select.id;
+
+    console.log("sede seleccionada:", rol.value);
+    const sele = rol.value
+    const labe = sele.label
+    console.log("sede seleccionada:", sele);
+
+    // Verificar si se encontró la máquina seleccionada
+    if (!sele) {
+      console.error("Máquina seleccionada no encontrada", sele);
+      return;
+      }
     const datosUsuario = {
-      sede: sede.value,
+      sede: idSede,
       nombre: nombre.value,
       email: email.value,
       telefono: telefono.value,
       password: password.value,
-      rol: rol.value,
+      rol: labe,
       estado: estadoOptions.find(option => option.label === estado.value).value,
     };
+
+    console.log("Datos a agregar", datosUsuario);
 
     const response = await useUsuario.postUsuarios(datosUsuario);
     if (response.status === 200) {
@@ -125,30 +209,6 @@ const agregarUsuario = async () => {
     }
   } catch (error) {
     console.error('Error al agregar el usuario:', error);
-  }
-};
-
-const editarUsuario = async () => {
-  try {
-    const datosUsuario = {
-      sede: sede.value,
-      nombre: nombre.value,
-      email: email.value,
-      telefono: telefono.value,
-      password: password.value,
-      rol: rol.value,
-    };
-
-    const response = await useUsuario.putUsuarios(selectedUsuarioId.value, datosUsuario);
-    if (response.status === 200) {
-      listarUsuarios();
-      limpiarCamposUsuario();
-      mostrarFormularioEditarUsuarios.value = false;
-    } else {
-      console.error('Error al editar el usuario:', response.data);
-    }
-  } catch (error) {
-    console.error('Error al editar el usuario:', error);
   }
 };
 const mostrarDatosParaEditar = (usuarios) => {
@@ -164,6 +224,55 @@ const mostrarDatosParaEditar = (usuarios) => {
   mostrarFormularioAgregarUsuarios.value = false;
   mostrarFormularioEditarUsuarios.value = true;
 };
+const editarUsuario = async () => {
+  try {
+
+    // Buscar la máquina seleccionada por su descripción
+    const select = sede.value
+    const label = select.label
+
+    // Verificar si se encontró la máquina seleccionada
+    if (!select) {
+      console.error("Máquina seleccionada no encontrada", select);
+      console.log("Máquina seleccionada:", label);
+      return;
+      }
+
+    const idSede = select.id;
+
+    console.log("sede seleccionada:", rol.value);
+    const sele = rol.value
+    const labe = sele.label
+    console.log("sede seleccionada:", sele);
+
+    // Verificar si se encontró la máquina seleccionada
+    if (!sele) {
+      console.error("Máquina seleccionada no encontrada", sele);
+      return;
+      }
+
+    const datosUsuario = {
+      sede: idSede,
+      nombre: nombre.value,
+      email: email.value,
+      telefono: telefono.value,
+      password: password.value,
+      rol: labe,
+    };
+
+    const response = await useUsuario.putUsuarios(selectedUsuarioId.value, datosUsuario);
+    if (response.status === 200) {
+      listarUsuarios();
+      limpiarCamposUsuario();
+      mostrarFormularioEditarUsuarios.value = false;
+    } else {
+      console.error('Error al editar el usuario:', response.data);
+    }
+  } catch (error) {
+    console.error('Error al editar el usuario:', error);
+  }
+};
+
 
 const cancelarUsuario = () => {
   mostrarFormularioAgregarUsuarios.value = false;
@@ -185,7 +294,8 @@ const actualizarListadoUsuarios = async () => {
 };
 
 onMounted(() => {
-  listarUsuarios();
+  listarUsuarios(),
+  listarSedes()
 });
 
 watch(selectedOption, (newValue) => {
@@ -244,7 +354,7 @@ const selectAllText = (event) => {
             </q-card-section>
             <q-card-section>
               <q-form @submit.prevent="agregarUsuario">
-                <q-input v-model="sede" label="Sede" outlined @dblclick="selectAllText" />
+                <q-select v-model="sede" label="Sede" outlined :options="sedeOptions" class="q-mb-md" />
                 <q-input v-model="nombre" label="Nombre" outlined autocomplete="username" @dblclick="selectAllText" />
                 <q-input v-model="email" label="Email" type="email" outlined autocomplete="email" />
                 <q-input v-model="telefono" label="Telefono" type="tel" outlined autocomplete="tel"
@@ -269,7 +379,7 @@ const selectAllText = (event) => {
                     </div>
                   </template>
                 </q-input>
-                <q-input v-model="rol" label="Rol" outlined @dblclick="selectAllText" />
+                <q-select v-model="rol" label="Rol" outlined :options="rolOptions" class="q-mb-md" @dblclick="selectAllText" />
                 <q-select v-model="estado" label="Estado" outlined :options="estadoOptions" />
                 <q-btn @click="cancelarUsuario" class="q-ma-sm">Cancelar</q-btn>
                 <q-btn type="submit" color="primary" class="q-ma-sm">Agregar Usuario</q-btn>
@@ -286,7 +396,7 @@ const selectAllText = (event) => {
             </q-card-section>
             <q-card-section>
               <q-form @submit.prevent="editarUsuario">
-                <q-input v-model="sede" label="Sede" outlined @dblclick="selectAllText" />
+                <q-select v-model="sede" label="Sede" outlined :options="sedeOptions" class="q-mb-md" />
                 <q-input v-model="nombre" label="Nombre" outlined autocomplete="username" @dblclick="selectAllText" />
                 <q-input v-model="email" label="Email" type="email" outlined autocomplete="email" />
                 <q-input v-model="telefono" label="Telefono" type="tel" outlined autocomplete="tel"
@@ -311,7 +421,7 @@ const selectAllText = (event) => {
                     </div>
                   </template>
                 </q-input>
-                <q-input v-model="rol" label="Rol" outlined @dblclick="selectAllText" />
+                <q-select v-model="rol" label="Rol" outlined :options="rolOptions" class="q-mb-md" @dblclick="selectAllText" />
                 <q-btn @click="cancelarUsuario" class="q-ma-sm">Cancelar</q-btn>
                 <q-btn type="submit" color="primary" class="q-ma-sm">Editar Usuario</q-btn>
               </q-form>

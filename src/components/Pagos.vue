@@ -2,10 +2,12 @@
 import { ref, onMounted, computed, watch } from "vue";
 import { useStoreClientes } from "../stores/Clientes.js";
 import { useStorePagos } from "../stores/Pagos.js";
+import { useStorePlanes } from "../stores/Planes.js";
 import { format } from "date-fns";
 
 const useCliente = useStoreClientes();
 const usePago = useStorePagos();
+const usePlan = useStorePlanes();
 
 const fechaSeleccionada = ref("");
 const planC = ref("");
@@ -68,21 +70,30 @@ async function listarPagos() {
   // Obtener la lista de clientes
   const clientesResponse = await useCliente.getClientes();
   const clientes = clientesResponse.data.clientes;
+  console.log("clientes", clientes);
 
   // Obtener la lista de pagos
   const pagosResponse = await usePago.getPagos();
   const pagos = pagosResponse.data.pagos;
+  console.log("pagos", pagos);
+
+  // Obtener la lista de pagos
+  const planesResponse = await usePlan.getPlanes();
+  const planes = planesResponse.data.planes;
+  console.log("planes", planes);
 
   // Iterar sobre cada pago y asignar el nombre del cliente correspondiente
   pagos.forEach((pago) => {
     // Buscar el cliente correspondiente al pago por su _id
     const cliente = clientes.find((c) => c._id === pago.cliente);
-
+    const plan = planes.find((p) => p.descripcion === pago.plan);
     // Si se encontró el cliente, asignar su nombre al pago
     if (cliente) {
-      pago.cliente = cliente.nombre; // Suponiendo que `nombre` es la propiedad que contiene el nombre del cliente
+      pago.cliente = cliente.nombre;
+      pago.valor = plan.valor
     } else {
-      pago.cliente = "Cliente no encontrado"; // Si no se encuentra el cliente, asignar un valor predeterminado
+      pago.cliente = "Cliente no encontrado";
+      pago.valor = "Valor no encontrado";
     }
   });
 
@@ -176,10 +187,6 @@ const planPago = ref("");
 const fechaPago = ref("");
 const valorPago = ref("");
 
-const clientePagoEditar = ref("");
-const planPagoEditar = ref("");
-const fechaPagoEditar = ref("");
-const valorPagoEditar = ref("");
 const mostrarFormularioAgregarPago = ref(false);
 const mostrarFormularioEditarPago = ref(false);
 
@@ -187,6 +194,21 @@ const estadoOptions = [
   { label: "Activo" }, // Agrega el valor 'Activo' aquí
   { label: "Inactivo" }, // Agrega el valor 'Inactivo' aquí
 ];
+
+const planes = ref([])
+
+async function listarPlanes() {
+  const r = await usePlan.getPlanes();
+  // console.log("planes", r.data.planes);
+  planes.value = r.data.planes;
+}
+
+const planOptions = computed(() => {
+  return planes.value.map((plan) => ({
+    label: plan.descripcion,
+    id: plan._id
+  }));
+});
 const estadoPago = ref(estadoOptions.find(option => option.label === "Activo").label);
 
 const limpiarCamposPago = () => {
@@ -203,13 +225,23 @@ const cancelarEdicionPago = () => {
 };
 const cargarPagoParaEdicion = (pago) => {
   idPagoSeleccionada.value = pago._id; // Asegúrate de que este es el campo correcto para el ID del pago
-  clientePagoEditar.value = pago.cliente;
-  planPagoEditar.value = pago.plan;
-  fechaPagoEditar.value = pago.fecha.split("T")[0];
-  valorPagoEditar.value = pago.valor;
+  clientePago.value = pago.cliente;
+  planPago.value = pago.plan;
+  fechaPago.value = pago.fecha.split("T")[0]; // Extraer solo la parte de la fecha (sin la hora)
+  valorPago.value = pago.valor;
   mostrarFormularioEditarPago.value = true; // Mostrar el formulario de edición
-  mostrarFormularioAgregarPago.value = false; // Ocultar el formulario de agregar pago
+  mostrarFormularioAgregarPago.value = false; // Ocultar el formulario de agregar
+
+  // Registrar en la consola los datos cargados para verificación
+  console.log("Datos cargados para edición:", {
+    idPagoSeleccionada: idPagoSeleccionada.value,
+    clientePago: clientePago.value,
+    planPago: planPago.value,
+    fechaPago: fechaPago.value,
+    valorPago: valorPago.value,
+  });
 };
+
 function quitarTildes(texto) {
   return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
@@ -235,6 +267,7 @@ async function obtenerClienteIdPorNombre(nombre) {
   }
 }
 // const clienteId = ref("")
+
 // async function obtenerClienteIdPorNombre(nombre) {
 //   try {
 //     const response = await useCliente.getClientes();
@@ -252,24 +285,45 @@ async function obtenerClienteIdPorNombre(nombre) {
 //     throw error;
 //   }
 // }
+
 const agregarPago = async () => {
   try {
     const clienteId = await obtenerClienteIdPorNombre(clientePago.value);
 
     let eA = estadoPago.value === "Activo" ? 1 : 0;
 
+
+    const sele = planPago.value;
+    const labe = sele.label;
+    console.log("Plan seleccionado:", labe);
+    let valo = "";
+
+    for (const plane of planes.value) {
+      if (plane.descripcion === labe) {
+        valo = plane.valor;
+        break; // Exit the loop once a match is found
+      }
+    }
+
+    const valoReal = valo;
+    console.log("Valor real:", valoReal);
+
+
+
     const nuevoPago = {
       cliente: clienteId,
-      plan: planPago.value,
+      plan: labe,
       fecha: fechaPago.value,
-      valor: valorPago.value,
+      valor: valoReal,
       estado: eA,
     };
+
+    console.log(nuevoPago);
 
     const response = await usePago.postPagos(nuevoPago);
     if (response.status === 200) {
       listarPagos();
-      eA = estadoOptions.find(option => option.label === "Activo").label; // Estado predeterminado
+      eA = estadoOptions.find(option => option.label === "Activo").value; // Estado predeterminado
       limpiarCamposPago();
     } else {
       console.error('Error al agregar el pago:', response.data);
@@ -278,25 +332,58 @@ const agregarPago = async () => {
     console.error('Error al agregar el pago:', error);
   }
 };
+
 async function editarPago() {
-  if (!idPagoSeleccionada.value) {
-    console.error("Error: El ID del pago no está definido");
+  console.log("Plan que tenía:", planPago.value);
+
+  const sele = planPago.value;
+let labe = sele ? sele.label : '';
+
+if (!labe) {
+  // console.error("Error: No se encontró el valor del plan seleccionado");
+  labe = planPago.value; // Si labe es vacío, asigna planPago.value a labe
+}
+
+console.log("Plan seleccionado:", labe);
+
+  // Buscar el valor del plan seleccionado
+  let valo = null;
+  for (const plane of planes.value) {
+    if (plane.descripcion === labe) {
+      valo = plane.valor;
+      break; // Salir del bucle una vez que se encuentra una coincidencia
+    }
+  }
+
+  // Verificar si se encontró el valor del plan
+  if (valo === null) {
+    console.error("Error: No se encontró el valor del plan seleccionado");
     return;
   }
 
+  // Obtener el ID del cliente por su nombre
+  let clienteId;
   try {
-    const clienteId = await obtenerClienteIdPorNombre(clientePagoEditar.value);
-    const pagoEditado = {
-      cliente: clienteId,
-      plan: planPagoEditar.value,
-      fecha: fechaPagoEditar.value,
-      valor: valorPagoEditar.value,
-    };
+    clienteId = await obtenerClienteIdPorNombre(clientePago.value);
+  } catch (error) {
+    console.error("Error al obtener el ID del cliente:", error);
+    return;
+  }
 
+  // Crear el objeto de pago editado
+  const pagoEditado = {
+    cliente: clienteId,
+    plan: labe,
+    fecha: fechaPago.value,
+    valor: valo, // Asignar el valor del plan encontrado
+  };
+
+  // Actualizar el pago en la base de datos
+  try {
     const response = await usePago.putPagos(idPagoSeleccionada.value, pagoEditado);
     if (response.status === 200) {
-      listarPagos();
       cancelarEdicionPago(); // Limpiar campos y ocultar formulario después de editar
+      listarPagos();
     } else {
       console.error("Error al editar el pago:", response.data);
     }
@@ -304,8 +391,11 @@ async function editarPago() {
     console.error("Error al editar el pago:", error);
   }
 }
+
+
 onMounted(() => {
   listarPagos();
+  listarPlanes();
 });
 watch(selectedOption, (newValue) => {
   ActivarInactivarPagos();
@@ -360,9 +450,9 @@ watch(selectedOption, (newValue) => {
                 <q-form @submit.prevent="agregarPago">
                   <!-- Campos del formulario de agregar pago -->
                   <q-input v-model="clientePago" label="Cliente" outlined class="q-mb-md" />
-                  <q-input v-model="planPago" label="Plan" outlined class="q-mb-md" />
+                  <q-select v-model="planPago" label="Plan" outlined :options="planOptions" class="q-mb-md" />
                   <q-input v-model="fechaPago" label="Fecha" type="date" outlined class="q-mb-md" />
-                  <q-input v-model="valorPago" label="Valor" type="number" outlined class="q-mb-md" />
+                  <q-input v-model="valorPago" label="Valor" type="number" outlined class="q-mb-md" style="display: none;" />
                   <q-select v-model="estadoPago" label="Estado" outlined :options="estadoOptions" class="q-mb-md" />
 
                   <!-- Botones de acción -->
@@ -387,10 +477,10 @@ watch(selectedOption, (newValue) => {
               <div class="q-pa-md">
                 <q-form @submit.prevent="editarPago">
                   <!-- Campos del formulario de editar pago -->
-                  <q-input v-model="clientePagoEditar" label="Cliente" outlined class="q-mb-md" />
-                  <q-input v-model="planPagoEditar" label="Plan" outlined class="q-mb-md" />
-                  <q-input v-model="fechaPagoEditar" label="Fecha" type="date" outlined class="q-mb-md" />
-                  <q-input v-model="valorPagoEditar" label="Valor" type="number" outlined class="q-mb-md" />
+                  <q-input v-model="clientePago" label="Cliente" outlined class="q-mb-md" />
+                  <q-select v-model="planPago" label="Plan" outlined :options="planOptions" class="q-mb-md" />
+                  <q-input v-model="fechaPago" label="Fecha" type="date" outlined class="q-mb-md" />
+                  <q-input v-model="valorPago" label="Valor" type="number" outlined class="q-mb-md" style="display: none;" />
 
                   <!-- Botones de acción -->
                   <div class="q-mt-md">

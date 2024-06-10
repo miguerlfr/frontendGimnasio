@@ -1,4 +1,4 @@
-<template>
+<!-- <template>
     <q-layout view="hHh lpR fFf">
       <q-header elevated class="bg-primary text-white" height-hint="98">
         <q-toolbar>
@@ -9,11 +9,7 @@
           </q-toolbar-title>
         </q-toolbar>
   
-        <!-- <q-tabs align="left">
-          <q-route-tab to="/page1" label="Page One" />
-          <q-route-tab to="/page2" label="Page Two" />
-          <q-route-tab to="/page3" label="Page Three" />
-        </q-tabs> -->
+
       </q-header>
   
       <q-drawer show-if-above v-model="leftDrawerOpen" side="left" bordered>
@@ -69,9 +65,9 @@ const toggleLeftDrawer = () => {
 .bg-primary {
   background-color: rgb(60, 63, 77) !important;
 }
-</style>
+</style> -->
 
-<!-- <template>
+ <template>
   <q-layout view="hHh lpR fFf">
     <q-header elevated class="bg-primary text-white" height-hint="98">
       <q-toolbar>
@@ -96,8 +92,8 @@ const toggleLeftDrawer = () => {
         <router-link v-if="hasAccess(['Administrador', 'Recepcionista'])" class="r" to="/Ventas">Ventas</router-link>
       </div>
     </q-drawer>
-
-    <q-page-container>
+    
+    <q-page-container style=" padding: 0 !important;">
       <router-view />
     </q-page-container>
   </q-layout>
@@ -122,4 +118,28 @@ const isAuthenticated = computed(() => !!useUsuario.token);
 const hasAccess = (allowedRoles) => {
   return allowedRoles.includes(useUsuario.user.rol);
 };
-</script> -->
+</script>
+<style scoped>
+.drawer-links {
+  text-align: center !important;
+  font-size: 20px !important;
+  /* Centra los enlaces horizontalmente */
+  overflow: hidden;
+  margin-top: 20px;
+  height: 100%;
+  margin: 0;
+  padding-top: 20px;
+  padding-bottom: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.r {
+  color: rgb(65, 60, 77);
+}
+
+.bg-primary {
+  background-color: rgb(60, 63, 77) !important;
+}
+</style>

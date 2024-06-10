@@ -1,14 +1,22 @@
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
 import { useStoreClientes } from "../stores/Clientes.js";
+import { useStorePlanes } from "../stores/Planes.js";
+import { useStoreUsuarios } from "../stores/Usuarios.js";
 import { format } from "date-fns";
 
+const useUsuario = useStoreUsuarios();
+
 const useCliente = useStoreClientes();
+const usePlan = useStorePlanes();
+
+// Propiedad calculada para comprobar si el usuario es un instructor
+const isInstructor = computed(() => useUsuario.user.rol === 'Instructor');
 
 // Para mostrar el div con lo datos de peso y demas al darle click a la fechaSeguimiento
 const mostrarMensajeCliente = ref(false);
 
-// variables para listar clientes por
+// Variables para listar clientes por
 const fechaSeleccionada = ref(""); //fechaSeguimiento
 const fechaIngreso = ref("");
 const planC = ref(""); //planDelCliente
@@ -159,13 +167,31 @@ const filteredRows = computed(() => {
 
 async function listarClientes() {
   try {
-    const r = await useCliente.getClientes();
-    if (r && r.data && r.data.clientes) {
-      rows.value = r.data.clientes;
-    } else {
-      console.error("La respuesta de la API no tiene la estructura esperada.");
-      rows.value = []; // O maneja esto como necesites, por ejemplo, mostrando un mensaje al usuario
-    }
+    // Obtener la lista de clientes
+    const clientesResponse = await useCliente.getClientes();
+    const clientes = clientesResponse.data.clientes;
+    console.log("CLIENTES", clientes);
+
+    // // Obtener la lista de planes
+    // const planesResponse = await usePlan.getPlanes();
+    // const planes = planesResponse.data.planes;
+    // console.log("PLANES", planes);
+
+    // // Iterar sobre cada cliente y asignar la descripción del plan correspondiente
+    // clientes.forEach((cliente) => {
+    //   // Buscar el plan correspondiente al cliente por su _id
+    //   const plan = planes.find((p) => p.descrpcion === cliente.plan);
+
+    //   // Si se encontró el plan, asignar su descripción al cliente
+    //   if (plan) {
+    //     cliente.plan = plan.descripcion; // Crear una nueva propiedad para almacenar la descripción del plan
+    //   } else {
+    //     cliente.plan = "Plan no encontrado"; // Si no se encuentra el plan, asignar un valor predeterminado
+    //   }
+    // });
+
+    // Asignar los clientes actualizados a la variable 'rows'
+    rows.value = clientes;
   } catch (error) {
     console.error("Error al listar clientes:", error);
     rows.value = []; // O maneja esto como necesites, por ejemplo, mostrando un mensaje al usuario
@@ -259,6 +285,21 @@ const estadoOptions = [
   { label: "Inactivo" },
 ];
 
+const planes = ref([])
+
+async function listarPlanes() {
+  const r = await usePlan.getPlanes();
+  console.log("planes", r.data.planes);
+  planes.value = r.data.planes;
+}
+
+const planOptions = computed(() => {
+  return planes.value.map((plan) => ({
+    label: plan.descripcion,
+    id: plan._id
+  }));
+});
+
 const mostrarFormularioAgregarCliente = ref(false);
 const mostrarFormularioEditarCliente = ref(false);
 
@@ -316,6 +357,12 @@ async function agregarCliente() {
     eA = 0;
   }
 
+
+  const sele = planCliente.value;
+  const labe = sele.label;
+  console.log("Plan seleccionado:", labe);
+
+
   const nuevoCliente = {
     nombre: nombreCliente.value,
     fechaIngreso: fechaIngresoCliente.value,
@@ -327,7 +374,7 @@ async function agregarCliente() {
     objetivo: objetivoCliente.value,
     observaciones: observacionesCliente.value,
     estado: eA,
-    plan: planCliente.value,
+    plan: labe,
     fechaVencimiento: fechaVencimientoCliente.value,
     seguimiento: seguimientoCliente.value.map((item) => ({
       fecha: item.fecha,
@@ -357,6 +404,13 @@ async function agregarCliente() {
 }
 
 async function editarCliente() {
+
+
+  const sele = planCliente.value;
+  const labe = sele.label;
+  console.log("Plan seleccionado:", labe);
+
+
   const clienteEditado = {
     nombre: nombreCliente.value,
     fechaIngreso: fechaIngresoCliente.value,
@@ -367,7 +421,7 @@ async function editarCliente() {
     telefono: telefonoCliente.value,
     objetivo: objetivoCliente.value,
     observaciones: observacionesCliente.value,
-    plan: planCliente.value,
+    plan: labe,
     fechaVencimiento: fechaVencimientoCliente.value,
     seguimiento: seguimientoCliente.value.map((item) => ({
       fecha: item.fecha,
@@ -441,7 +495,8 @@ function mostrarRestoDatosDeSeguimiento(fecha) {
 }
 
 onMounted(() => {
-  actualizarListadoClientes();
+  actualizarListadoClientes(),
+    listarPlanes()
 });
 
 watch(selectedOption, (newValue) => {
@@ -495,18 +550,19 @@ watch(selectedOption, (newValue) => {
       <div>
         <!-- Botones para abrir diálogos -->
         <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-my-md">
-          <q-btn label="Agregar Cliente" @click="mostrarFormularioAgregarCliente = true" />
+          <q-btn :label="isInstructor ? 'Agregar Seguimiento' : 'Agregar Cliente'" @click="mostrarFormularioAgregarCliente = true" />
           <!-- <q-btn label="Editar Cliente" @click="mostrarFormularioEditarCliente = true" /> -->
         </div>
         <!-- Dialogo para agregar cliente -->
         <q-dialog v-model="mostrarFormularioAgregarCliente">
           <q-card>
             <q-card-section>
-              <div class="text-h5">Agregar Cliente</div>
+              <div class="text-h5">{{ isInstructor ? 'Agregar Seguimiento' : 'Agregar Cliente' }}</div>
             </q-card-section>
 
             <q-card-section>
               <q-form @submit.prevent="agregarCliente">
+                <template v-if="!isInstructor">  
                 <q-input v-model="nombreCliente" label="Nombre" filled required class="q-mb-md" />
                 <q-input v-model="fechaIngresoCliente" label="Fecha de Ingreso" type="date" filled class="q-mb-md" />
                 <q-input v-model="documentoCliente" label="Documento" type="number" filled required class="q-mb-md" />
@@ -518,9 +574,10 @@ watch(selectedOption, (newValue) => {
                 <q-input v-model="objetivoCliente" label="Objetivo" filled required class="q-mb-md" />
                 <q-input v-model="observacionesCliente" label="Observaciones" type="textarea" filled class="q-mb-md" />
                 <q-select v-model="estadoCliente" label="Estado" outlined :options="estadoOptions" class="q-mb-md" />
-                <q-input v-model="planCliente" label="Plan" filled required class="q-mb-md" />
+                <q-select v-model="planCliente" label="Plan" outlined :options="planOptions" class="q-mb-md" />
                 <q-input v-model="fechaVencimientoCliente" label="Fecha de Vencimiento" type="date" filled required
                   class="q-mb-md" />
+                </template>
 
                 <q-card-section class="text-h5">Seguimiento</q-card-section>
                 <div v-for="(item, index) in seguimientoCliente" :key="index">
@@ -548,11 +605,12 @@ watch(selectedOption, (newValue) => {
         <q-dialog v-model="mostrarFormularioEditarCliente">
           <q-card>
             <q-card-section>
-              <div class="text-h5">Editar Cliente</div>
+              <div class="text-h5">{{ isInstructor ? 'Editar Seguimiento' : 'Editar Cliente' }}</div>
             </q-card-section>
 
             <q-card-section>
               <q-form @submit.prevent="editarCliente">
+                <template v-if="!isInstructor">                
                 <q-input v-model="nombreCliente" label="Nombre" filled required class="q-mb-md" />
                 <q-input v-model="fechaIngresoCliente" label="Fecha de Ingreso" type="date" filled class="q-mb-md" />
                 <q-input v-model="documentoCliente" label="Documento" type="number" filled required class="q-mb-md" />
@@ -563,9 +621,10 @@ watch(selectedOption, (newValue) => {
                 <q-input v-model="telefonoCliente" label="Teléfono" type="tel" filled required class="q-mb-md" />
                 <q-input v-model="objetivoCliente" label="Objetivo" filled required class="q-mb-md" />
                 <q-input v-model="observacionesCliente" label="Observaciones" type="textarea" filled class="q-mb-md" />
-                <q-input v-model="planCliente" label="Plan" filled required class="q-mb-md" />
+                <q-select v-model="planCliente" label="Plan" outlined :options="planOptions" class="q-mb-md" />
                 <q-input v-model="fechaVencimientoCliente" label="Fecha de Vencimiento" type="date" filled required
                   class="q-mb-md" />
+                  </template>
 
                 <q-card-section class="text-h5">Seguimiento</q-card-section>
                 <div v-for="(item, index) in seguimientoCliente" :key="index">
@@ -579,6 +638,7 @@ watch(selectedOption, (newValue) => {
                 <q-input v-model="seguimientoCliente[0].cintura" label="Cintura" type="number" filled class="q-mb-md" />
                 <q-input v-model="seguimientoCliente[0].estatura" label="Estatura" type="number" filled
                   class="q-mb-md" />
+
 
                 <div class="q-mt-md">
                   <q-btn @click="cancelarCliente" label="Cancelar" class="q-ma-sm" />

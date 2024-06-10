@@ -95,6 +95,26 @@ async function agregarProducto() {
     console.error("Error al agregar el producto");
   }
 }
+function cargarProductoParaEdicion(producto) {
+  // Asignar valores del producto a los campos del formulario
+  idProductoSeleccionado.value = producto._id;  // Asegúrate de usar _id
+  codigoProducto.value = producto.codigo;
+  descripcionProducto.value = producto.descripcion;
+  valorProducto.value = producto.valor;
+  cantidadProducto.value = producto.cantidad;
+
+  // Registrar en la consola los datos cargados para verificación
+  console.log("datos", {
+    idProductoSeleccionado: idProductoSeleccionado.value,  // Asegúrate de usar _id
+    codigoProducto: codigoProducto.value,
+    descripcionProducto: descripcionProducto.value,
+    valorProducto: valorProducto.value,
+    cantidadProducto: cantidadProducto.value
+  });
+
+  // Cambiar al formulario de edición
+  cambiarFormulario(false);
+}
 // Función para editar un producto
 async function editarProducto() {
   console.log('Editando producto con ID:', idProductoSeleccionado.value);
@@ -106,13 +126,15 @@ async function editarProducto() {
       cantidad: cantidadProducto.value,
     };
 
+    console.log("editacion", productoEditado);
     const response = await useProducto.putProductos(idProductoSeleccionado.value, productoEditado);
     if (response.status === 200) {
       // Actualiza el producto en la lista local
-      const index = rows.value.findIndex(prod => prod._id === idProductoSeleccionado.value);
-      if (index !== -1) {
-        rows.value[index] = { ...rows.value[index], ...productoEditado };
-      }
+      // const index = rows.value.findIndex(prod => prod._id === idProductoSeleccionado.value);
+      // if (index !== -1) {
+      //   rows.value[index] = { ...rows.value[index], ...productoEditado };
+      // }
+      listarProductos()
       limpiarCampos();
       idProductoSeleccionado.value = null;
     } else {
@@ -121,17 +143,6 @@ async function editarProducto() {
   } else {
     console.error('El ID del producto seleccionado no es válido.');
   }
-}
-// Función para cargar los datos de un producto en el formulario para editar
-function cargarProductoParaEdicion(producto) {
-  idProductoSeleccionado.value = producto._id;  // Asegúrate de usar _id
-  codigoProducto.value = producto.codigo;
-  descripcionProducto.value = producto.descripcion;
-  valorProducto.value = producto.valor;
-  cantidadProducto.value = producto.cantidad;
-
-  // Cambiar al formulario de edición
-  cambiarFormulario(false);
 }
 const cancelarProducto = () => {
   // Cancelar la acción de agregar o editar producto
@@ -145,22 +156,6 @@ const cancelarProducto = () => {
 //   const producto = rows.value.find(producto => producto.id === id);
 //   return producto; // Devuelve el producto encontrado o undefined si no se encuentra
 // }
-async function putProductos(id, datos) {
-  console.log('ID del producto a editar:', id);
-  console.log('datos del producto a editar:', datos); // Verifica el ID recibido
-
-  // Buscar el producto en la lista de productos
-  const producto = rows.value.find(prod => prod._id === id); // Usar `_id` para la comparación
-
-  if (producto) {
-    // Si se encuentra el producto, cargar los datos del producto en el formulario para editar
-    console.log('Producto encontrado:', producto); // Verifica el producto encontrado
-    cargarProductoParaEdicion(producto);
-  } else {
-    // Si el producto no se encuentra, manejar el caso apropiadamente (por ejemplo, mostrar un mensaje de error)
-    console.error('El producto no fue encontrado');
-  }
-}
 // Limpiar los campos del formulario
 function limpiarCampos() {
   codigoProducto.value = "";
@@ -267,7 +262,7 @@ onMounted(() => {
         :columns="columns" row-key="id">
         <template v-slot:body-cell-opciones="props">
           <q-td :props="props">
-            <q-btn @click="putProductos(props.row._id)">✏️</q-btn>
+            <q-btn @click="cargarProductoParaEdicion(props.row)">✏️</q-btn>
           </q-td>
         </template>
 
