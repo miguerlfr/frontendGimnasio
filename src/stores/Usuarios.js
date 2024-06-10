@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import axios from "axios";
+import { Notify } from "quasar";
 import { ref } from "vue";
 
 const url = "https://backendgimnasio-ip8j.onrender.com"
@@ -69,11 +70,20 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
             const r = await axios.post(`${url}/api/usuarios/login`, {email, password});
             token.value = r.data.token
             user.value = r.data.usuario
-            // console.log(token.value);
+            console.log(token.value);
+            Notify.create({
+                type: "positive",
+                message: "Registro exitoso",
+            });
 			return r;
 		} catch (error) {
 			console.log(error.response.data.msg);
-            console.log(email);
+            console.log("Email", email);
+            console.log("Contraseña:", password);
+            Notify.create({
+                type: "negative",
+                message: error.response.data.msg,
+            });
 			return error;
 		}
 	};
@@ -85,9 +95,17 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
                     token: token.value
                 }
             });
+            Notify.create({
+                type: "positive",
+                message: "Registro exitoso",
+            });
             return r;
         } catch (error) {
             console.log("Error en postPagos:", error);
+            Notify.create({
+                type: "negative",
+                message: error.response.data.msg,
+            });
             return error;
         }
     };
@@ -99,10 +117,18 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
                     token: token.value
                 }
             });
+            Notify.create({
+                type: "positive",
+                message: "Registro exitoso",
+            });
             console.log(r);
             return r;
         } catch (error) {
             console.log("Error en putUsuarios:", error.response.data);
+            Notify.create({
+                type: "negative",
+                message: error.response.data.msg,
+            });
             return error;
         }
     };
@@ -113,6 +139,10 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
                 headers: {
                     token: token.value
                 }
+            });
+            Notify.create({
+                type: "positive",
+                message: "Cambio de estado exitoso",
             });
             return r;
         } catch (error) {
@@ -127,6 +157,10 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
                 headers: {
                     token: token.value
                 }
+            });
+            Notify.create({
+                type: "positive",
+                message: "Cambio de estado exitoso",
             });
             return r;
         } catch (error) {

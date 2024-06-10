@@ -38,7 +38,7 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useStoreUsuarios } from "../stores/Usuarios.js";
-import { notifyErrorRequest } from "../routes/routes.js";
+// import { notifyErrorRequest } from "../routes/routes.js";
 
 const useUsuario = useStoreUsuarios();
 const router = useRouter();
@@ -49,7 +49,7 @@ async function login() {
     const isValid = await validateCredentials();
     if (isValid) {
         const r = await useUsuario.login(email.value, password.value);
-        console.log(r);
+        // console.log(r);
         if (r) {
             router.push('/Clientes'); // Redirige a la ruta con la barra lateral y la primera página protegida
         } else {

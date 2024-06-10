@@ -48,17 +48,17 @@ export const notifyWarningRequest = (msg, position = "top") => {
 };
 
 const auth = (to, from, next) => {
-    if (checkAuth()) {
-        const useUsuario = useStoreUsuarios();
-        const rol = useUsuario.user.rol
-        console.log(rol);
-        if (!to.meta.rol.includes(rol)) {
-            return next({ name: 'login' })
-        }
-        next()
-    } else {
-        return next({ name: 'login' })
-    }
+	if (checkAuth()) {
+		const useUsuario = useStoreUsuarios();
+		const rol = useUsuario.user.rol
+		console.log("Rol:", rol);
+		if (!to.meta.rol.includes(rol)) {
+			return next({ name: 'login' })
+		}
+		next()
+	} else {
+		return next({ name: 'login' })
+	}
 }
 
 const checkAuth = async () => {
@@ -69,7 +69,7 @@ const checkAuth = async () => {
 };
 
 // const routes = [
-// 	{ path: "/", component: Login, name: "Login" },
+// 	{ path: "/", component: Login, name: "login" },
 // 	// { path: "/barraLateral", component: barraLateral, },
 // 	{ path: "/Clientes", component: Clientes, },
 // 	{ path: "/Ingresos", component: Ingresos, },
@@ -84,7 +84,7 @@ const checkAuth = async () => {
 // ];
 
 // const routes = [
-// 	{ path: "/", component: Login, name: "Login" },
+// 	{ path: "/", component: Login, name: "login" },
 // 	{ path: "/Clientes", component: Clientes, beforeEnter: auth, meta: { rol: ["Administrador", "Recepcionista", "Instructor"] } },
 // 	{ path: "/Ingresos", component: Ingresos, beforeEnter: auth, meta: { rol: ["Administrador", "Recepcionista"] } },
 // 	{ path: "/Mantenimientos", component: Mantenimientos, beforeEnter: auth, meta: { rol: ["Administrador", "Recepcionista"] } },
@@ -98,26 +98,26 @@ const checkAuth = async () => {
 // ];
 
 const routes = [
-	{ path: "/", component: Login, name: "Login" },
-	{ 
-	  path: "/", 
-	  component: barraLateral,
-	  children: [
-		{ path: "Clientes", component: Clientes, beforeEnter: auth, meta: { rol: ["Administrador", "Recepcionista", "Instructor"] } },
-		{ path: "Ingresos", component: Ingresos, beforeEnter: auth, meta: { rol: ["Administrador", "Recepcionista"] } },
-		{ path: "Mantenimientos", component: Mantenimientos, beforeEnter: auth, meta: { rol: ["Administrador", "Recepcionista"] } },
-		{ path: "Maquinas", component: Maquinas, beforeEnter: auth, meta: { rol: ["Administrador", "Recepcionista"] } },
-		{ path: "Pagos", component: Pagos, beforeEnter: auth, meta: { rol: ["Administrador", "Recepcionista"] } },
-		{ path: "Planes", component: Planes, beforeEnter: auth, meta: { rol: ["Administrador"] } },
-		{ path: "Productos", component: Productos, beforeEnter: auth, meta: { rol: ["Administrador"] } },
-		{ path: "Sedes", component: Sedes, beforeEnter: auth, meta: { rol: ["Administrador"] } },
-		{ path: "Usuarios", component: Usuarios, beforeEnter: auth, meta: { rol: ["Administrador", "Recepcionista"] } },
-		{ path: "Ventas", component: Ventas, beforeEnter: auth, meta: { rol: ["Administrador", "Recepcionista"] } },
-	  ]
+	{ path: "/", component: Login, name: "login" },
+	{
+		path: "/",
+		component: barraLateral,
+		children: [
+			{ path: "Clientes", component: Clientes, beforeEnter: auth, meta: { rol: ["Administrador", "Recepcionista", "Instructor"] } },
+			{ path: "Ingresos", component: Ingresos, beforeEnter: auth, meta: { rol: ["Administrador", "Recepcionista"] } },
+			{ path: "Mantenimientos", component: Mantenimientos, beforeEnter: auth, meta: { rol: ["Administrador", "Recepcionista"] } },
+			{ path: "Maquinas", component: Maquinas, beforeEnter: auth, meta: { rol: ["Administrador", "Recepcionista"] } },
+			{ path: "Pagos", component: Pagos, beforeEnter: auth, meta: { rol: ["Administrador", "Recepcionista"] } },
+			{ path: "Planes", component: Planes, beforeEnter: auth, meta: { rol: ["Administrador"] } },
+			{ path: "Productos", component: Productos, beforeEnter: auth, meta: { rol: ["Administrador"] } },
+			{ path: "Sedes", component: Sedes, beforeEnter: auth, meta: { rol: ["Administrador"] } },
+			{ path: "Usuarios", component: Usuarios, beforeEnter: auth, meta: { rol: ["Administrador", "Recepcionista"] } },
+			{ path: "Ventas", component: Ventas, beforeEnter: auth, meta: { rol: ["Administrador", "Recepcionista"] } },
+		]
 	},
-  ];
-  
-  export const router = createRouter({
+];
+
+export const router = createRouter({
 	history: createWebHashHistory(),
 	routes,
 });
