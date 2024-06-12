@@ -107,6 +107,7 @@ async function listarVentas() {
     if (producto) {
       venta.codigoProducto = producto.descripcion;
       venta.valorUnitario = producto.valor
+      venta.valorTotal = producto.valor * venta.cantidad
     } else {
       venta.codigoProducto = "producto no encontrado";
     }
