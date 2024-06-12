@@ -93,7 +93,7 @@ const toggleLeftDrawer = () => {
       </div>
     </q-drawer>
     
-    <q-page-container style=" padding: 0 !important;">
+    <q-page-container>
       <router-view />
     </q-page-container>
   </q-layout>
