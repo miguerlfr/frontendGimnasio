@@ -405,9 +405,8 @@ async function agregarCliente() {
 
 async function editarCliente() {
 
-
   const sele = planCliente.value;
-  const labe = sele.label;
+  const labe = sele ? sele.label : planCliente.value;
   console.log("Plan seleccionado:", labe);
 
 
