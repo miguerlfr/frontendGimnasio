@@ -9,9 +9,9 @@ export const useStoreClientes = defineStore("Cliente", () => {
     const getClientes = async () => {
         try {
             const r = await axios.get(`${url}/api/clientes`, {
-                // headers: {
-                //     token: useUsuario.token
-                // }
+                headers: {
+                    token: useUsuario.token
+                }
             });
             return r;
         } catch (error) {
