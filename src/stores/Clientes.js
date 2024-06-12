@@ -2,11 +2,10 @@ import { defineStore } from "pinia";
 import axios from "axios";
 import { useStoreUsuarios } from "../stores/Usuarios.js";
 
-const url = "https://backendgimnasio-ip8j.onrender.com"
-
 export const useStoreClientes = defineStore("Cliente", () => {
     const useUsuario = useStoreUsuarios();
-
+    const url = "https://backendgimnasio-ip8j.onrender.com"
+    
     const getClientes = async () => {
         try {
             const r = await axios.get(`${url}/api/clientes`, {
