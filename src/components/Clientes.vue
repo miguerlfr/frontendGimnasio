@@ -496,7 +496,8 @@ function mostrarRestoDatosDeSeguimiento(fecha) {
 
 onMounted(() => {
   actualizarListadoClientes(),
-    listarPlanes()
+    listarPlanes(),
+    listarClientes()
 });
 
 watch(selectedOption, (newValue) => {
