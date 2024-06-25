@@ -628,7 +628,7 @@ watch(selectedOption, () => {
                       class="q-mb-md" required />
                     <q-input v-model="item.peso" :label="'Peso ' + (index + 1)" type="number" filled class="q-mb-md"
                       required />
-                    <q-input v-model="item.imc" :label="'IMC ' + (index + 1)" type="number" filled class="q-mb-md"
+                    <q-input v-model="item.imc" :label="'IMC ' + (index + 1)" type="text" filled class="q-mb-md"
                        style="display: none;"/>
                     <q-input v-model="item.brazo" :label="'Brazo ' + (index + 1)" type="number" filled class="q-mb-md"
                       required />
@@ -720,7 +720,7 @@ watch(selectedOption, () => {
                       class="q-mb-md" required />
                     <q-input v-model="item.peso" :label="'Peso ' + (index + 1)" type="number" filled class="q-mb-md"
                       required />
-                    <q-input v-model="item.imc" :label="'IMC ' + (index + 1)" type="number" filled class="q-mb-md"
+                    <q-input v-model="item.imc" :label="'IMC ' + (index + 1)" type="text" filled class="q-mb-md"
                        style="display: none;"/>
                     <q-input v-model="item.brazo" :label="'Brazo ' + (index + 1)" type="number" filled class="q-mb-md"
                       required />
