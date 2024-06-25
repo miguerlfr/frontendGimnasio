@@ -805,13 +805,13 @@ watch(selectedOption, () => {
                   style="box-shadow: rgba(17, 17, 26, 0.1) 0px 4px 16px, rgba(17, 17, 26, 0.05) 0px 8px 32px; margin: 20px; padding: 20px;"
                   v-for="(seguimiento, index) in seguimientoSeleccionado" :key="index">
                   <h5>Seguimiento {{ (index + 1) }}</h5>
-                  <p>{{ `Fecha: ${seguimiento.fecha}` }}</p>
-                  <p>{{ `Peso: ${seguimiento.peso}` }}</p>
-                  <p>{{ `Imc: ${seguimiento.imc}` }}</p>
-                  <p>{{ `Brazo: ${seguimiento.brazo}` }}</p>
-                  <p>{{ `Pierna: ${seguimiento.pierna}` }}</p>
-                  <p>{{ `Cintura: ${seguimiento.cintura}` }}</p>
-                  <p>{{ `Estatura: ${seguimiento.estatura}` }}</p>
+                  <p style="margin: 0;">{{ `Fecha: ${new Date(seguimiento.fecha).toLocaleDateString('es-ES')}` }}</p>
+                  <p style="margin: 0;">{{ `Peso: ${seguimiento.peso}` }}</p>
+                  <p style="margin: 0;">{{ `IMC: ${typeof seguimiento.imc === 'number' ? seguimiento.imc.toFixed(2).replace(/\.(\d{2})\d*$/, '.$1...') : seguimiento.imc}` }}</p>
+                  <p style="margin: 0;">{{ `Brazo: ${seguimiento.brazo}` }}</p>
+                  <p style="margin: 0;">{{ `Pierna: ${seguimiento.pierna}` }}</p>
+                  <p style="margin: 0;">{{ `Cintura: ${seguimiento.cintura}` }}</p>
+                  <p style="margin: 0;">{{ `Estatura: ${seguimiento.estatura}` }}</p>
                 </div>
               </div>
             </q-card-section>
