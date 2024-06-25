@@ -29,11 +29,10 @@
 
     <q-drawer v-if="isAuthenticated" :model-value="leftDrawerOpen" show-if-above side="left" bordered overlay style="background-color: #f0f0f0b8;">
 
-
       <div class="q-img q-img--menu relative-top" role="img" style="height: 204px;">
         <div style="padding-bottom: 82.5195%;"></div>
         <div class="q-img__container absolute-full"><img
-            class="q-img__image q-img__image--with-transition q-img__image--loaded" loading="lazy" fetchpriority="auto"
+            class="q-img__image q-img__image--with-transition q-img__image--loaded" fetchpriority="auto"
             aria-hidden="true" draggable="false" src="../img/fondoAzul.png"
             style="object-fit: cover; object-position: 50% 50%;"></div>
         <div class="q-img__content absolute-full q-anchor--skip">
@@ -104,11 +103,7 @@
         <p style="text-align: center; font-size: 10px; margin-top: -20px;">autorizados...</p>
       </div>
     </q-drawer>
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> a45999c47dc0ad44c1a48f0aeb56572f157523e4
     <q-page-container>
       <router-view />
     </q-page-container>
