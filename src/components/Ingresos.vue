@@ -4,16 +4,22 @@ import { useStoreClientes } from "../stores/Clientes.js";
 import { useStoreIngresos } from "../stores/Ingresos.js";
 import { useStoreSedes } from "../stores/Sedes.js";
 import { format } from "date-fns";
-import { Notify } from "quasar";
 
 const useCliente = useStoreClientes();
 const useIngreso = useStoreIngresos();
 const useSede = useStoreSedes();
 
+const visible = ref(true);
+
+const mostrarFormularioAgregarIngreso = ref(false);
+const mostrarFormularioEditarIngreso = ref(false);
+
 const nombreClienteIngreso = ref("");
 const idIngresoSeleccionado = ref(null);
 const fecha = ref("");
 const sede = ref("")
+
+const input = ref('');
 
 const sedes = ref([])
 
@@ -32,10 +38,12 @@ async function listarSedes() {
 }
 
 const sedeOptions = computed(() => {
-  return sedes.value.map((sede) => ({
-    label: sede.nombre,
-    id: sede._id,
-  }));
+  return sedes.value
+    .filter(sede => sede.estado !== 0)
+    .map(sede => ({
+      label: sede.nombre,
+      id: sede._id,
+    }));
 });
 
 // const cliente = ref("");
@@ -48,8 +56,7 @@ const options = [
   {
     label: "Listar Ingreso del Cliente por su Nombre",
     value: "Listar Ingreso del Cliente por su Nombre",
-  },
-  // { label: "Agregar Ingreso", value: "Agregar Ingreso" },
+  }
 ];
 
 let rows = ref([]);
@@ -59,21 +66,26 @@ let columns = ref([
     label: "Fecha",
     align: "center",
     field: (row) => {
-      // Obtener la fecha en formato de objeto Date
       const fecha = new Date(row.fecha);
       fecha.setDate(fecha.getDate() + 1);
-      // Formatear la fecha sumada como "día mes año" usando date-fns
-      const fechaFormateada = format(fecha, "dd/MM/yyyy");
-
-      return fechaFormateada;
+      return format(fecha, "dd/MM/yyyy");
     },
   },
-  { name: "sede", label: "Sede", field: "sede", align: "center" }, // Corregido "Sede" a "sede"
-  { name: "cliente", label: "Cliente", field: "cliente", align: "center" },
+  {
+    name: "sede",
+    label: "Sede",
+    field: row => row.sede ? row.sede.nombre : '',
+    align: "center"
+  },
+  {
+    name: "cliente",
+    label: "Cliente",
+    field: row => row.cliente ? row.cliente.nombre : '',
+    align: "center"
+  },
   { name: "opciones", label: "Opciones", field: "opciones", align: "center" },
 ]);
 
-// Función computada para manejar la lógica de qué datos mostrar
 const filteredRows = computed(() => {
   switch (selectedOption.value) {
     case "Listar Ingreso del Cliente por su Nombre":
@@ -86,44 +98,16 @@ const filteredRows = computed(() => {
 async function listarIngresos() {
   try {
     // Realizar todas las llamadas de forma simultánea
-    const [clientesResponse, ingresosResponse, sedesResponse] = await Promise.all([
-      useCliente.getClientes(),
-      useIngreso.getIngresos(),
-      useSede.getSedes()
-    ]);
-
-    // Extraer los datos de las respuestas
-    const clientes = clientesResponse.data.clientes;
-    const ingresos = ingresosResponse.data.ingresos;
-    const sedes = sedesResponse.data.sedes;
-
-    console.log("Clientes:", clientes);
-    console.log("Ingresos:", ingresos);
-    console.log("Sedes:", sedes);
-
-    // Iterar sobre cada ingreso y asignar el nombre del cliente correspondiente
-    ingresos.forEach((ingreso) => {
-      // Buscar el cliente correspondiente al ingreso por su _id
-      const cliente = clientes.find((c) => c._id === ingreso.cliente);
-      const sede = sedes.find((s) => s._id === ingreso.sede); // Cambiar a comparar por _id en lugar de nombre
-
-      // Si se encontró el cliente, asignar su nombre al ingreso
-      if (cliente && sede) { // Asegúrate de que tanto el cliente como la sede sean encontrados
-        ingreso.cliente = cliente.nombre;
-        ingreso.sede = sede.nombre; // Asignar el nombre de la sede en lugar de su _id
-      } else {
-        ingreso.cliente = "Cliente no encontrado"; // Si no se encuentra el cliente, asignar un valor predeterminado
-        ingreso.sede = "Sede no encontrada";
-      }
-    });
+    const ingresosResponse = await useIngreso.getIngresos()
+    console.log("Ingresos", ingresosResponse.data.ingresos);
 
     // Asignar los ingresos actualizados a la variable 'rows'
-    rows.value = ingresos;
+    rows.value = ingresosResponse.data.ingresos;
+    visible.value = false
   } catch (error) {
     console.error("Error al listar ingresos:", error);
   }
 }
-
 
 const listarIngresoPorNombreCliente = computed(() => {
   if (
@@ -139,93 +123,109 @@ const listarIngresoPorNombreCliente = computed(() => {
   }
 });
 
-
-const mostrarFormularioAgregarIngreso = ref(false);
-const mostrarFormularioEditarIngreso = ref(false);
-
 const listarClientes = async () => {
   try {
     const response = await useCliente.getClientes();
     clientes.value = response.data.clientes;
-    console.log(clientes.value);
-    console.log("Clientes listados:", clientes.value); // Agrega esta línea para verificar los clientes listados
+    console.log("Clientes listados:", clientes.value);
   } catch (error) {
     console.error("Error al listar los clientes:", error);
   }
 };
-const validarCliente = () => {
-  if (!nombreCliente.value || typeof nombreCliente.value !== 'string' || nombreCliente.value.trim() === '') {
-    // Si nombreCliente.value no está definido, no es una cadena o está vacío, mostrar un mensaje de error
-    Notify.create({
-      type: "negative",
-      message: "Nombre del cliente incorrecto",
-    });
-    return null;
-  }
 
-  // Normalizar el nombre del cliente ingresado
-  const nombreClienteNormalizado = nombreCliente.value
-    .trim()
-    .toLowerCase();
-
-  // Buscar el cliente encontrado en la lista de clientes
-  const clienteEncontrado = clientes.value.find(
-    (cliente) => cliente.nombre.trim().toLowerCase() === nombreClienteNormalizado
-  );
-
-  // Si no se encontró el cliente, mostrar una notificación y retornar null
-  if (!clienteEncontrado) {
-    Notify.create({
-      type: "negative",
-      message: "Cliente no encontrado",
-    });
-    return null;
-  }
-
-  // Si se encontró el cliente, retornar el objeto cliente completo
-  return clienteEncontrado;
-};
 const cargarIngresoParaEdicion = (ingreso) => {
   idIngresoSeleccionado.value = ingreso._id;
   fecha.value = ingreso.fecha.split("T")[0];
-  sede.value = ingreso.sede;
-  nombreCliente.value = ingreso.cliente; // Asegúrate de actualizar correctamente el nombre del cliente
+  sede.value = ingreso.sede.nombre;
+  nombreCliente.value = ingreso.cliente.nombre;
+
+  console.log("Datos a cargar:", {
+    idIngresoSeleccionado: idIngresoSeleccionado.value,
+    fecha: fecha.value,
+    sede: sede.value,
+    nombreCliente: nombreCliente.value
+  });
+
   mostrarFormularioAgregarIngreso.value = false;
   mostrarFormularioEditarIngreso.value = true;
 };
 
-// // Esta función simula la actualización de un cliente en la base de datos
-// const actualizarCliente = async (cliente) => {
-//   try {
-//     // Aquí iría tu lógica para actualizar el cliente en la base de datos
-//     // Por ejemplo, podrías hacer una petición HTTP POST o PUT a tu servidor
+const setModel = value => {
+  nombreCliente.value = value;
+};
 
-//     // Simulación de una respuesta exitosa
-//     return { status: 200, message: "Cliente actualizado correctamente" };
-//   } catch (error) {
-//     // En caso de error, maneja la excepción adecuadamente
-//     throw new Error("Error al actualizar el cliente: " + error.message);
-//   }
-// };
+const clientesOptions = computed(() => {
+  const needle = input.value.toLocaleLowerCase();
+
+  return clientes.value
+    .filter(cliente => {
+      const combinedString = `${cliente.nombre} - ${cliente.documento}`.toLocaleLowerCase();
+      return combinedString.includes(needle) && cliente.estado !== 0;
+    })
+    .map(cliente => ({
+      label: `${cliente.nombre} - ${cliente.documento}`,
+      id: cliente._id,
+    }));
+});
+
+
+const filterFn = (val, update, abort) => {
+  update(() => {
+    input.value = val;
+  });
+};
+
+function quitarTildes(texto) {
+  return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+async function obtenerClienteIdPorNombre(nombre) {
+  try {
+    const response = await useCliente.getClientes();
+    const clientes = response.data.clientes;
+    const nombreBuscado = quitarTildes(nombre.toLowerCase());
+    console.log('Nombre buscado:', nombreBuscado);
+
+    clientes.forEach(cliente => {
+      console.log('Comparando con:', quitarTildes(cliente.nombre.toLowerCase()));
+    });
+
+    // Find the client
+    const clienteEncontrado = clientes.find(cliente => quitarTildes(cliente.nombre.toLowerCase()) === nombreBuscado);
+
+    if (clienteEncontrado) {
+      return clienteEncontrado._id;
+    } else {
+      throw new Error('Cliente no encontrado');
+    }
+  } catch (error) {
+    console.error('Error al obtener el ID del cliente:', error);
+    throw error;
+  }
+}
 
 const agregarIngreso = async () => {
   console.log("Nombre del cliente ingresado:", nombreCliente.value);
 
-    // Buscar la máquina seleccionada por su descripción
-    const select = sede.value
-    const nombre = select.nombre
+  // Buscar la máquina seleccionada por su descripción
+  const select = sede.value
+  const nombre = select.nombre
 
-    // Verificar si se encontró la máquina seleccionada
-    if (!select) {
-      console.log("Máquina seleccionada:", nombre);
-      console.error("Máquina seleccionada no encontrada");
-      return;
-    }
+  // Verificar si se encontró la máquina seleccionada
+  if (!select) {
+    console.log("Máquina seleccionada:", nombre);
+    console.error("Máquina seleccionada no encontrada");
+    return;
+  }
 
-    const idSede = select.id;
-  
-  const clienteId = validarCliente();
-  if (!clienteId) return;
+  const idSede = select.id;
+
+  // Use nombreCliente.value to get the name of the client
+  const clienteNombre = nombreCliente.value.nameCliente || nombreCliente.value;
+  console.log("Nombre del cliente:", clienteNombre);
+
+  let clienteId = await obtenerClienteIdPorNombre(clienteNombre);
+  console.log("ClienteId:", clienteId);
 
   // Obtener la fecha actual
   const fechaActual = new Date(fecha.value);
@@ -257,23 +257,29 @@ const agregarIngreso = async () => {
   }
 
 };
+
 const editarIngreso = async () => {
 
-    // Buscar la máquina seleccionada por su descripción
-    const select = sede.value
-    const nombre = select.nombre
+  // Buscar la máquina seleccionada por su descripción
+  const select = sede.value
+  const nombre = select.nombre
 
-    // Verificar si se encontró la máquina seleccionada
-    if (!select) {
-      console.log("Máquina seleccionada:", nombre);
-      console.error("Máquina seleccionada no encontrada");
-      return;
-    }
+  // Verificar si se encontró la máquina seleccionada
+  if (!select) {
+    console.log("Máquina seleccionada:", nombre);
+    console.error("Máquina seleccionada no encontrada");
+    return;
+  }
 
-    const idSede = select.id;
+  const idSede = select.id;
 
-  const clienteId = validarCliente();
-  if (!clienteId) return;
+  // Use nombreCliente.value to get the name of the client
+  console.log("nameCliente", nombreCliente.value);
+  const clienteNombre = nombreCliente.value.nameCliente || nombreCliente.value;
+  console.log("Nombre del cliente:", clienteNombre);
+
+  let clienteId = await obtenerClienteIdPorNombre(clienteNombre);
+  console.log("ClienteId:", clienteId);
 
   const ingresoEditado = {
     fecha: fecha.value,
@@ -298,40 +304,34 @@ const editarIngreso = async () => {
     console.error("Error al editar el ingreso:", error);
   }
 };
+
 const limpiarCamposIngreso = () => {
   idIngresoSeleccionado.value = null;
   fecha.value = "";
   sede.value = "";
   nombreCliente.value = "";
 };
+
 const cancelarIngreso = () => {
   mostrarFormularioAgregarIngreso.value = false;
   mostrarFormularioEditarIngreso.value = false;
   limpiarCamposIngreso();
 };
 
-watch(selectedOption, (newValue) => {
+onMounted(() => {
   listarIngresos();
-  if (newValue === "Agregar Ingreso") {
-    limpiarCamposIngreso()
-    mostrarFormularioAgregarIngreso.value = true;
-    mostrarFormularioEditarIngreso.value = false;
-  } else {
-    mostrarFormularioEditarIngreso.value = false;
-    mostrarFormularioAgregarIngreso.value = false;
-  }
+  listarClientes();
+  listarSedes()
 });
 
-onMounted(() => {
-  listarIngresos(),
-  listarClientes(),
-  listarSedes()
+watch(selectedOption, () => {
+  listarIngresos();
 });
 </script>
 
 <template>
   <div>
-    <div class="q-pa-md">
+    <div class="q-pa-md" v-if="!visible">
       <div>
         <h3 style="text-align: center; margin: 10px">Ingresos</h3>
         <hr style="width: 70%; height: 5px; background-color: green" />
@@ -348,8 +348,12 @@ onMounted(() => {
 
       <div>
         <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
-          <q-btn label="Agregar Ingreso" @click="mostrarFormularioAgregarIngreso = true" />
-          <!-- <q-btn label="Editar Ingreso" @click="mostrarFormularioEditarIngreso = true" /> -->
+          <q-btn label="Agregar Ingreso" @click="mostrarFormularioAgregarIngreso = true">
+            <!-- <q-btn label="Editar Ingreso" @click="mostrarFormularioEditarIngreso = true" /> -->
+            <q-tooltip>
+              {{ 'Agregar Ingreso' }}
+            </q-tooltip>
+          </q-btn>
         </div>
 
         <!-- Dialogo para agregar ingreso -->
@@ -361,12 +365,39 @@ onMounted(() => {
 
             <q-card-section>
               <q-form @submit.prevent="agregarIngreso">
-                <q-input v-model="fecha" label="Fecha" type="date" outlined class="q-mb-md" />
-                <q-select v-model="sede" label="Sede" outlined :options="sedeOptions" class="q-mb-md" />
-                <q-input v-model="nombreCliente" label="Cliente" outlined class="q-mb-md" />
+                <q-input v-model="fecha" label="Fecha" type="date" filled outlined class="q-mb-md" />
+                <q-select v-model="sede" label="Sede" filled outlined :options="sedeOptions" class="q-mb-md"
+                  style="max-width: 100%;">
+                  <template v-slot:no-option>
+                    <q-item>
+                      <q-item-section>
+                        No results
+                      </q-item-section>
+                    </q-item>
+                  </template>
+                </q-select>
+                <q-select filled outlined v-model="nombreCliente" use-input hide-selected fill-input input-debounce="0"
+                  :options="clientesOptions" label="Cliente" emit-value map-options @filter="filterFn"
+                  @input-value="setModel" class="q-mb-md" style="min-width: 100%;">
+                  <template v-slot:no-option>
+                    <q-item>
+                      <q-item-section>
+                        No results
+                      </q-item-section>
+                    </q-item>
+                  </template>
+                </q-select>
                 <div class="q-mt-md">
-                  <q-btn @click="cancelarIngreso" label="Cancelar" color="negative" class="q-ma-sm" />
-                  <q-btn type="submit" label="Guardar Ingreso" color="primary" class="q-ma-sm" />
+                  <q-btn @click="cancelarIngreso" label="Cancelar" color="negative" class="q-ma-sm">
+                    <q-tooltip>
+                      {{ 'Cancelar' }}
+                    </q-tooltip>
+                  </q-btn>
+                  <q-btn type="submit" label="Guardar Ingreso" color="primary" class="q-ma-sm">
+                    <q-tooltip>
+                      {{ 'Guardar Ingreso' }}
+                    </q-tooltip>
+                  </q-btn>
                 </div>
               </q-form>
             </q-card-section>
@@ -382,12 +413,39 @@ onMounted(() => {
 
             <q-card-section>
               <q-form @submit.prevent="editarIngreso">
-                <q-input v-model="fecha" label="Fecha" type="date" outlined class="q-mb-md" />
-                <q-select v-model="sede" label="Sede" outlined :options="sedeOptions" class="q-mb-md" />
-                <q-input v-model="nombreCliente" label="Cliente" outlined class="q-mb-md" />
+                <q-input v-model="fecha" label="Fecha" type="date" filled outlined class="q-mb-md" />
+                <q-select v-model="sede" label="Sede" filled outlined :options="sedeOptions" class="q-mb-md"
+                  style="max-width: 100%;">
+                  <template v-slot:no-option>
+                    <q-item>
+                      <q-item-section>
+                        No results
+                      </q-item-section>
+                    </q-item>
+                  </template>
+                </q-select>
+                <q-select filled outlined v-model="nombreCliente" use-input hide-selected fill-input input-debounce="0"
+                  :options="clientesOptions" label="Cliente" emit-value map-options @filter="filterFn"
+                  @input-value="setModel" class="q-mb-md" style="min-width: 100%;">
+                  <template v-slot:no-option>
+                    <q-item>
+                      <q-item-section>
+                        No results
+                      </q-item-section>
+                    </q-item>
+                  </template>
+                </q-select>
                 <div class="q-mt-md">
-                  <q-btn @click="cancelarIngreso" label="Cancelar" color="negative" class="q-ma-sm" />
-                  <q-btn type="submit" label="Guardar Cambios" color="primary" class="q-ma-sm" />
+                  <q-btn @click="cancelarIngreso" label="Cancelar" color="negative" class="q-ma-sm">
+                    <q-tooltip>
+                      {{ 'Cancelar' }}
+                    </q-tooltip>
+                  </q-btn>
+                  <q-btn type="submit" label="Guardar Cambios" color="primary" class="q-ma-sm">
+                    <q-tooltip>
+                      {{ 'Guardar Cambios' }}
+                    </q-tooltip>
+                  </q-btn>
                 </div>
               </q-form>
             </q-card-section>
@@ -399,12 +457,19 @@ onMounted(() => {
         :columns="columns" row-key="id">
         <template v-slot:body-cell-opciones="props">
           <q-td :props="props">
-            <q-btn @click="cargarIngresoParaEdicion(props.row)">✏️</q-btn>
+            <q-btn @click="cargarIngresoParaEdicion(props.row)">
+              ✏️
+              <q-tooltip>
+                {{ 'Editar Ingreso' }}
+              </q-tooltip>
+            </q-btn>
           </q-td>
         </template>
       </q-table>
     </div>
   </div>
+  <q-inner-loading :showing="visible" label="Por favor espere..." label-class="text-teal"
+    label-style="font-size: 1.1em" />
 </template>
 
 <style scoped>

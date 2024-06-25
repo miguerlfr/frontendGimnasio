@@ -3,21 +3,34 @@
     <div class="container">
 
         <div class="login-container">
-            <h3>Sign In</h3>
+            <h3>Login</h3>
 
             <form @submit.prevent="">
 
-                <input class="input" type="email" placeholder="Email" v-model="email" autocomplete="username" />
-                <input data-v-47199182 class="input" type="password" placeholder="Password"
-                    autocomplete="current-password" v-model="password" />
+                <div>
+                    <div class="input-container">
+                        <input class="input" type="email" placeholder=" " v-model="email" autocomplete="username" />
+                        <label>Email</label>
+                    </div>
+                    <div class="input-container">
+                        <input class="input" type="password" placeholder=" " v-model="password"
+                            autocomplete="current-password" />
+                        <label>Password</label>
+                    </div>
+                </div>
+                <p style="font-size: 13px;margin: -10px; padding: 0; border: 0;"><a href="#">¿Olvidaste tu
+                        contraseña?</a></p>
 
-                <button type="submit" @click="login">Sign In</button>
+                <q-btn style="margin: 30px;" type="submit" :loading="useUsuario.loading" @click="login">
+                    Sign In
+                    <template v-slot:loading>
+                        <q-spinner color="black" size="1em" />
+                    </template>
+                </q-btn>
             </form>
 
-            <p>New to Gimnasio? <a href="#">Sign up now</a></p>
 
-            <div class="social-login">
-
+            <!-- <div class="social-login">
                 <button class="google-btn" @click="googleLogin">
                     <img class="redSocial" src="../img/google-logo.png" alt="Google Logo" />
                 </button>
@@ -27,9 +40,7 @@
                 <button class="twitter-btn" @click="twitterLogin">
                     <img class="redSocial" src="../img/twitter-logo.png" alt="Twitter Logo" />
                 </button>
-
-            </div>
-
+            </div> -->
         </div>
     </div>
 </template>
@@ -38,7 +49,7 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useStoreUsuarios } from "../stores/Usuarios.js";
-// import { notifyErrorRequest } from "../routes/routes.js";
+import { notifyErrorRequest } from "../routes/routes.js";
 
 const useUsuario = useStoreUsuarios();
 const router = useRouter();
@@ -48,12 +59,19 @@ const password = ref("");
 async function login() {
     const isValid = await validateCredentials();
     if (isValid) {
-        const r = await useUsuario.login(email.value, password.value);
-        // console.log(r);
-        if (r) {
-            router.push('/Clientes'); // Redirige a la ruta con la barra lateral y la primera página protegida
-        } else {
-            notifyErrorRequest("Error al iniciar sesión. Por favor, verifica tus credenciales.");
+        try {
+            const r = await useUsuario.login(email.value, password.value);
+            // console.log(r.response.data.msg);
+            if (r) {
+                router.push('/Clientes');
+            }
+        } catch (error) {
+            console.error(error); // Imprime el error en la consola para verificar qué está pasando
+            if (error.response && error.response.data && error.response.data.msg) {
+                notifyErrorRequest(error.response.data.msg);
+            } else {
+                notifyErrorRequest("Error al iniciar sesión. Por favor, intenta de nuevo más tarde.");
+            }
         }
     } else {
         notifyErrorRequest("Por favor, introduce credenciales válidas");
@@ -69,17 +87,17 @@ async function validateCredentials() {
     }
 }
 
-function googleLogin() {
-    // Google login logic here
-}
+// function googleLogin() {
+//     // Google login logic here
+// }
 
-function facebookLogin() {
-    // Facebook login logic here
-}
+// function facebookLogin() {
+//     // Facebook login logic here
+// }
 
-function twitterLogin() {
-    // Twitter login logic here
-}
+// function twitterLogin() {
+//     // Twitter login logic here
+// }
 </script>
 
 <style scoped>
@@ -106,7 +124,7 @@ function twitterLogin() {
     margin-top: 50px;
     width: 300px;
     background-color: #fff;
-    padding: 20px;
+    padding: 30px;
     border: 1px solid #ddd;
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
@@ -114,7 +132,7 @@ function twitterLogin() {
 }
 
 .input:hover {
-    background-color: #ac483f80;
+    background-color: #ac483f27;
 }
 
 .login-container h3 {
@@ -129,26 +147,61 @@ form {
     align-items: center;
 }
 
-input {
-    width: 100%;
-    height: 40px;
+.input-container {
+    position: relative;
     margin-bottom: 20px;
-    padding: 10px;
-    border: 1px solid #ccc;
+}
+
+.input-container input {
+    width: 100%;
+    padding: 10px 10px 10px 5px;
+    display: block;
+    border: none;
+    border-bottom: 1px solid #757575;
+    background: transparent;
+    font-size: 16px;
+    /* height: 40px;
+    margin-bottom: 20px;
+    padding: 10px;*/
+    /* border: 1px solid #ccc;  */
+}
+
+.input-container input:focus {
+    outline: none;
+    /* background-color: inherit; */
+}
+
+.input-container input:focus~label,
+.input-container input:not(:placeholder-shown)~label {
+    top: -15px;
+    font-size: 12px;
+    color: #5264AE;
+}
+
+.input-container label {
+    color: #999;
+    /* font-size: 16px; */
+    font-weight: normal;
+    position: absolute;
+    pointer-events: none;
+    left: 5px;
+    top: 10px;
+    transition: 0.2s ease all;
+}
+
+.input-container input:focus~label {
+    background: transparent;
+    color: #5264AE;
 }
 
 button[type="submit"] {
-    width: 100%;
+    width: 83%;
     height: 40px;
-    background-color: #e50914;
-    color: #fff;
+    background-color: #ff69b4;
+    color: white;
     border: none;
     border-radius: 10px;
     cursor: pointer;
-}
-
-button[type="submit"]:hover {
-    background-color: #ff69b4;
 }
 
 p {

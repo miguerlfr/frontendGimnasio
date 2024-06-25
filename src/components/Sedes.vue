@@ -2,13 +2,39 @@
 import { ref, onMounted, computed, watch } from "vue";
 import { useStoreSedes } from "../stores/Sedes.js";
 
+// Para colocar puntos decimales a los nuemros
+function formatoNumerico(numero) {
+  return typeof numero === 'number' ? numero.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : undefined;
+}
+
+// Variables parra mostrar formularios
+const mostrarFormularioAgregarSedes = ref(false);
+const mostrarFormularioEditarSedes = ref(false);
+
+// Variables de los inputs de agregar y editar
+const selectedSedeId = ref(null);
+const nombre = ref("");
+const direccion = ref("");
+const codigo = ref("");
+const horario = ref("");
+const ciudad = ref("");
+const telefono = ref("");
+
+const estadoOptions = [
+  { label: "Activo" },
+  { label: "Inactivo" },
+];
+
+// estado predeterminado
+const estado = ref(estadoOptions.find(option => option.label === "Activo").label);
+
+// Llamado de modelo
 const useSede = useStoreSedes();
 
-const codigoSede = ref("")
+// Loading
+const visible = ref(true);
 
-function formatoNumerico(numero) {
-    return typeof numero === 'number' ? numero.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : undefined;
-}
+const codigoSede = ref("")
 
 const selectedOption = ref("Listar Sedes"); // Establecer 'Listar Sedes' como valor por defecto
 const options = [
@@ -34,7 +60,7 @@ const columns = ref([
   { name: "estado", label: "Estado", field: "estado", align: "center" },
   { name: "opciones", label: "Opciones", field: "opciones", align: "center" },
 ]);
-// Función computada para manejar la lógica de qué datos mostrar
+
 const filteredRows = computed(() => {
   switch (selectedOption.value) {
     case "Listar Sede por Código":
@@ -43,18 +69,20 @@ const filteredRows = computed(() => {
       return rows.value;
   }
 });
+
 async function listarSedes() {
   const r = await useSede.getSedes();
-  console.log(r.data);
+  console.log("Sedes", r.data.sedes);
   rows.value = r.data.sedes;
+  visible.value = false;
 }
-// Función computada para filtrar las sedes por código
+
 const listarSedeCodigo = computed(() => {
   if (
     selectedOption.value === "Listar Sede por Código" &&
     codigoSede.value.trim() !== ""
   ) {
-    const codigoInput = codigoSede.value.trim(); // Obtener el código ingresado por el usuario
+    const codigoInput = codigoSede.value.trim();
     return rows.value.filter((sede) =>
       sede.codigo.toString().includes(codigoInput)
     );
@@ -101,25 +129,6 @@ const actualizarListadoSedes = () => {
   }
 };
 
-
-
-
-const mostrarFormularioAgregarSedes = ref(false);
-const mostrarFormularioEditarSedes = ref(false);
-
-const selectedSedeId = ref(null);
-const nombre = ref("");
-const direccion = ref("");
-const codigo = ref("");
-const horario = ref("");
-const ciudad = ref("");
-const telefono = ref("");
-
-const estadoOptions = [
-  { label: "Activo" }, // Agrega el valor 'Activo' aquí
-  { label: "Inactivo" }, // Agrega el valor 'Inactivo' aquí
-];
-const estado = ref(estadoOptions.find(option => option.label === "Activo").label);
 const limpiarCamposSede = () => {
   nombre.value = "";
   direccion.value = ""
@@ -217,7 +226,7 @@ watch(selectedOption, (newValue) => {
 
 <template>
   <div>
-    <div class="q-pa-md">
+    <div class="q-pa-md" v-if="!visible">
       <div>
         <h3 style="text-align: center; margin: 10px">Sedes</h3>
         <hr style="width: 70%; height: 5px; background-color: green" />
@@ -234,7 +243,11 @@ watch(selectedOption, (newValue) => {
       <div>
         <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
           <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
-            <q-btn label="Agregar Sede" @click="mostrarFormularioAgregarSedes = true" />
+            <q-btn label="Agregar Sede" @click="mostrarFormularioAgregarSedes = true" >
+            <q-tooltip>
+                {{ 'Agregar Sede' }}
+              </q-tooltip>
+            </q-btn>
           </div>
 
         </div>
@@ -253,10 +266,18 @@ watch(selectedOption, (newValue) => {
                 <q-input v-model="horario" label="Horario" filled required class="q-mb-md" />
                 <q-input v-model="ciudad" label="Ciudad" filled required class="q-mb-md" />
                 <q-input v-model="telefono" label="Teléfono" filled required class="q-mb-md" />
-                <q-select v-model="estado" label="Estado" filled required :options="estadoOptions" class="q-mb-md" />
+                <q-select v-model="estado" label="Estado" filled required :options="estadoOptions" class="q-mb-md" style="max-width: 100%;" />
                 <div class="q-mt-md">
-                  <q-btn @click="cancelarSede" label="Cancelar" class="q-mr-sm" />
-                  <q-btn type="submit" label="Agregar Sede" color="primary" class="q-ma-sm" />
+                  <q-btn @click="cancelarSede" label="Cancelar" class="q-mr-sm" >
+                  <q-tooltip>
+                    {{ 'Cancelar' }}
+                  </q-tooltip>
+                </q-btn>   
+                  <q-btn type="submit" label="Guardar Sede" color="primary" class="q-ma-sm" >
+                  <q-tooltip>
+                {{ 'Guardar Sede' }}
+              </q-tooltip>
+            </q-btn>
                 </div>
               </q-form>
             </q-card-section>
@@ -279,8 +300,16 @@ watch(selectedOption, (newValue) => {
                 <q-input v-model="ciudad" label="Ciudad" filled required class="q-mb-md" />
                 <q-input v-model="telefono" label="Teléfono" filled required class="q-mb-md" />
                 <div class="q-mt-md">
-                  <q-btn @click="cancelarSede" label="Cancelar" class="q-mr-sm" />
-                  <q-btn type="submit" label="Guardar cambios" color="primary" class="q-ma-sm" />
+                  <q-btn @click="cancelarSede" label="Cancelar" class="q-mr-sm" >
+                  <q-tooltip>
+                    {{ 'Cancelar' }}
+                  </q-tooltip>
+                </q-btn>   
+                  <q-btn type="submit" label="Guardar cambios" color="primary" class="q-ma-sm" >
+                  <q-tooltip>
+                {{ 'Guardar cambios' }}
+              </q-tooltip>
+            </q-btn>
                 </div>
               </q-form>
             </q-card-section>
@@ -292,11 +321,24 @@ watch(selectedOption, (newValue) => {
         :columns="columns" row-key="id">
         <template v-slot:body-cell-opciones="props">
           <q-td :props="props">
-            <q-btn @click="mostrarDatosParaEditar(props.row)">✏️</q-btn>
+            <q-btn @click="mostrarDatosParaEditar(props.row)">
+            ✏️
+              <q-tooltip>
+                {{ 'Editar Sede' }}
+              </q-tooltip>
+            </q-btn>
             <q-btn v-if="props.row.estado == 1" @click="inactivarSede(props.row._id)">
               ❌
+              <q-tooltip>
+                {{ 'Inactivar Sede' }}
+              </q-tooltip>
             </q-btn>
-            <q-btn v-else @click="activarSede(props.row._id)">✅</q-btn>
+            <q-btn v-else @click="activarSede(props.row._id)">
+              ✅
+              <q-tooltip>
+                {{ 'Activar Sede' }}
+              </q-tooltip>
+            </q-btn>
           </q-td>
         </template>
 
@@ -313,6 +355,8 @@ watch(selectedOption, (newValue) => {
       </q-table>
     </div>
   </div>
+  <q-inner-loading :showing="visible" label="Por favor espere..." label-class="text-teal"
+    label-style="font-size: 1.1em" />
 </template>
 
 <style scoped>

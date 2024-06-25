@@ -4,15 +4,61 @@ import { useStoreMantenimientos } from "../stores/Mantenimientos.js";
 import { useStoreMaquinas } from "../stores/Maquinas.js";
 import { format } from "date-fns";
 
+function formatoNumerico(numero) {
+  return typeof numero === 'number' ? numero.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : undefined;
+}
+
+const visible = ref(true);
+
+const mostrarFormularioAgregarMantenimiento = ref(false);
+const mostrarFormularioEditarMantenimiento = ref(false);
+
 const useMaquina = useStoreMaquinas();
 const useMantenimiento = useStoreMantenimientos();
 
 const nombreMaquinaMantenimiento = ref("");
 const fechaSeleccionada = ref("");
 
-function formatoNumerico(numero) {
-    return typeof numero === 'number' ? numero.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : undefined;
-}
+const maquinas = ref([]);
+
+const listarMaquinas = async () => {
+  try {
+    const response = await useMaquina.getMaquinas(); // Ajusta según tu API de servicio
+    if (response.data) {
+      maquinas.value = response.data.maquinas;
+      // console.log("Maquinas listadas:", maquinas.value);
+    } else {
+      console.error("La respuesta no contiene datos:", response);
+    }
+  } catch (error) {
+    console.error("Error al listar las máquinas:", error);
+  }
+};
+
+const maquinasOptions = computed(() => {
+  return maquinas.value
+  .filter(maquina => maquina.estado != 0)
+  .map((maquina) => ({
+    label: maquina.descripcion,
+    id: maquina._id,
+  }));
+});
+
+const selectedMachine = ref(null);
+const idMaquina = ref('');
+const fecha = ref('');
+const descripcion = ref('');
+const responsable = ref('');
+const precio = ref("");
+const idMantenimientoSeleccionado = ref(null);
+
+
+const estadoOptions = [
+  { label: "Activo" },
+  { label: "Inactivo" },
+];
+
+const estadoM = ref(estadoOptions.find(option => option.label === "Activo").label);
 
 const selectedOption = ref("Listar Mantenimientos"); // Establecer 'Listar Mantenimientos' como valor por defecto
 const options = [
@@ -24,8 +70,7 @@ const options = [
   {
     label: "Listar Mantenimientos por Fecha",
     value: "Listar Mantenimientos por Fecha",
-  },
-  // { label: "Agregar Mantenimiento", value: "Agregar Mantenimiento" },
+  }
 ];
 
 let rows = ref([]);
@@ -33,7 +78,7 @@ const columns = ref([
   {
     name: "idMaquina",
     label: "Máquina",
-    field: "idMaquina",
+    field: row => (row.idMaquina.descripcion),
     align: "center",
   },
   {
@@ -82,7 +127,6 @@ const columns = ref([
   },
 ]);
 
-// Función computada para manejar la lógica de qué datos mostrar
 const filteredRows = computed(() => {
   switch (selectedOption.value) {
     case "Listar Mantenimiento de la Máquina por su Nombre":
@@ -95,32 +139,10 @@ const filteredRows = computed(() => {
 });
 
 async function listarMantenimientos() {
-  const productosResponse = await useMaquina.getMaquinas();
-  const productos = productosResponse.data.maquinas;
-  // console.log(productos);
-
-  // Obtener la lista de ventas
-  const ventasResponse = await useMantenimiento.getMantenimientos();
-  const ventas = ventasResponse.data.mantenimientos;
-  // console.log(ventas);
-
-  // Iterar sobre cada venta y asignar el descripcion del producto correspondiente
-  ventas.forEach((venta) => {
-    // Buscar el producto correspondiente al venta por su _id
-    const producto = productos.find(
-      (c) => c._id.toString() === venta.idMaquina.toString()
-    );
-
-    // Si se encontró el producto, asignar su descripcion al venta
-    if (producto) {
-      venta.idMaquina = producto.descripcion; // Suponiendo que `descripcion` es la propiedad que contiene el descripcion del producto
-    } else {
-      venta.idMaquina = "producto no encontrado"; // Si no se encuentra el producto, asignar un valor predeterminado
-    }
-  });
-
-  // Asignar los ventas actualizados a la variable 'rows'
-  rows.value = ventas;
+  const mantenimientos = await useMantenimiento.getMantenimientos();
+  const mantR = mantenimientos.data.mantenimientos;
+  visible.value = false;
+  rows.value = mantR;
 }
 
 const listarMantenimientosPorNombreMaquina = computed(() => {
@@ -155,45 +177,6 @@ const listarMantenimientosPorFecha = computed(() => {
     return rows.value;
   }
 });
-const maquinas = ref([]);
-
-const listarMaquinas = async () => {
-  try {
-    const response = await useMaquina.getMaquinas(); // Ajusta según tu API de servicio
-    if (response.data) {
-      maquinas.value = response.data.maquinas; // Ajusta según la estructura de respuesta de tu API
-      // console.log("Maquinas listadas:", maquinas.value);
-      // Verifica si selectedMachine y selectedMachine.value están definidos
-    } else {
-      console.error("La respuesta no contiene datos:", response);
-    }
-  } catch (error) {
-    console.error("Error al listar las máquinas:", error);
-  }
-};
-
-const maquinasOptions = computed(() => {
-  return maquinas.value.map((maquina) => ({
-    label: maquina.descripcion,
-    id: maquina._id,
-  }));
-});
-
-const selectedMachine = ref(null);
-const idMaquina = ref('');
-const fecha = ref('');
-const descripcion = ref('');
-const responsable = ref('');
-const precio = ref("");
-const idMantenimientoSeleccionado = ref(null);
-
-
-const estadoOptions = [
-  { label: "Activo" },
-  { label: "Inactivo" },
-];
-
-const estadoM = ref(estadoOptions.find(option => option.label === "Activo").label);
 
 const agregarMantenimiento = async () => {
   try {
@@ -242,6 +225,22 @@ const agregarMantenimiento = async () => {
   } catch (error) {
     console.error("Error al agregar el mantenimiento:", error);
   }
+};
+
+const cambiarFormulario = (agregar) => {
+  mostrarFormularioAgregarMantenimiento.value = agregar;
+  mostrarFormularioEditarMantenimiento.value = !agregar;
+};
+
+const cargarMantenimientoParaEdicion = (mantenimiento) => {
+  idMantenimientoSeleccionado.value = mantenimiento._id;
+  selectedMachine.value = mantenimiento.idMaquina.descripcion;
+  fecha.value = mantenimiento.fecha.split("T")[0],
+  descripcion.value = mantenimiento.descripcion;
+  responsable.value = mantenimiento.responsable;
+  precio.value = mantenimiento.precio;
+
+  cambiarFormulario(false);
 };
 
 const editarMantenimiento = async () => {
@@ -310,64 +309,39 @@ const limpiarCampos = () => {
   responsable.value = "";
   precio.value = "";
 };
-const mostrarFormularioAgregarMantenimiento = ref(false);
-const mostrarFormularioEditarMantenimiento = ref(false);
-
-const cambiarFormulario = (agregar) => {
-  mostrarFormularioAgregarMantenimiento.value = agregar;
-  mostrarFormularioEditarMantenimiento.value = !agregar;
-};
-
-const cargarMantenimientoParaEdicion = (mantenimiento) => {
-  // Cargar los datos del mantenimiento en los campos del formulario
-  idMantenimientoSeleccionado.value = mantenimiento._id; // Asegúrate de que el ID está siendo seleccionado
-  selectedMachine.value = mantenimiento.idMaquina;
-  fecha.value = mantenimiento.fecha.split("T")[0],// Manejar la fecha nula
-    descripcion.value = mantenimiento.descripcion;
-  responsable.value = mantenimiento.responsable;
-  precio.value = mantenimiento.precio;
-
-  // Cambiar al formulario de edición
-  cambiarFormulario(false);
-};
 
 const cancelarMantenimiento = () => {
   mostrarFormularioAgregarMantenimiento.value = false;
   mostrarFormularioEditarMantenimiento.value = false;
   limpiarCampos();
 };
+
 async function inactivarMantenimiento(id) {
   const r = await useMantenimiento.putMantenimientosInactivar(id);
   console.log(r.data);
   listarMantenimientos();
 }
+
 async function activarMantenimiento(id) {
   const r = await useMantenimiento.putMantenimientosActivar(id);
   console.log(r.data);
   listarMantenimientos();
 }
+
 onMounted(async () => {
-  await listarMaquinas(); // Asegúrate de que las máquinas se carguen antes de listar mantenimientos
+  listarMaquinas();
   listarMantenimientos();
 });
 
-watch(selectedOption, (newValue) => {
+watch(selectedOption, () => {
   listarMantenimientos();
-  if (newValue === "Agregar Mantenimiento" || newValue === "Agregar Mantenimiento" && mostrarFormularioAgregarMantenimiento.value === false) {
-    mostrarFormularioAgregarMantenimiento.value = true; // Asignar el valor a la propiedad value
-    mostrarFormularioEditarMantenimiento.value = false; // Asegurarse de asignar a la propiedad value
-    limpiarCampos()
-  } else {
-    mostrarFormularioEditarMantenimiento.value = false; // Asegurarse de asignar a la propiedad value
-    mostrarFormularioAgregarMantenimiento.value = false; // Asignar el valor a la propiedad value
-  }
 });
 
 </script>
 
 <template>
   <div>
-    <div class="q-pa-md">
+    <div class="q-pa-md" v-if="!visible">
       <div>
         <h3 style="text-align: center; margin: 10px">Mantenimientos</h3>
         <hr style="width: 70%; height: 5px; background-color: green" />
@@ -389,14 +363,18 @@ watch(selectedOption, (newValue) => {
 
       <div>
         <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
-          <q-btn label="Agregar Mantenimiento" @click="mostrarFormularioAgregarMantenimiento = true" />
-          <!-- <q-btn label="Editar Mantenimiento" @click="mostrarFormularioEditarMantenimiento = true" /> -->
+          <q-btn label="Agregar Mantenimiento" @click="mostrarFormularioAgregarMantenimiento = true">
+            <!-- <q-btn label="Editar Mantenimiento" @click="mostrarFormularioEditarMantenimiento = true" /> -->
+            <q-tooltip>
+              {{ 'Agregar Mantenimiento' }}
+            </q-tooltip>
+          </q-btn>
         </div>
         <!-- Dialogo para agregar mantenimiento -->
         <q-dialog v-model="mostrarFormularioAgregarMantenimiento">
           <q-card>
             <q-card-section>
-              <div class="text-h6">Agregar Mantenimiento</div>
+              <div class="text-h5" style="padding: 10px 0 0 25px;">Agregar Mantenimiento</div>
             </q-card-section>
 
             <q-card-section>
@@ -405,18 +383,33 @@ watch(selectedOption, (newValue) => {
                   <!-- Campos del formulario de agregar mantenimiento -->
                   <!-- Selección de máquina -->
                   <q-select v-model="selectedMachine" filled outlined label="Máquina" :options="maquinasOptions"
-                    class="q-mb-md" />
-
+                    class="q-mb-md" style="max-width: 100%;" >
+                    <template v-slot:no-option>
+                      <q-item>
+                        <q-item-section>
+                          No results
+                        </q-item-section>
+                      </q-item>
+                    </template>
+                  </q-select>
                   <q-input v-model="fecha" label="Fecha" type="date" filled class="q-mb-md" />
                   <q-input v-model="descripcion" label="Descripción" filled class="q-mb-md" />
                   <q-input v-model="responsable" label="Responsable" filled class="q-mb-md" />
                   <q-input v-model="precio" label="Precio" type="number" filled class="q-mb-md" />
-                  <q-select v-model="estadoM" label="Estado" outlined :options="estadoOptions" filled class="q-mb-md" />
+                  <q-select v-model="estadoM" label="Estado" outlined :options="estadoOptions" filled class="q-mb-md" style="max-width: 100%;" />
 
                   <!-- Botón para agregar mantenimiento -->
                   <div class="q-mt-md">
-                    <q-btn @click="cancelarMantenimiento" label="Cancelar" color="negative" class="q-ma-sm" />
-                    <q-btn type="submit" label="Agregar Mantenimiento" color="primary" class="q-ma-sm" />
+                    <q-btn @click="cancelarMantenimiento" label="Cancelar" color="negative" class="q-ma-sm" >
+                                      <q-tooltip>
+                    {{ 'Cancelar' }}
+                  </q-tooltip>
+                </q-btn>   
+                    <q-btn type="submit" label="Guardar Mantenimiento" color="primary" class="q-ma-sm">
+                      <q-tooltip>
+                        {{ 'Guardar Mantenimiento' }}
+                      </q-tooltip>
+                    </q-btn>
                   </div>
                 </q-form>
               </div>
@@ -428,7 +421,7 @@ watch(selectedOption, (newValue) => {
         <q-dialog v-model="mostrarFormularioEditarMantenimiento">
           <q-card>
             <q-card-section>
-              <div class="text-h6">Editar Mantenimiento</div>
+              <div class="text-h5" style="padding: 10px 0 0 25px;">Editar Mantenimiento</div>
             </q-card-section>
 
             <q-card-section>
@@ -437,8 +430,15 @@ watch(selectedOption, (newValue) => {
                   <!-- Campos del formulario de editar mantenimiento -->
                   <!-- Selección de máquina -->
                   <q-select v-model="selectedMachine" filled outlined label="Máquina" :options="maquinasOptions"
-                    class="q-mb-md" />
-
+                    class="q-mb-md" style="max-width: 100%;" >
+                    <template v-slot:no-option>
+                      <q-item>
+                        <q-item-section>
+                          No results
+                        </q-item-section>
+                      </q-item>
+                    </template>
+                  </q-select>
                   <q-input v-model="fecha" label="Fecha" type="date" filled class="q-mb-md" />
                   <q-input v-model="descripcion" label="Descripción" filled class="q-mb-md" />
                   <q-input v-model="responsable" label="Responsable" filled class="q-mb-md" />
@@ -446,8 +446,16 @@ watch(selectedOption, (newValue) => {
 
                   <!-- Botón para editar mantenimiento -->
                   <div class="q-mt-md">
-                    <q-btn @click="cancelarMantenimiento" label="Cancelar" color="negative" class="q-ma-sm" />
-                    <q-btn type="submit" label="Editar Mantenimiento" color="primary" class="q-ma-sm" />
+                    <q-btn @click="cancelarMantenimiento" label="Cancelar" color="negative" class="q-ma-sm" >
+                                      <q-tooltip>
+                    {{ 'Cancelar' }}
+                  </q-tooltip>
+                </q-btn>   
+                    <q-btn type="submit" label="Guardar Cambios" color="primary" class="q-ma-sm">
+                      <q-tooltip>
+                        {{ 'Guardar Cambios' }}
+                      </q-tooltip>
+                    </q-btn>
                   </div>
                 </q-form>
               </div>
@@ -460,11 +468,24 @@ watch(selectedOption, (newValue) => {
         :rows="filteredRows" :columns="columns" row-key="id">
         <template v-slot:body-cell-opciones="props">
           <q-td :props="props">
-            <q-btn @click="cargarMantenimientoParaEdicion(props.row)">✏️</q-btn>
+            <q-btn @click="cargarMantenimientoParaEdicion(props.row)">
+              ✏️
+            <q-tooltip>
+                {{ 'Editar Mantenimiento' }}
+              </q-tooltip>
+            </q-btn>
             <q-btn v-if="props.row.estado == 1" @click="inactivarMantenimiento(props.row._id)">
               ❌
+              <q-tooltip>
+                {{ 'Inactivar Mantenimiento' }}
+              </q-tooltip>
             </q-btn>
-            <q-btn v-else @click="activarMantenimiento(props.row._id)">✅</q-btn>
+            <q-btn v-else @click="activarMantenimiento(props.row._id)">
+              ✅
+              <q-tooltip>
+                {{ 'Activar Mantenimiento' }}
+              </q-tooltip>
+            </q-btn>
           </q-td>
         </template>
 
@@ -481,6 +502,8 @@ watch(selectedOption, (newValue) => {
       </q-table>
     </div>
   </div>
+  <q-inner-loading :showing="visible" label="Por favor espere..." label-class="text-teal"
+    label-style="font-size: 1.1em" />
 </template>
 
 <style scoped>

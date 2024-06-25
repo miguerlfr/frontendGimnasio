@@ -3,119 +3,21 @@ import { ref, onMounted, computed, watch } from "vue";
 import { useStoreUsuarios } from "../stores/Usuarios.js";
 import { useStoreSedes } from "../stores/Sedes.js";
 
-const useUsuario = useStoreUsuarios();
-const useSede = useStoreSedes();
+// Loading
+const visible = ref(true);
 
-const emailUsuario = ref("");
-
-const selectedOption = ref("Listar Usuarios"); // Establecer 'Listar Usuarios' como valor por defecto
-const options = [
-  { label: "Listar Usuarios", value: "Listar Usuarios" },
-  {
-    label: "Listar Usuario por su Email",
-    value: "Listar Usuario por su Email",
-  },
-  { label: "Listar Usuarios Activos", value: "Listar Usuarios Activos" },
-  { label: "Listar Usuarios Inactivos", value: "Listar Usuarios Inactivos" },
-  // { label: "Agregar Usuario", value: "Agregar Usuario" },
-];
-const rolOptions = [
-  { label: "Administrador" }, 
-  { label: "Recepcionista" }, 
-  { label: "Instructor" }
-];
-let rows = ref([]);
-const columns = ref([
-  { name: "sede", label: "Sede", field: "sede", align: "center" },
-  { name: "nombre", label: "Nombre", field: "nombre", align: "center" },
-  { name: "email", label: "Email", field: "email", align: "center" },
-  { name: "telefono", label: "Teléfono", field: "telefono", align: "center" },
-  { name: "rol", label: "Rol", field: "rol", align: "center" },
-  { name: "estado", label: "Estado", field: "estado", align: "center" },
-  { name: "opciones", label: "Opciones", field: "opciones", align: "center" },
-]);
-// Función computada para manejar la lógica de qué datos mostrar
-const filteredRows = computed(() => {
-  switch (selectedOption.value) {
-    case "Listar Usuario por su Email":
-      return listarClienteEmail.value;
-    default:
-      return rows.value;
-  }
-});
-async function listarUsuarios() {
-  try {
-    const [usuariosR, sedesR] = await Promise.all([
-      useUsuario.getUsuarios(),
-      useSede.getSedes()
-    ]);
-
-    // Extraer los datos de las respuestas
-    const usuarios = usuariosR.data.usuarios;
-    const sedes = sedesR.data.sedes;
-
-    console.log("usuarios:", usuarios);
-    console.log("Sedes:", sedes);
-
-    // Iterar sobre cada usuario y asignar el nombre de la sede correspondiente
-    usuarios.forEach((usuario) => {
-      // Buscar la sede correspondiente al usuario por su ID
-      const sede = sedes.find((s) => s._id === usuario.sede); // Asumiendo que 'usuario.sede' contiene el ID de la sede
-
-      // Si se encontró la sede, asignar su nombre al usuario
-      if (sede) {
-        usuario.sede = sede.nombre; // Asignar el nombre de la sede
-      } else {
-        usuario.sede = "Sede no encontrada"; // Si no se encuentra la sede, asignar un valor predeterminado
-      }
-    });
-
-    // Asignar los usuarios actualizados a la variable 'rows'
-    rows.value = usuarios;
-  } catch (error) {
-    console.error("Error al listar los usuarios:", error);
-  }
-}
-// Función computada para filtrar los usuarios por email
-const listarClienteEmail = computed(() => {
-  if (
-    selectedOption.value === "Listar Usuario por su Email" &&
-    emailUsuario.value
-  ) {
-    const searchTerm = emailUsuario.value.toLowerCase(); // Convertir el término de búsqueda a minúsculas
-    return rows.value.filter((usuario) =>
-      usuario.email.toLowerCase().includes(searchTerm)
-    );
-  } else {
-    return rows.value; // Devuelve todos los usuarios si no hay un email especificado
-  }
-});
-async function listarUsuariosActivos(id) {
-  const r = await useUsuario.getUsuariosActivos();
-  // console.log(r);
-  rows.value = r.data.usuariosAc;
-}
-async function listarUsuariosInactivos(id) {
-  const r = await useUsuario.getUsuariosInactivos();
-  // console.log(r);
-  rows.value = r.data.usuariosIn;
-}
-async function inactivarUsuario(id) {
-  const r = await useUsuario.putUsuariosInactivar(id);
-  console.log(r.data);
-  actualizarListadoUsuarios();
-}
-async function activarUsuario(id) {
-  const r = await useUsuario.putUsuariosActivar(id);
-  console.log(r.data);
-  actualizarListadoUsuarios();
-}
-
-
-
+// Variables parra mostrar formularios
 const mostrarFormularioAgregarUsuarios = ref(false);
 const mostrarFormularioEditarUsuarios = ref(false);
 
+// Llamado de modelos
+const useUsuario = useStoreUsuarios();
+const useSede = useStoreSedes();
+
+// Variables del input para peticiones get
+const emailUsuario = ref("");
+
+// Variables de los inputs de agregar y editar
 const selectedUsuarioId = ref(null);
 const sede = ref("");
 const nombre = ref("");
@@ -123,11 +25,8 @@ const email = ref("");
 const telefono = ref("");
 const password = ref("")
 const rol = ref("");
-const estadoOptions = [
-  { label: "Activo", value: 1 },
-  { label: "Inactivo", value: 0 },
-];
 
+// Array de modelo de sedes
 const sedes = ref([])
 
 async function listarSedes() {
@@ -135,7 +34,8 @@ async function listarSedes() {
     const r = await useSede.getSedes();
     if (r.data && r.data.sedes) {
       sedes.value = r.data.sedes;
-      // console.log("Sedes listadas:", sedes.value);
+    visible.value = false;
+    // console.log("Sedes listadas:", sedes.value);
     } else {
       console.error("La respuesta no contiene la propiedad 'sedes'.", r.data);
     }
@@ -145,13 +45,110 @@ async function listarSedes() {
 }
 
 const sedeOptions = computed(() => {
-  return sedes.value.map((sede) => ({
-    label: sede.nombre,
-    id: sede._id,
-  }));
+  return sedes.value
+    .filter(sede => sede.estado !== 0)
+    .map(sede => ({
+      label: sede.nombre,
+      id: sede._id,
+    }));
 });
 
+const rolOptions = [
+  { label: "Administrador" }, 
+  { label: "Recepcionista" }, 
+  { label: "Instructor" }
+];
+
+const estadoOptions = [
+  { label: "Activo", value: 1 },
+  { label: "Inactivo", value: 0 },
+];
+
 const estado = ref(estadoOptions.find(option => option.label === "Activo").label);
+
+
+const selectedOption = ref("Listar Usuarios"); // Establecer 'Listar Usuarios' como valor por defecto
+const options = [
+  { label: "Listar Usuarios", value: "Listar Usuarios" },
+  {
+    label: "Listar Usuario por su Email",
+    value: "Listar Usuario por su Email",
+  },
+  { label: "Listar Usuarios Activos", value: "Listar Usuarios Activos" },
+  { label: "Listar Usuarios Inactivos", value: "Listar Usuarios Inactivos" }
+];
+
+let rows = ref([]);
+const columns = ref([
+  { name: "sede", label: "Sede", field: row => (row.sede.nombre), align: "center" },
+  { name: "nombre", label: "Nombre", field: "nombre", align: "center" },
+  { name: "email", label: "Email", field: "email", align: "center" },
+  { name: "telefono", label: "Teléfono", field: "telefono", align: "center" },
+  { name: "rol", label: "Rol", field: "rol", align: "center" },
+  { name: "estado", label: "Estado", field: "estado", align: "center" },
+  { name: "opciones", label: "Opciones", field: "opciones", align: "center" },
+]);
+
+// Función computada para manejar la lógica de qué datos mostrar
+const filteredRows = computed(() => {
+  switch (selectedOption.value) {
+    case "Listar Usuario por su Email":
+      return listarClienteEmail.value;
+    default:
+      return rows.value;
+  }
+});
+
+async function listarUsuarios() {
+  try {
+    const usuariosR = await useUsuario.getUsuarios()
+    const usuarios = usuariosR.data.usuarios;
+    console.log("usuarios:", usuarios);
+    rows.value = usuarios;
+    
+  } catch (error) {
+    console.error("Error al listar los usuarios:", error);
+  }
+}
+
+// Función computada para filtrar los usuarios por email
+const listarClienteEmail = computed(() => {
+  if (
+    selectedOption.value === "Listar Usuario por su Email" &&
+    emailUsuario.value
+  ) {
+    const searchTerm = emailUsuario.value.toLowerCase();
+    return rows.value.filter((usuario) =>
+      usuario.email.toLowerCase().includes(searchTerm)
+    );
+  } else {
+    return rows.value;
+  }
+});
+
+async function listarUsuariosActivos(id) {
+  const r = await useUsuario.getUsuariosActivos();
+  // console.log(r);
+  rows.value = r.data.usuariosAc;
+}
+
+async function listarUsuariosInactivos(id) {
+  const r = await useUsuario.getUsuariosInactivos();
+  // console.log(r);
+  rows.value = r.data.usuariosIn;
+}
+
+async function inactivarUsuario(id) {
+  const r = await useUsuario.putUsuariosInactivar(id);
+  console.log(r.data);
+  actualizarListadoUsuarios();
+}
+
+async function activarUsuario(id) {
+  const r = await useUsuario.putUsuariosActivar(id);
+  console.log(r.data);
+  actualizarListadoUsuarios();
+}
 
 const limpiarCamposUsuario = () => {
   sede.value = ""
@@ -161,6 +158,7 @@ const limpiarCamposUsuario = () => {
   password.value = "",
     rol.value = "";
 };
+
 const agregarUsuario = async () => {
   try {
 
@@ -211,23 +209,23 @@ const agregarUsuario = async () => {
     console.error('Error al agregar el usuario:', error);
   }
 };
+
 const mostrarDatosParaEditar = (usuarios) => {
   console.log("usuario a editar:", usuarios);
   selectedUsuarioId.value = usuarios._id;
-  sede.value = usuarios.sede;
+  sede.value = usuarios.sede.nombre;
   nombre.value = usuarios.nombre;
   email.value = usuarios.email;
   telefono.value = usuarios.telefono;
   password.value = "",
-    rol.value = usuarios.rol;
+  rol.value = usuarios.rol;
 
   mostrarFormularioAgregarUsuarios.value = false;
   mostrarFormularioEditarUsuarios.value = true;
 };
+
 const editarUsuario = async () => {
   try {
-
-    // Buscar la máquina seleccionada por su descripción
     const select = sede.value
     const label = select.label
 
@@ -272,7 +270,6 @@ const editarUsuario = async () => {
     console.error('Error al editar el usuario:', error);
   }
 };
-
 
 const cancelarUsuario = () => {
   mostrarFormularioAgregarUsuarios.value = false;
@@ -326,7 +323,7 @@ const selectAllText = (event) => {
 
 <template>
   <div>
-    <div class="q-pa-md">
+    <div class="q-pa-md" v-if="!visible">
       <div>
         <h3 style="text-align: center; margin: 10px">Usuarios</h3>
         <hr style="width: 70%; height: 5px; background-color: green" />
@@ -342,8 +339,12 @@ const selectAllText = (event) => {
 
       <div>
         <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
-          <q-btn label="Agregar Usuario" @click="mostrarFormularioAgregarUsuarios = true" />
+          <q-btn label="Agregar Usuario" @click="mostrarFormularioAgregarUsuarios = true" >
           <!-- <q-btn label="Editar Usuario" @click="mostrarFormularioEditarUsuarios = true" /> -->
+          <q-tooltip>
+                {{ 'Agregar Usuario' }}
+              </q-tooltip>
+            </q-btn>
         </div>
 
         <!-- Formulario para agregar usuario -->
@@ -354,13 +355,21 @@ const selectAllText = (event) => {
             </q-card-section>
             <q-card-section>
               <q-form @submit.prevent="agregarUsuario">
-                <q-select v-model="sede" label="Sede" outlined :options="sedeOptions" class="q-mb-md" />
-                <q-input v-model="nombre" label="Nombre" outlined autocomplete="username" @dblclick="selectAllText" />
-                <q-input v-model="email" label="Email" type="email" outlined autocomplete="email" />
-                <q-input v-model="telefono" label="Telefono" type="tel" outlined autocomplete="tel"
-                  @dblclick="selectAllText" />
-                <q-input v-model="password" :type="showPassword ? 'text' : 'password'" placeholder="Password"
-                  autocomplete="current-password" @dblclick="selectAllText">
+                <q-select v-model="sede" label="Sede" filled outlined :options="sedeOptions" class="q-mb-md" style="max-width: 100%;" >
+                  <template v-slot:no-option>
+                      <q-item>
+                        <q-item-section>
+                          No results
+                        </q-item-section>
+                      </q-item>
+                    </template>
+                  </q-select>
+                <q-input v-model="nombre" label="Nombre" filled outlined autocomplete="username" @dblclick="selectAllText" class="q-mb-md" />
+                <q-input v-model="email" label="Email" filled type="email" outlined autocomplete="email" class="q-mb-md" />
+                <q-input v-model="telefono" label="Telefono" filled type="tel" outlined autocomplete="tel"
+                  @dblclick="selectAllText" class="q-mb-md" />
+                <q-input v-model="password" filled :type="showPassword ? 'text' : 'password'" placeholder="Password"
+                  autocomplete="current-password" @dblclick="selectAllText" class="q-mb-md" >
                   <template v-slot:append>
                     <div class="eye-wrapper" @click="togglePasswordVisibility">
                       <div style="display: flex; flex-direction: column;">
@@ -379,10 +388,18 @@ const selectAllText = (event) => {
                     </div>
                   </template>
                 </q-input>
-                <q-select v-model="rol" label="Rol" outlined :options="rolOptions" class="q-mb-md" @dblclick="selectAllText" />
-                <q-select v-model="estado" label="Estado" outlined :options="estadoOptions" />
-                <q-btn @click="cancelarUsuario" class="q-ma-sm">Cancelar</q-btn>
-                <q-btn type="submit" color="primary" class="q-ma-sm">Agregar Usuario</q-btn>
+                <q-select v-model="rol" label="Rol" filled outlined :options="rolOptions" class="q-mb-md" @dblclick="selectAllText"  style="max-width: 100%;" />
+                <q-select v-model="estado" label="Estado" filled outlined :options="estadoOptions" class="q-mb-md"  style="max-width: 100%;" />
+                <q-btn @click="cancelarUsuario" label="Cancelar" class="q-ma-sm">
+                <q-tooltip>
+                    {{ 'Cancelar' }}
+                  </q-tooltip>
+                </q-btn>                
+                <q-btn type="submit" label="Guardar Usuario" color="primary" class="q-ma-sm">
+                <q-tooltip>
+                {{ 'Guardar Usuario' }}
+              </q-tooltip>
+            </q-btn>
               </q-form>
             </q-card-section>
           </q-card>
@@ -396,13 +413,20 @@ const selectAllText = (event) => {
             </q-card-section>
             <q-card-section>
               <q-form @submit.prevent="editarUsuario">
-                <q-select v-model="sede" label="Sede" outlined :options="sedeOptions" class="q-mb-md" />
-                <q-input v-model="nombre" label="Nombre" outlined autocomplete="username" @dblclick="selectAllText" />
-                <q-input v-model="email" label="Email" type="email" outlined autocomplete="email" />
-                <q-input v-model="telefono" label="Telefono" type="tel" outlined autocomplete="tel"
-                  @dblclick="selectAllText" />
-                <q-input v-model="password" :type="showPassword ? 'text' : 'password'" placeholder="Password"
-                  autocomplete="current-password" @dblclick="selectAllText">
+                <q-select v-model="sede" label="Sede" filled outlined :options="sedeOptions" class="q-mb-md" style="max-width: 100%;" >
+                  <template v-slot:no-option>
+                      <q-item>
+                        <q-item-section>
+                          No results
+                        </q-item-section>
+                      </q-item>
+                    </template>
+                  </q-select>
+                <q-input v-model="nombre" label="Nombre" filled outlined autocomplete="username" @dblclick="selectAllText" class="q-mb-md" />
+                <q-input v-model="email" label="Email" type="email" filled outlined autocomplete="email" class="q-mb-md" />
+                <q-input v-model="telefono" label="Telefono" type="tel" filled outlined autocomplete="tel" @dblclick="selectAllText" class="q-mb-md" />
+                <q-input v-model="password" filled :type="showPassword ? 'text' : 'password'" placeholder="Password"
+                  autocomplete="current-password" @dblclick="selectAllText" class="q-mb-md" >
                   <template v-slot:append>
                     <div class="eye-wrapper" @click="togglePasswordVisibility">
                       <div style="display: flex; flex-direction: column;">
@@ -421,9 +445,17 @@ const selectAllText = (event) => {
                     </div>
                   </template>
                 </q-input>
-                <q-select v-model="rol" label="Rol" outlined :options="rolOptions" class="q-mb-md" @dblclick="selectAllText" />
-                <q-btn @click="cancelarUsuario" class="q-ma-sm">Cancelar</q-btn>
-                <q-btn type="submit" color="primary" class="q-ma-sm">Editar Usuario</q-btn>
+                <q-select v-model="rol" label="Rol" filled outlined :options="rolOptions" class="q-mb-md" @dblclick="selectAllText" style="max-width: 100%;" />
+                <q-btn @click="cancelarUsuario" label="Cancelar" class="q-ma-sm">
+                <q-tooltip>
+                    {{ 'Cancelar' }}
+                  </q-tooltip>
+                </q-btn>
+                <q-btn type="submit" label="Guardar cambios" color="primary" class="q-ma-sm">
+                <q-tooltip>
+                {{ 'Guardar cambios' }}
+              </q-tooltip>
+            </q-btn>
               </q-form>
             </q-card-section>
           </q-card>
@@ -436,11 +468,24 @@ const selectAllText = (event) => {
           emit-value :options="options" />
         <template v-slot:body-cell-opciones="props">
           <q-td :props="props">
-            <q-btn @click="mostrarDatosParaEditar(props.row)">✏️</q-btn>
+            <q-btn @click="mostrarDatosParaEditar(props.row)">
+              ✏️
+            <q-tooltip>
+                {{ 'Editar Usuario' }}
+              </q-tooltip>
+            </q-btn>
             <q-btn v-if="props.row.estado == 1" @click="inactivarUsuario(props.row._id)">
               ❌
+              <q-tooltip>
+                {{ 'Inactivar Usuario' }}
+              </q-tooltip>
             </q-btn>
-            <q-btn v-else @click="activarUsuario(props.row._id)">✅</q-btn>
+            <q-btn v-else @click="activarUsuario(props.row._id)">
+              ✅
+              <q-tooltip>
+                {{ 'Activar Usuario' }}
+              </q-tooltip>
+            </q-btn>
           </q-td>
         </template>
 
@@ -457,6 +502,8 @@ const selectAllText = (event) => {
       </q-table>
     </div>
   </div>
+  <q-inner-loading :showing="visible" label="Por favor espere..." label-class="text-teal"
+    label-style="font-size: 1.1em" />
 </template>
 
 <style scoped>

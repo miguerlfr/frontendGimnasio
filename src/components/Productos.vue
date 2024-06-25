@@ -2,9 +2,19 @@
 import { ref, onMounted, computed, watch } from "vue";
 import { useStoreProductos } from "../stores/Productos.js";
 
+// Para colocar puntos decimales a los nuemros
+function formatoNumerico(numero) {
+  return typeof numero === 'number' ? numero.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : undefined;
+}
+
+// Llamado de modelo
 const useProducto = useStoreProductos();
 
+const visible = ref(true);
 const listarCodigo = ref("")
+
+const mostrarFormularioAgregarProducto = ref(false);
+const mostrarFormularioEditarProducto = ref(false);
 
 const codigoProducto = ref("");
 const descripcionProducto = ref("");
@@ -12,16 +22,12 @@ const valorProducto = ref("");
 const cantidadProducto = ref("");
 const idProductoSeleccionado = ref(null);
 
-function formatoNumerico(numero) {
-  return typeof numero === 'number' ? numero.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : undefined;
-}
-
 const selectedOption = ref("Listar Productos"); // Establecer 'Listar Productos' como valor por defecto
 const options = [
   { label: "Listar Productos", value: "Listar Productos" },
-  { label: "Listar Producto por Código", value: "Listar Producto por Código" },
-  // { label: "Agregar Producto", value: "Agregar Producto" },
+  { label: "Listar Producto por Código", value: "Listar Producto por Código" }
 ];
+
 let rows = ref([]);
 const columns = ref([
   { name: "codigo", label: "Código", field: "codigo", align: "center" },
@@ -35,7 +41,7 @@ const columns = ref([
   { name: "cantidad", label: "Cantidad", field: (row) => formatoNumerico(row.cantidad), align: "center" },
   { name: "opciones", label: "Opciones", field: "opciones", align: "center" },
 ]);
-// Función computada para manejar la lógica de qué datos mostrar
+
 const filteredRows = computed(() => {
   switch (selectedOption.value) {
     case "Listar Producto por Código":
@@ -44,39 +50,32 @@ const filteredRows = computed(() => {
       return rows.value;
   }
 });
+
 async function listarProductos() {
   try {
     const r = await useProducto.getProductos();
     console.log('Datos de productos recibidos:', r.data.productos);
     rows.value = r.data.productos;
+    visible.value = false;
   } catch (error) {
     console.error('Error al obtener los productos:', error);
   }
 }
-// Función computada para filtrar los productos por código
+
 const listarProductoCodigo = computed(() => {
   if (
     selectedOption.value === "Listar Producto por Código" &&
     listarCodigo.value
   ) {
-    const codigoInput = listarCodigo.value; // Obtener el código ingresado por el usuario
+    const codigoInput = listarCodigo.value;
     return rows.value.filter((producto) =>
       producto.codigo.toString().includes(codigoInput)
     );
   } else {
-    return rows.value; // Devuelve todos los productos si no hay un código especificado
+    return rows.value;
   }
 });
 
-const mostrarFormularioAgregarProducto = ref(false)
-const mostrarFormularioEditarProducto = ref(false)
-
-const cambiarFormulario = (agregar) => {
-  mostrarFormularioAgregarProducto.value = agregar;
-  mostrarFormularioEditarProducto.value = !agregar;
-};
-
-// Agregar un nuevo producto
 async function agregarProducto() {
   const nuevoProducto = {
     codigo: codigoProducto.value,
@@ -87,35 +86,31 @@ async function agregarProducto() {
 
   const response = await useProducto.postProductos(nuevoProducto);
   if (response.status === 200) {
-    // Actualizar la lista de productos después de agregar uno nuevo
     listarProductos();
-    // Limpiar los campos del formulario después de agregar el producto
     limpiarCampos();
   } else {
     console.error("Error al agregar el producto");
   }
 }
+
 function cargarProductoParaEdicion(producto) {
-  // Asignar valores del producto a los campos del formulario
-  idProductoSeleccionado.value = producto._id;  // Asegúrate de usar _id
+  idProductoSeleccionado.value = producto._id;
   codigoProducto.value = producto.codigo;
   descripcionProducto.value = producto.descripcion;
   valorProducto.value = producto.valor;
   cantidadProducto.value = producto.cantidad;
 
-  // Registrar en la consola los datos cargados para verificación
   console.log("datos", {
-    idProductoSeleccionado: idProductoSeleccionado.value,  // Asegúrate de usar _id
+    idProductoSeleccionado: idProductoSeleccionado.value,
     codigoProducto: codigoProducto.value,
     descripcionProducto: descripcionProducto.value,
     valorProducto: valorProducto.value,
     cantidadProducto: cantidadProducto.value
   });
 
-  // Cambiar al formulario de edición
   cambiarFormulario(false);
 }
-// Función para editar un producto
+
 async function editarProducto() {
   console.log('Editando producto con ID:', idProductoSeleccionado.value);
   if (idProductoSeleccionado.value) {
@@ -129,11 +124,6 @@ async function editarProducto() {
     console.log("editacion", productoEditado);
     const response = await useProducto.putProductos(idProductoSeleccionado.value, productoEditado);
     if (response.status === 200) {
-      // Actualiza el producto en la lista local
-      // const index = rows.value.findIndex(prod => prod._id === idProductoSeleccionado.value);
-      // if (index !== -1) {
-      //   rows.value[index] = { ...rows.value[index], ...productoEditado };
-      // }
       listarProductos()
       limpiarCampos();
       idProductoSeleccionado.value = null;
@@ -144,19 +134,13 @@ async function editarProducto() {
     console.error('El ID del producto seleccionado no es válido.');
   }
 }
+
 const cancelarProducto = () => {
-  // Cancelar la acción de agregar o editar producto
   mostrarFormularioAgregarProducto.value = false;
   mostrarFormularioEditarProducto.value = false;
   limpiarCampos();
 };
-// // Función para obtener un producto por su ID
-// function obtenerProductoPorId(id) {
-//   // Supongamos que 'rows.value' contiene la lista de productos
-//   const producto = rows.value.find(producto => producto.id === id);
-//   return producto; // Devuelve el producto encontrado o undefined si no se encuentra
-// }
-// Limpiar los campos del formulario
+
 function limpiarCampos() {
   codigoProducto.value = "";
   descripcionProducto.value = "";
@@ -164,16 +148,13 @@ function limpiarCampos() {
   cantidadProducto.value = "";
 }
 
-watch(selectedOption, (newValue) => {
+const cambiarFormulario = (agregar) => {
+  mostrarFormularioAgregarProducto.value = agregar;
+  mostrarFormularioEditarProducto.value = !agregar;
+};
+
+watch(selectedOption, () => {
   listarProductos()
-  if (newValue === "Agregar Producto") {
-    mostrarFormularioEditarProducto.value = false;
-    mostrarFormularioAgregarProducto.value = true;
-    limpiarCampos();
-  } else {
-    mostrarFormularioEditarProducto.value = false;
-    mostrarFormularioAgregarProducto.value = false;
-  }
 });
 
 onMounted(() => {
@@ -183,7 +164,7 @@ onMounted(() => {
 
 <template>
   <div>
-    <div class="q-pa-md">
+    <div class="q-pa-md" v-if="!visible">
       <div>
         <h3 style="text-align: center; margin: 10px">Productos</h3>
         <hr style="width: 70%; height: 5px; background-color: green" />
@@ -199,7 +180,11 @@ onMounted(() => {
 
       <div>
         <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
-          <q-btn label="Agregar Producto" @click="mostrarFormularioAgregarProducto = true" />
+          <q-btn label="Agregar Producto" @click="mostrarFormularioAgregarProducto = true">
+            <q-tooltip>
+              {{ 'Agregar Producto' }}
+            </q-tooltip>
+          </q-btn>
           <!-- <q-btn label="Editar Producto" @click="mostrarFormularioEditarProducto = true" /> -->
         </div>
 
@@ -207,7 +192,7 @@ onMounted(() => {
         <q-dialog v-model="mostrarFormularioAgregarProducto">
           <q-card>
             <q-card-section>
-              <div class="text-h6">Agregar Producto</div>
+              <div class="text-h5" style="padding: 10px 0 0 25px;">Agregar Producto</div>
             </q-card-section>
 
             <q-card-section>
@@ -222,8 +207,16 @@ onMounted(() => {
 
                 <!-- Botones de acción -->
                 <div class="q-mt-md">
-                  <q-btn @click="cancelarProducto" label="Cancelar" color="negative" class="q-mr-sm" />
-                  <q-btn type="submit" label="Agregar Producto" color="primary" />
+                  <q-btn @click="cancelarProducto" label="Cancelar" color="negative" class="q-mr-sm" >
+                                    <q-tooltip>
+                    {{ 'Cancelar' }}
+                  </q-tooltip>
+                </q-btn>   
+                  <q-btn type="submit" label="Agregar Producto" color="primary">
+                    <q-tooltip>
+                      {{ 'Agregar Plan' }}
+                    </q-tooltip>
+                  </q-btn>
                 </div>
               </q-form>
             </q-card-section>
@@ -234,7 +227,7 @@ onMounted(() => {
         <q-dialog v-model="mostrarFormularioEditarProducto">
           <q-card>
             <q-card-section>
-              <div class="text-h6">Editar Producto</div>
+              <div class="text-h5" style="padding: 10px 0 0 25px;">Editar Producto</div>
             </q-card-section>
 
             <q-card-section>
@@ -246,11 +239,19 @@ onMounted(() => {
                   class="q-mb-md" />
                 <q-input v-model="cantidadProducto" label="Cantidad del producto" type="number" filled required
                   class="q-mb-md" />
-
+ <!-- style="padding: 10px 0 0 25px;" -->
                 <!-- Botones de acción -->
                 <div class="q-mt-md">
-                  <q-btn @click="cancelarProducto" label="Cancelar" color="negative" class="q-mr-sm" />
-                  <q-btn type="submit" label="Guardar Cambios" color="primary" />
+                  <q-btn @click="cancelarProducto" label="Cancelar" color="negative" class="q-mr-sm" >
+                                    <q-tooltip>
+                    {{ 'Cancelar' }}
+                  </q-tooltip>
+                </q-btn>   
+                  <q-btn type="submit" label="Guardar Cambios" color="primary">
+                    <q-tooltip>
+                      {{ 'Guardar Cambios' }}
+                    </q-tooltip>
+                  </q-btn>
                 </div>
               </q-form>
             </q-card-section>
@@ -262,14 +263,20 @@ onMounted(() => {
         :columns="columns" row-key="id">
         <template v-slot:body-cell-opciones="props">
           <q-td :props="props">
-            <q-btn @click="cargarProductoParaEdicion(props.row)">✏️</q-btn>
+            <q-btn @click="cargarProductoParaEdicion(props.row)">
+              ✏️
+              <q-tooltip>
+                {{ 'Editar Plan' }}
+              </q-tooltip>
+            </q-btn>
           </q-td>
         </template>
 
       </q-table>
     </div>
-
   </div>
+  <q-inner-loading :showing="visible" label="Por favor espere..." label-class="text-teal"
+    label-style="font-size: 1.1em" />
 </template>
 
 <style scoped>

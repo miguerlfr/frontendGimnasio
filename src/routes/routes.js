@@ -51,12 +51,12 @@ const auth = (to, from, next) => {
 	if (checkAuth()) {
 		const useUsuario = useStoreUsuarios();
 		const rol = useUsuario.user.rol
-		console.log("Rol:", rol);
 		if (!to.meta.rol.includes(rol)) {
 			return next({ name: 'login' })
 		}
 		next()
 	} else {
+		console.log("Rol:", rol);
 		return next({ name: 'login' })
 	}
 }

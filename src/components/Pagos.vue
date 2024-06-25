@@ -5,34 +5,130 @@ import { useStorePagos } from "../stores/Pagos.js";
 import { useStorePlanes } from "../stores/Planes.js";
 import { format } from "date-fns";
 
-const useCliente = useStoreClientes();
-const usePago = useStorePagos();
-const usePlan = useStorePlanes();
-
-const fechaSeleccionada = ref("");
-const planC = ref("");
-const nombreCliente = ref("");
-
+// Para colocar puntos decimales a los nuemros
 function formatoNumerico(numero) {
   return typeof numero === 'number' ? numero.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : undefined;
 }
 
-const selectedOption = ref("Listar Pagos"); // Establecer 'Listar Pagos' como valor por defecto
+// Loading
+const visible = ref(true);
+
+// Variables parra mostrar formularios
+const mostrarFormularioAgregarPago = ref(false);
+const mostrarFormularioEditarPago = ref(false);
+
+// Llamado de modelos
+const useCliente = useStoreClientes();
+const usePago = useStorePagos();
+const usePlan = useStorePlanes();
+
+// Variables del input para peticiones get
+const fechaSeleccionada = ref("");
+const planC = ref("");
+const nombreCliente = ref("");
+
+// Arrays de modelos
+const clientes = ref([]);
+const planes = ref([])
+
+// Variables de los inputs de agregar y editar
+const idPagoSeleccionada = ref("");
+const clientePago = ref("");
+const planPago = ref("");
+const fechaPago = ref("");
+const valorPago = ref("");
+
+// Variables para saber que se escribe en el select de cliente al agregar o editar
+const input = ref(''),
+  setModel = value => {
+    clientePago.value = value;
+  },
+  filterFn = (val, update, abort) => {
+    update(() => {
+      input.value = val;
+    });
+  };
+
+const estadoOptions = [
+  { label: "Activo" },
+  { label: "Inactivo" },
+];
+
+async function listarPagosListarInactivosYActivos() {
+  let pagos = [];
+
+  switch (selectedOption.value) {
+    case "Listar Pagos Activos":
+      pagos = (await usePago.getPagosActivos()).data.pagosAc;
+      break;
+    case "Listar Pagos Inactivos":
+      pagos = (await usePago.getPagosInactivos()).data.pagosIn;
+      break;
+    default:
+      pagos = (await usePago.getPagos()).data.pagos;
+      break;
+  }
+
+  visible.value = false;
+  rows.value = pagos;
+};
+
+async function listarClientes() {
+  try {
+    const clientesResponse = await useCliente.getClientes();
+    clientes.value = clientesResponse.data.clientes;
+    console.log("clientes", clientes.value);
+  } catch (error) {
+    console.error("Error al listar las clientes:", error);
+  }
+};
+
+async function listarPlanes() {
+  const r = await usePlan.getPlanes();
+  console.log("planes", r.data.planes);
+  planes.value = r.data.planes;
+}
+
+const clientesOptions = computed(() => {
+  const needle = input.value.toLocaleLowerCase();
+
+  return clientes.value
+    .filter(cliente => {
+      const combinedString = `${cliente.nombre} - ${cliente.documento}`.toLocaleLowerCase();
+      return combinedString.includes(needle) && cliente.estado !== 0;
+    })
+    .map(cliente => ({
+      label: `${cliente.nombre} - ${cliente.documento}`,
+      id: cliente._id,
+    }));
+});
+
+const planOptions = computed(() => {
+  return planes.value
+    .filter(plan => plan.estado != 0)
+    .map((plan) => ({
+      label: plan.descripcion,
+      id: plan._id,
+      valor: plan.valor
+    }));
+});
+
+const estadoPago = ref(estadoOptions.find(option => option.label === "Activo").label);
+
+const selectedOption = ref("Listar Pagos");
 const options = [
   { label: "Listar Pagos", value: "Listar Pagos" },
-  // { label: "Listar Pago por ID", value: "Listar Pago por ID" },
   { label: "Listar Pagos por Fecha", value: "Listar Pagos por Fecha" },
   { label: "Listar Pagos por Plan", value: "Listar Pagos por Plan" },
   { label: "Listar Pagos por Cliente", value: "Listar Pagos por Cliente" },
   { label: "Listar Pagos Activos", value: "Listar Pagos Activos" },
   { label: "Listar Pagos Inactivos", value: "Listar Pagos Inactivos" },
-  // { label: "Agregar Pago", value: "Agregar Pago" },
 ];
 
 let rows = ref([]);
 const columns = ref([
-  { name: "cliente", label: "Cliente", field: "cliente", align: "center" },
-  { name: "plan", label: "Plan", field: "plan", align: "center" },
+  { name: "cliente", label: "Cliente", field: row => row.cliente ? row.cliente.nombre : '', align: "center" },
+  { name: "plan", label: "Plan", field: row => row.plan ? row.plan.descripcion : '', align: "center" },
   {
     name: "fecha",
     label: "Fecha",
@@ -61,45 +157,12 @@ const filteredRows = computed(() => {
     case "Listar Pagos por Plan":
       return listarPagosPorPlan.value;
     case "Listar Pagos por Cliente":
-      return listarPagosPorCliente.value; // Utilizamos la nueva función computada para listar por cliente
+      return listarPagosPorCliente.value;
     default:
       return rows.value;
   }
 });
-async function listarPagos() {
-  // Obtener la lista de clientes
-  const clientesResponse = await useCliente.getClientes();
-  const clientes = clientesResponse.data.clientes;
-  console.log("clientes", clientes);
 
-  // Obtener la lista de pagos
-  const pagosResponse = await usePago.getPagos();
-  const pagos = pagosResponse.data.pagos;
-  console.log("pagos", pagos);
-
-  // Obtener la lista de pagos
-  const planesResponse = await usePlan.getPlanes();
-  const planes = planesResponse.data.planes;
-  console.log("planes", planes);
-
-  // Iterar sobre cada pago y asignar el nombre del cliente correspondiente
-  pagos.forEach((pago) => {
-    // Buscar el cliente correspondiente al pago por su _id
-    const cliente = clientes.find((c) => c._id === pago.cliente);
-    const plan = planes.find((p) => p.descripcion === pago.plan);
-    // Si se encontró el cliente, asignar su nombre al pago
-    if (cliente) {
-      pago.cliente = cliente.nombre;
-      pago.valor = plan.valor
-    } else {
-      pago.cliente = "Cliente no encontrado";
-      pago.valor = "Valor no encontrado";
-    }
-  });
-
-  // Asignar los pagos actualizados a la variable 'rows'
-  rows.value = pagos;
-}
 const listarPagosPorFecha = computed(() => {
   if (
     selectedOption.value === "Listar Pagos por Fecha" &&
@@ -119,6 +182,7 @@ const listarPagosPorFecha = computed(() => {
     return rows.value; // Devolver todos los pagos si no se ha seleccionado una fecha
   }
 });
+
 const listarPagosPorPlan = computed(() => {
   const planInput = planC.value.toLowerCase();
   if (selectedOption.value === "Listar Pagos por Plan" && planC.value) {
@@ -129,6 +193,7 @@ const listarPagosPorPlan = computed(() => {
     return rows.value;
   }
 });
+
 const listarPagosPorCliente = computed(() => {
   const clienteInput = nombreCliente.value.toLowerCase();
   if (
@@ -142,74 +207,20 @@ const listarPagosPorCliente = computed(() => {
     return rows.value;
   }
 });
-const ActivarInactivarPagos = async () => {
-  let pagos = [];
 
-  switch (selectedOption.value) {
-    case "Listar Pagos Activos":
-      pagos = (await usePago.getPagosActivos()).data.pagosAc;
-      break;
-    case "Listar Pagos Inactivos":
-      pagos = (await usePago.getPagosInactivos()).data.pagosIn;
-      break;
-    default:
-      pagos = (await usePago.getPagos()).data.pagos;
-      break;
-  }
-
-  const clientesResponse = await useCliente.getClientes();
-  const clientes = clientesResponse.data.clientes;
-
-  pagos.forEach((pago) => {
-    const cliente = clientes.find((c) => c._id === pago.cliente);
-    pago.cliente = cliente ? cliente.nombre : "Cliente no encontrado";
-  });
-
-  rows.value = pagos;
-};
 async function inactivarPago(id) {
   console.log("Iniciando inactivarPago con ID:", id);
   const r = await usePago.putPagosInactivar(id);
   console.log("Respuesta de inactivarPago:", r.data);
-  ActivarInactivarPagos();
+  listarPagosListarInactivosYActivos();
 }
+
 async function activarPago(id) {
   console.log("Iniciando activarPago con ID:", id);
   const r = await usePago.putPagosActivar(id);
   console.log("Respuesta de activarPago:", r.data);
-  ActivarInactivarPagos();
+  listarPagosListarInactivosYActivos();
 }
-
-
-const idPagoSeleccionada = ref("");
-const clientePago = ref("");
-const planPago = ref("");
-const fechaPago = ref("");
-const valorPago = ref("");
-
-const mostrarFormularioAgregarPago = ref(false);
-const mostrarFormularioEditarPago = ref(false);
-
-const estadoOptions = [
-  { label: "Activo" }, // Agrega el valor 'Activo' aquí
-  { label: "Inactivo" }, // Agrega el valor 'Inactivo' aquí
-];
-
-const planes = ref([])
-
-async function listarPlanes() {
-  const r = await usePlan.getPlanes();
-  // console.log("planes", r.data.planes);
-  planes.value = r.data.planes;
-}
-
-const planOptions = computed(() => {
-  return planes.value.map((plan) => ({
-    label: plan.descripcion,
-    id: plan._id
-  }));
-});
-const estadoPago = ref(estadoOptions.find(option => option.label === "Activo").label);
 
 const limpiarCamposPago = () => {
   clientePago.value = "";
@@ -223,98 +234,33 @@ const cancelarEdicionPago = () => {
   mostrarFormularioEditarPago.value = false;
   mostrarFormularioAgregarPago.value = false;
 };
-const cargarPagoParaEdicion = (pago) => {
-  idPagoSeleccionada.value = pago._id; // Asegúrate de que este es el campo correcto para el ID del pago
-  clientePago.value = pago.cliente;
-  planPago.value = pago.plan;
-  fechaPago.value = pago.fecha.split("T")[0]; // Extraer solo la parte de la fecha (sin la hora)
-  valorPago.value = pago.valor;
-  mostrarFormularioEditarPago.value = true; // Mostrar el formulario de edición
-  mostrarFormularioAgregarPago.value = false; // Ocultar el formulario de agregar
-
-  // Registrar en la consola los datos cargados para verificación
-  console.log("Datos cargados para edición:", {
-    idPagoSeleccionada: idPagoSeleccionada.value,
-    clientePago: clientePago.value,
-    planPago: planPago.value,
-    fechaPago: fechaPago.value,
-    valorPago: valorPago.value,
-  });
-};
-
-function quitarTildes(texto) {
-  return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-}
-async function obtenerClienteIdPorNombre(nombre) {
-  try {
-    const response = await useCliente.getClientes();
-    const clientes = response.data.clientes;
-
-    // Convertir el nombre ingresado y los nombres de la lista a minúsculas y sin tildes
-    const nombreBuscado = quitarTildes(nombre.toLowerCase());
-
-    // Buscar el cliente en la lista
-    const clienteEncontrado = clientes.find(cliente => quitarTildes(cliente.nombre.toLowerCase()) === nombreBuscado);
-
-    if (clienteEncontrado) {
-      return clienteEncontrado._id;
-    } else {
-      throw new Error('Cliente no encontrado');
-    }
-  } catch (error) {
-    console.error('Error al obtener el ID del cliente:', error);
-    throw error;
-  }
-}
-// const clienteId = ref("")
-
-// async function obtenerClienteIdPorNombre(nombre) {
-//   try {
-//     const response = await useCliente.getClientes();
-//     const clientes = response.data.clientes;
-//     const nombreBuscado = quitarTildes(nombre.toLowerCase());
-//     const clienteEncontrado = clientes.find(cliente => quitarTildes(cliente.nombre.toLowerCase()) === nombreBuscado);
-
-//     if (clienteEncontrado) {
-//       return clienteEncontrado._id;
-//     } else {
-//       throw new Error('Cliente no encontrado');
-//     }
-//   } catch (error) {
-//     console.error('Error al obtener el ID del cliente:', error);
-//     throw error;
-//   }
-// }
 
 const agregarPago = async () => {
   try {
-    const clienteId = await obtenerClienteIdPorNombre(clientePago.value);
-
+    let idCliente;
+    let idPlan = planPago.value.id;
+    let valor = planPago.value.valor;
     let eA = estadoPago.value === "Activo" ? 1 : 0;
 
-
-    const sele = planPago.value;
-    const labe = sele.label;
-    console.log("Plan seleccionado:", labe);
-    let valo = "";
-
-    for (const plane of planes.value) {
-      if (plane.descripcion === labe) {
-        valo = plane.valor;
-        break; // Exit the loop once a match is found
+    for (let cliente of clientes.value) {
+      let nameDocumento = `${cliente.nombre} - ${cliente.documento}`
+      if (nameDocumento === clientePago.value) {
+        idCliente = cliente._id;
+        break;
+      } else if (cliente._id === clientePago.value.id) {
+        idCliente = cliente._id
+        break;
       }
     }
 
-    const valoReal = valo;
-    console.log("Valor real:", valoReal);
-
-
+    // console.log("idCliente:", idCliente);
+    // console.log("idPlan:", idPlan);
 
     const nuevoPago = {
-      cliente: clienteId,
-      plan: labe,
+      cliente: idCliente,
+      plan: idPlan,
       fecha: fechaPago.value,
-      valor: valoReal,
+      valor: valor,
       estado: eA,
     };
 
@@ -323,7 +269,7 @@ const agregarPago = async () => {
     const response = await usePago.postPagos(nuevoPago);
     if (response.status === 200) {
       listarPagos();
-      eA = estadoOptions.find(option => option.label === "Activo").value; // Estado predeterminado
+      eA = estadoOptions.find(option => option.label === "Activo").value;
       limpiarCamposPago();
     } else {
       console.error('Error al agregar el pago:', response.data);
@@ -333,57 +279,68 @@ const agregarPago = async () => {
   }
 };
 
+const cargarPagoParaEdicion = (pago) => {
+  idPagoSeleccionada.value = pago._id;
+  clientePago.value = pago.cliente.nombre;
+  planPago.value = pago.plan.descripcion;
+  fechaPago.value = pago.fecha.split("T")[0];
+  valorPago.value = pago.valor;
+
+  mostrarFormularioEditarPago.value = true;
+
+  console.log("Datos cargados para edición:", {
+    idPagoSeleccionada: idPagoSeleccionada.value,
+    clientePago: clientePago.value,
+    planPago: planPago.value,
+    fechaPago: fechaPago.value,
+    valorPago: valorPago.value,
+  });
+};
+
 async function editarPago() {
-  console.log("Plan que tenía:", planPago.value);
+  let idCliente;
+  let idPlan;
+  let valorNuevo;
 
-  const sele = planPago.value;
-let labe = sele ? sele.label : '';
-
-if (!labe) {
-  // console.error("Error: No se encontró el valor del plan seleccionado");
-  labe = planPago.value; // Si labe es vacío, asigna planPago.value a labe
-}
-
-console.log("Plan seleccionado:", labe);
-
-  // Buscar el valor del plan seleccionado
-  let valo = null;
-  for (const plane of planes.value) {
-    if (plane.descripcion === labe) {
-      valo = plane.valor;
-      break; // Salir del bucle una vez que se encuentra una coincidencia
+  for (let cliente of clientes.value) {
+    if (cliente.nombre === clientePago.value) {
+      idCliente = cliente._id;
+      break;
+    } else if (cliente._id === clientePago.value.id) {
+      idCliente = cliente._id
+      break;
     }
   }
 
-  // Verificar si se encontró el valor del plan
-  if (valo === null) {
-    console.error("Error: No se encontró el valor del plan seleccionado");
-    return;
+  for (let plan of planes.value) {
+    if (plan.descripcion === planPago.value) {
+      idPlan = plan._id;
+      valorNuevo = plan.valor;
+      break;
+    } else if (plan._id === planPago.value.id) {
+      idPlan = plan._id
+      valorNuevo = plan.valor;
+      break;
+    }
   }
 
-  // Obtener el ID del cliente por su nombre
-  let clienteId;
-  try {
-    clienteId = await obtenerClienteIdPorNombre(clientePago.value);
-  } catch (error) {
-    console.error("Error al obtener el ID del cliente:", error);
-    return;
-  }
+  // console.log("idCliente:", idCliente);
+  // console.log("idPlan:", idPlan);
+  // console.log("valorPago", valorNuevo);
 
-  // Crear el objeto de pago editado
   const pagoEditado = {
-    cliente: clienteId,
-    plan: labe,
+    cliente: idCliente,
+    plan: idPlan,
     fecha: fechaPago.value,
-    valor: valo, // Asignar el valor del plan encontrado
+    valor: valorNuevo,
   };
 
-  // Actualizar el pago en la base de datos
   try {
     const response = await usePago.putPagos(idPagoSeleccionada.value, pagoEditado);
     if (response.status === 200) {
-      cancelarEdicionPago(); // Limpiar campos y ocultar formulario después de editar
+      cancelarEdicionPago();
       listarPagos();
+
     } else {
       console.error("Error al editar el pago:", response.data);
     }
@@ -392,27 +349,20 @@ console.log("Plan seleccionado:", labe);
   }
 }
 
-
 onMounted(() => {
-  listarPagos();
+  listarPagosListarInactivosYActivos();
   listarPlanes();
-});
-watch(selectedOption, (newValue) => {
-  ActivarInactivarPagos();
-  if (newValue === "Agregar Pago") {
-    mostrarFormularioAgregarPago.value = true;
-    mostrarFormularioEditarPago.value = false;
-  } else {
-    mostrarFormularioEditarPago.value = false;
-    mostrarFormularioAgregarPago.value = false; // Oculta el formulario de editar si no es "Agregar Pago"
-  }
+  listarClientes();
 });
 
+watch(selectedOption, () => {
+  listarPagosListarInactivosYActivos()
+});
 </script>
 
 <template>
   <div>
-    <div class="q-pa-md">
+    <div class="q-pa-md" v-if="!visible">
       <div>
         <h3 style="text-align: center; margin: 10px">Pagos</h3>
         <hr style="width: 70%; height: 5px; background-color: green" />
@@ -434,31 +384,64 @@ watch(selectedOption, (newValue) => {
 
       <div>
         <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
-          <q-btn label="Agregar Pago" @click="mostrarFormularioAgregarPago = true" />
-          <!-- <q-btn label="Editar Pago" @click="mostrarFormularioEditarPago = true" /> -->
+          <q-btn label="Agregar Pago" @click="mostrarFormularioAgregarPago = true">
+            <!-- <q-btn label="Editar Pago" @click="mostrarFormularioEditarPago = true" /> -->
+            <q-tooltip>
+              {{ 'Agregar Pago' }}
+            </q-tooltip>
+          </q-btn>
         </div>
 
         <!-- Dialogo para agregar pago -->
         <q-dialog v-model="mostrarFormularioAgregarPago">
           <q-card>
             <q-card-section>
-              <div class="text-h6">Agregar Pago</div>
+              <div class="text-h5" style="padding: 10px 0 0 25px;">Agregar Pago</div>
             </q-card-section>
 
             <q-card-section>
               <div class="q-pa-md">
                 <q-form @submit.prevent="agregarPago">
                   <!-- Campos del formulario de agregar pago -->
-                  <q-input v-model="clientePago" label="Cliente" outlined class="q-mb-md" />
-                  <q-select v-model="planPago" label="Plan" outlined :options="planOptions" class="q-mb-md" />
-                  <q-input v-model="fechaPago" label="Fecha" type="date" outlined class="q-mb-md" />
-                  <q-input v-model="valorPago" label="Valor" type="number" outlined class="q-mb-md" style="display: none;" />
-                  <q-select v-model="estadoPago" label="Estado" outlined :options="estadoOptions" class="q-mb-md" />
+                  <q-select filled outlined v-model="clientePago" use-input hide-selected fill-input input-debounce="0"
+                    :options="clientesOptions" label="Cliente" emit-value map-options @filter="filterFn"
+                    @input-value="setModel" class="q-mb-md" style="min-width: 100%;">
+                    <template v-slot:no-option>
+                      <q-item>
+                        <q-item-section>
+                          No results
+                        </q-item-section>
+                      </q-item>
+                    </template>
+                  </q-select>
+                  <q-select v-model="planPago" label="Plan" filled outlined :options="planOptions" class="q-mb-md"
+                    style="max-width: 100%;">
+                    <template v-slot:no-option>
+                      <q-item>
+                        <q-item-section>
+                          No results
+                        </q-item-section>
+                      </q-item>
+                    </template>
+                  </q-select>
+                  <q-input v-model="fechaPago" label="Fecha" filled type="date" outlined class="q-mb-md" />
+                  <q-input v-model="valorPago" label="Valor" type="number" outlined class="q-mb-md"
+                    style="display: none;" />
+                  <q-select v-model="estadoPago" label="Estado" filled outlined :options="estadoOptions" class="q-mb-md"
+                    style="max-width: 100%;" />
 
                   <!-- Botones de acción -->
                   <div class="q-mt-md">
-                    <q-btn @click="cancelarEdicionPago" label="Cancelar" color="negative" class="q-mr-sm" />
-                    <q-btn type="submit" label="Agregar Pago" color="primary" />
+                    <q-btn @click="cancelarEdicionPago" label="Cancelar" color="negative" class="q-mr-sm">
+                      <q-tooltip>
+                        {{ 'Cancelar' }}
+                      </q-tooltip>
+                    </q-btn>
+                    <q-btn type="submit" label="Guardar Pago" color="primary">
+                      <q-tooltip>
+                        {{ 'Guardar Pago' }}
+                      </q-tooltip>
+                    </q-btn>
                   </div>
                 </q-form>
               </div>
@@ -470,22 +453,50 @@ watch(selectedOption, (newValue) => {
         <q-dialog v-model="mostrarFormularioEditarPago">
           <q-card>
             <q-card-section>
-              <div class="text-h6">Editar Pago</div>
+              <div class="text-h5" style="padding: 10px 0 0 25px;">Editar Pago</div>
             </q-card-section>
 
             <q-card-section>
               <div class="q-pa-md">
                 <q-form @submit.prevent="editarPago">
                   <!-- Campos del formulario de editar pago -->
-                  <q-input v-model="clientePago" label="Cliente" outlined class="q-mb-md" />
-                  <q-select v-model="planPago" label="Plan" outlined :options="planOptions" class="q-mb-md" />
-                  <q-input v-model="fechaPago" label="Fecha" type="date" outlined class="q-mb-md" />
-                  <q-input v-model="valorPago" label="Valor" type="number" outlined class="q-mb-md" style="display: none;" />
+                  <q-select filled outlined v-model="clientePago" use-input hide-selected fill-input input-debounce="0"
+                    :options="clientesOptions" label="Cliente" emit-value map-options @filter="filterFn"
+                    @input-value="setModel" class="q-mb-md" style="min-width: 100%;">
+                    <template v-slot:no-option>
+                      <q-item>
+                        <q-item-section>
+                          No results
+                        </q-item-section>
+                      </q-item>
+                    </template>
+                  </q-select>
+                  <q-select v-model="planPago" label="Plan" filled outlined :options="planOptions" class="q-mb-md"
+                    style="max-width: 100%;">
+                    <template v-slot:no-option>
+                      <q-item>
+                        <q-item-section>
+                          No results
+                        </q-item-section>
+                      </q-item>
+                    </template>
+                  </q-select>
+                  <q-input v-model="fechaPago" label="Fecha" filled type="date" outlined class="q-mb-md" />
+                  <q-input v-model="valorPago" label="Valor" type="number" outlined class="q-mb-md"
+                    style="display: none;" />
 
                   <!-- Botones de acción -->
                   <div class="q-mt-md">
-                    <q-btn @click="cancelarEdicionPago" label="Cancelar" color="negative" class="q-mr-sm" />
-                    <q-btn type="submit" label="Guardar cambios" color="primary" />
+                    <q-btn @click="cancelarEdicionPago" label="Cancelar" color="negative" class="q-mr-sm">
+                      <q-tooltip>
+                        {{ 'Cancelar' }}
+                      </q-tooltip>
+                    </q-btn>
+                    <q-btn type="submit" label="Guardar cambios" color="primary">
+                      <q-tooltip>
+                        {{ 'Guardar cambios' }}
+                      </q-tooltip>
+                    </q-btn>
                   </div>
                 </q-form>
               </div>
@@ -498,11 +509,24 @@ watch(selectedOption, (newValue) => {
         :columns="columns" row-key="id">
         <template v-slot:body-cell-opciones="props">
           <q-td :props="props">
-            <q-btn @click="cargarPagoParaEdicion(props.row)">✏️</q-btn>
+            <q-btn @click="cargarPagoParaEdicion(props.row)">
+              ✏️
+              <q-tooltip>
+                {{ 'Editar Pago' }}
+              </q-tooltip>
+            </q-btn>
             <q-btn v-if="props.row.estado == 1" @click="inactivarPago(props.row._id)">
               ❌
+              <q-tooltip>
+                {{ 'Inactivar Pago' }}
+              </q-tooltip>
             </q-btn>
-            <q-btn v-else @click="activarPago(props.row._id)">✅</q-btn>
+            <q-btn v-else @click="activarPago(props.row._id)">
+              ✅
+              <q-tooltip>
+                {{ 'Activar Pago' }}
+              </q-tooltip>
+            </q-btn>
           </q-td>
         </template>
 
@@ -519,6 +543,8 @@ watch(selectedOption, (newValue) => {
       </q-table>
     </div>
   </div>
+  <q-inner-loading :showing="visible" label="Por favor espere..." label-class="text-teal"
+    label-style="font-size: 1.1em" />
 </template>
 
 <style scoped>
@@ -530,7 +556,6 @@ watch(selectedOption, (newValue) => {
 
 .q-select {
   max-width: 200px;
-  /* Puedes ajustar el ancho según tu preferencia */
 }
 
 .q-my-md {
