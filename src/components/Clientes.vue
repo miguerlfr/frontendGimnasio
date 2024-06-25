@@ -573,7 +573,7 @@ watch(selectedOption, () => {
 
       <div>
         <!-- Botones para abrir diálogos -->
-        <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-my-md">
+        <div v-if="!isInstructor" style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-my-md">
           <q-btn :label="isInstructor ? 'Agregar Seguimiento' : 'Agregar Cliente'"
             @click="mostrarFormularioAgregarCliente = true">
             <q-tooltip>
@@ -583,7 +583,7 @@ watch(selectedOption, () => {
         </div>
 
         <!-- Dialogo para agregar cliente -->
-        <q-dialog v-model="mostrarFormularioAgregarCliente">
+        <q-dialog v-if="!isInstructor" v-model="mostrarFormularioAgregarCliente">
           <q-card>
             <q-card-section>
               <div class="text-h5">{{ isInstructor ? 'Agregar Seguimiento' : 'Agregar Cliente' }}</div>
@@ -591,6 +591,7 @@ watch(selectedOption, () => {
 
             <q-card-section>
               <q-form @submit.prevent="agregarCliente">
+              
                 <!-- Datos del Cliente -->
                 <q-input v-model="nombreCliente" label="Nombre" filled required class="q-mb-md" />
                 <q-input v-model="fechaIngresoCliente" label="Fecha de Ingreso" type="date" filled required
@@ -783,17 +784,17 @@ watch(selectedOption, () => {
 
         <!-- Modal o div para mostrar el seguimiento seleccionado -->
         <q-dialog v-model="mostrarSeguimientoModal" style="margin: 0; ">
-          <q-card style="max-width: 100%; min-width: 400px; height: 60%; margin: 0;">
+          <q-card style="max-width: 100%; min-width: 300px;  margin: 0;">
             <q-card-section style="margin: 0; padding: 0; ">
               <div class="some-page-wrapper">
                 <div class="row">
-                  <div class="column" style="flex-basis: 87%;">
+                  <div class="column" style="width: 100%;">
                     <div class="blue-column">
-                      <p style="margin-top: 7px;text-align: center; font-size: 23px;">Seguimientos del Cliente</p>
+                      <p style="margin-top: 10px; text-align: center; font-size: 21px;">Seguimientos del Cliente</p>
                     </div>
                   </div>
                   <q-btn
-                    style="background-color: red; color: white;margin: 0; padding: 0; font-size: 20px; width: 13%; height: 100%;"
+                    style="padding-top: 15px; background-color: red; color: white; margin: 0; padding: 0; font-size: 19px; width: 50px; height: 100%;"
                     flat label="x" v-close-popup />
                 </div>
               </div>
@@ -804,14 +805,14 @@ watch(selectedOption, () => {
                 <div
                   style="box-shadow: rgba(17, 17, 26, 0.1) 0px 4px 16px, rgba(17, 17, 26, 0.05) 0px 8px 32px; margin: 20px; padding: 20px;"
                   v-for="(seguimiento, index) in seguimientoSeleccionado" :key="index">
-                  <h5>Seguimiento {{ (index + 1) }}</h5>
-                  <p style="margin: 0;">{{ `Fecha: ${new Date(seguimiento.fecha).toLocaleDateString('es-ES')}` }}</p>
-                  <p style="margin: 0;">{{ `Peso: ${seguimiento.peso}` }}</p>
-                  <p style="margin: 0;">{{ `IMC: ${typeof seguimiento.imc === 'number' ? seguimiento.imc.toFixed(2).replace(/\.(\d{2})\d*$/, '.$1...') : seguimiento.imc}` }}</p>
-                  <p style="margin: 0;">{{ `Brazo: ${seguimiento.brazo}` }}</p>
-                  <p style="margin: 0;">{{ `Pierna: ${seguimiento.pierna}` }}</p>
-                  <p style="margin: 0;">{{ `Cintura: ${seguimiento.cintura}` }}</p>
-                  <p style="margin: 0;">{{ `Estatura: ${seguimiento.estatura}` }}</p>
+                  <h6 style="padding-bottom: 40px; margin: 0;">Seguimiento {{ (index + 1) }}</h6>
+                  <p style="margin: 0; border-bottom: 1px solid #ccc;">{{ `Fecha: ${new Date(seguimiento.fecha).toLocaleDateString('es-ES')}` }}</p>
+                  <p style="margin: 0; border-bottom: 1px solid #ccc;">{{ `Peso: ${seguimiento.peso}` }}</p>
+                  <p style="margin: 0; border-bottom: 1px solid #ccc;">{{ `IMC: ${typeof seguimiento.imc === 'number' ? seguimiento.imc.toFixed(2).replace(/\.(\d{2})\d*$/, '.$1...') : seguimiento.imc}` }}</p>
+                  <p style="margin: 0; border-bottom: 1px solid #ccc;">{{ `Brazo: ${seguimiento.brazo}` }}</p>
+                  <p style="margin: 0; border-bottom: 1px solid #ccc;">{{ `Pierna: ${seguimiento.pierna}` }}</p>
+                  <p style="margin: 0; border-bottom: 1px solid #ccc;">{{ `Cintura: ${seguimiento.cintura}` }}</p>
+                  <p style="margin: 0; border-bottom: 1px solid #ccc;">{{ `Estatura: ${seguimiento.estatura}` }}</p>
                 </div>
               </div>
             </q-card-section>
