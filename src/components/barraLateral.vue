@@ -104,7 +104,11 @@
         <p style="text-align: center; font-size: 10px; margin-top: -20px;">autorizados...</p>
       </div>
     </q-drawer>
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> a45999c47dc0ad44c1a48f0aeb56572f157523e4
     <q-page-container>
       <router-view />
     </q-page-container>
