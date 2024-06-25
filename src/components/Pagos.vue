@@ -268,7 +268,7 @@ const agregarPago = async () => {
 
     const response = await usePago.postPagos(nuevoPago);
     if (response.status === 200) {
-      listarPagos();
+      listarPagosListarInactivosYActivos();
       eA = estadoOptions.find(option => option.label === "Activo").value;
       limpiarCamposPago();
     } else {
@@ -339,7 +339,7 @@ async function editarPago() {
     const response = await usePago.putPagos(idPagoSeleccionada.value, pagoEditado);
     if (response.status === 200) {
       cancelarEdicionPago();
-      listarPagos();
+      listarPagosListarInactivosYActivos();
 
     } else {
       console.error("Error al editar el pago:", response.data);
