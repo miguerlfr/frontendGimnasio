@@ -179,33 +179,20 @@ function quitarTildes(texto) {
   return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
-async function obtenerClienteIdPorNombre(nombre) {
-  try {
-    const response = await useCliente.getClientes();
-    const clientes = response.data.clientes;
-    const nombreBuscado = quitarTildes(nombre.toLowerCase());
-    console.log('Nombre buscado:', nombreBuscado);
-
-    clientes.forEach(cliente => {
-      console.log('Comparando con:', quitarTildes(cliente.nombre.toLowerCase()));
-    });
-
-    // Find the client
-    const clienteEncontrado = clientes.find(cliente => quitarTildes(cliente.nombre.toLowerCase()) === nombreBuscado);
-
-    if (clienteEncontrado) {
-      return clienteEncontrado._id;
-    } else {
-      throw new Error('Cliente no encontrado');
-    }
-  } catch (error) {
-    console.error('Error al obtener el ID del cliente:', error);
-    throw error;
-  }
-}
-
 const agregarIngreso = async () => {
   console.log("Nombre del cliente ingresado:", nombreCliente.value);
+
+  let idCliente;
+
+  for (let cliente of clientes.value) {
+    if (cliente.nombre === nombreCliente.value) {
+      idCliente = cliente._id;
+      break;
+    } else if (cliente._id === nombreCliente.value.id) {
+      idCliente = cliente._id
+      break;
+    }
+  }
 
   // Buscar la máquina seleccionada por su descripción
   const select = sede.value
@@ -220,13 +207,6 @@ const agregarIngreso = async () => {
 
   const idSede = select.id;
 
-  // Use nombreCliente.value to get the name of the client
-  const clienteNombre = nombreCliente.value.nameCliente || nombreCliente.value;
-  console.log("Nombre del cliente:", clienteNombre);
-
-  let clienteId = await obtenerClienteIdPorNombre(clienteNombre);
-  console.log("ClienteId:", clienteId);
-
   // Obtener la fecha actual
   const fechaActual = new Date(fecha.value);
 
@@ -237,7 +217,7 @@ const agregarIngreso = async () => {
   const nuevoIngreso = {
     fecha: fechaActual,
     sede: idSede,
-    cliente: clienteId,
+    cliente: idCliente,
   };
   console.log(idSede);
 
@@ -260,6 +240,18 @@ const agregarIngreso = async () => {
 
 const editarIngreso = async () => {
 
+  let idCliente;
+
+  for (let cliente of clientes.value) {
+    if (cliente.nombre === nombreCliente.value) {
+      idCliente = cliente._id;
+      break;
+    } else if (cliente._id === nombreCliente.value.id) {
+      idCliente = cliente._id
+      break;
+    }
+  }
+
   // Buscar la máquina seleccionada por su descripción
   const select = sede.value
   const nombre = select.nombre
@@ -273,18 +265,10 @@ const editarIngreso = async () => {
 
   const idSede = select.id;
 
-  // Use nombreCliente.value to get the name of the client
-  console.log("nameCliente", nombreCliente.value);
-  const clienteNombre = nombreCliente.value.nameCliente || nombreCliente.value;
-  console.log("Nombre del cliente:", clienteNombre);
-
-  let clienteId = await obtenerClienteIdPorNombre(clienteNombre);
-  console.log("ClienteId:", clienteId);
-
   const ingresoEditado = {
     fecha: fecha.value,
     sede: idSede,
-    cliente: clienteId,
+    cliente: idCliente,
   };
 
   try {
