@@ -5,20 +5,13 @@ import { ref } from "vue"
 import { notifyErrorRequest } from "../routes/routes.js";
 import { notifySuccessRequest } from "../routes/routes.js";
 
-<<<<<<< HEAD
-const url = "http://localhost:4505"
-// "https://backendgimnasio-ip8j.onrender.com"
+const url = "https://backendgimnasio-ip8j.onrender.com" 
+// const url = "http://localhost:4505"
 
 export const useStoreClientes = defineStore("Cliente", () => {
     const useUsuario = useStoreUsuarios();
     let loading=ref(false)
 
-=======
-export const useStoreClientes = defineStore("Cliente", () => {
-    const useUsuario = useStoreUsuarios();
-    const url = "https://backendgimnasio-ip8j.onrender.com"
-    
->>>>>>> a45999c47dc0ad44c1a48f0aeb56572f157523e4
     const getClientes = async () => {
         try {
             loading.value=true

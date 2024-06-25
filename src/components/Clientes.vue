@@ -425,38 +425,6 @@ async function agregarCliente() {
 }
 
 async function editarCliente() {
-<<<<<<< HEAD
-=======
-
-  const sele = planCliente.value;
-  const labe = sele ? sele.label : planCliente.value;
-  console.log("Plan seleccionado:", labe);
-
-
-  const clienteEditado = {
-    nombre: nombreCliente.value,
-    fechaIngreso: fechaIngresoCliente.value,
-    documento: documentoCliente.value,
-    fechaNacimiento: fechaNacimientoCliente.value,
-    edad: edadCliente.value,
-    direccion: direccionCliente.value,
-    telefono: telefonoCliente.value,
-    objetivo: objetivoCliente.value,
-    observaciones: observacionesCliente.value,
-    plan: labe,
-    fechaVencimiento: fechaVencimientoCliente.value,
-    seguimiento: seguimientoCliente.value.map((item) => ({
-      fecha: item.fecha,
-      peso: item.peso,
-      imc: item.imc,
-      brazo: item.brazo,
-      pierna: item.pierna,
-      cintura: item.cintura,
-      estatura: item.estatura,
-    })),
-  };
-
->>>>>>> a45999c47dc0ad44c1a48f0aeb56572f157523e4
   try {
     // console.log(planCliente.value);
     const sele = planCliente.value;
@@ -563,9 +531,8 @@ const mostrarSeguimiento = (row) => {
 };
 
 onMounted(() => {
-  actualizarListadoClientes(),
-    listarPlanes(),
-    listarClientes()
+  actualizarListadoClientes();
+  listarPlanes();
 });
 
 watch(selectedOption, () => {

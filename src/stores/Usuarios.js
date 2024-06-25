@@ -4,8 +4,8 @@ import { ref } from "vue";
 import { notifyErrorRequest } from "../routes/routes.js";
 import { notifySuccessRequest } from "../routes/routes.js";
 
-const url = "http://localhost:4505"
-// "https://backendgimnasio-ip8j.onrender.com"
+const url = "https://backendgimnasio-ip8j.onrender.com"
+// const url = "http://localhost:4505"
 
 export const useStoreUsuarios = defineStore("Usuario", () => {
     let loading=ref(false)

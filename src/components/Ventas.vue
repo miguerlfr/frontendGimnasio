@@ -102,26 +102,6 @@ async function listarVentas() {
   const ventas = ventasResponse.data.ventas;
   console.log("ventas", ventas);
 
-<<<<<<< HEAD
-=======
-  // Iterar sobre cada venta y asignar el descripcion del producto correspondiente
-  ventas.forEach((venta) => {
-    // Buscar el producto correspondiente al venta por su codigo
-    const producto = productos.find((c) => c.descripcion.toString() === venta.codigoProducto.toString());
-
-
-    // Si se encontró el producto, asignar su descripcion al venta
-    if (producto) {
-      venta.codigoProducto = producto.descripcion;
-      venta.valorUnitario = producto.valor
-      venta.valorTotal = producto.valor * venta.cantidad
-    } else {
-      venta.codigoProducto = "producto no encontrado";
-    }
-  });
-
-  // Asignar los ventas actualizados a la variable 'rows'
->>>>>>> a45999c47dc0ad44c1a48f0aeb56572f157523e4
   rows.value = ventas;
   visible.value = false;
 }
