@@ -1,9 +1,8 @@
 import { defineStore } from "pinia";
-import axios from "axios";
-import { useStoreUsuarios } from "../stores/Usuarios.js";
 import { ref } from "vue"
-import { notifyErrorRequest } from "../routes/routes.js";
-import { notifySuccessRequest } from "../routes/routes.js";
+import { useStoreUsuarios } from "../stores/Usuarios.js";
+import axios from "axios";
+import { notifyErrorRequest, notifySuccessRequest } from "../routes/routes.js";
 
 const url = "https://backendgimnasio-ip8j.onrender.com"
 // const url = "http://localhost:4505"
@@ -20,7 +19,7 @@ export const useStoreSedes = defineStore("Sede", () => {
                     token: useUsuario.token
                 }
             });
-            notifySuccessRequest("Ventas listadas exitosamente");
+            notifySuccessRequest("Sedes listadas exitosamente");
             return r;
         } catch (error) {
             loading.value=true
@@ -39,11 +38,11 @@ export const useStoreSedes = defineStore("Sede", () => {
                     token: useUsuario.token
                 }
             });
-            notifySuccessRequest("Ventas listadas exitosamente");
+            notifySuccessRequest("Sedes activas listadas exitosamente");
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar sedes activas:", error);
+            console.log("Error al listar sedes activas:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -58,10 +57,11 @@ export const useStoreSedes = defineStore("Sede", () => {
                     token: useUsuario.token
                 }
             });
+            notifySuccessRequest("Sedes inactivas listadas exitosamente");
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar sedes inactivas:", error);
+            console.log("Error al listar sedes inactivas:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -79,7 +79,7 @@ export const useStoreSedes = defineStore("Sede", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar sedes por su ID:", error);
+            console.log("Error al listar sedes por su ID:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -115,7 +115,7 @@ export const useStoreSedes = defineStore("Sede", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al modificar la venta:", error);
+            console.log("Error al modificar la venta:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -133,7 +133,7 @@ export const useStoreSedes = defineStore("Sede", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al activar la sede:", error);
+            console.log("Error al activar la sede:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -151,7 +151,7 @@ export const useStoreSedes = defineStore("Sede", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al inactivar la sede:", error);
+            console.log("Error al inactivar la sede:", error.response.data);
             return error;
         } finally{
             loading.value=false

@@ -111,7 +111,7 @@ const routes = [
 			{ path: "Planes", component: Planes, beforeEnter: auth, meta: { rol: ["Administrador"] } },
 			{ path: "Productos", component: Productos, beforeEnter: auth, meta: { rol: ["Administrador"] } },
 			{ path: "Sedes", component: Sedes, beforeEnter: auth, meta: { rol: ["Administrador"] } },
-			{ path: "Usuarios", component: Usuarios, beforeEnter: auth, meta: { rol: ["Administrador", "Recepcionista"] } },
+			{ path: "Usuarios", component: Usuarios, beforeEnter: auth, meta: { rol: ["Administrador"] } },
 			{ path: "Ventas", component: Ventas, beforeEnter: auth, meta: { rol: ["Administrador", "Recepcionista"] } },
 		]
 	},

@@ -34,8 +34,8 @@ async function listarSedes() {
     const r = await useSede.getSedes();
     if (r.data && r.data.sedes) {
       sedes.value = r.data.sedes;
-    visible.value = false;
-    // console.log("Sedes listadas:", sedes.value);
+      visible.value = false;
+      // console.log("Sedes listadas:", sedes.value);
     } else {
       console.error("La respuesta no contiene la propiedad 'sedes'.", r.data);
     }
@@ -54,8 +54,8 @@ const sedeOptions = computed(() => {
 });
 
 const rolOptions = [
-  { label: "Administrador" }, 
-  { label: "Recepcionista" }, 
+  { label: "Administrador" },
+  { label: "Recepcionista" },
   { label: "Instructor" }
 ];
 
@@ -105,7 +105,7 @@ async function listarUsuarios() {
     const usuarios = usuariosR.data.usuarios;
     console.log("usuarios:", usuarios);
     rows.value = usuarios;
-    
+
   } catch (error) {
     console.error("Error al listar los usuarios:", error);
   }
@@ -171,7 +171,7 @@ const agregarUsuario = async () => {
       console.error("Máquina seleccionada no encontrada", select);
       console.log("Máquina seleccionada:", label);
       return;
-      }
+    }
 
     const idSede = select.id;
 
@@ -184,7 +184,7 @@ const agregarUsuario = async () => {
     if (!sele) {
       console.error("Máquina seleccionada no encontrada", sele);
       return;
-      }
+    }
     const datosUsuario = {
       sede: idSede,
       nombre: nombre.value,
@@ -218,7 +218,7 @@ const mostrarDatosParaEditar = (usuarios) => {
   email.value = usuarios.email;
   telefono.value = usuarios.telefono;
   password.value = "",
-  rol.value = usuarios.rol;
+    rol.value = usuarios.rol;
 
   mostrarFormularioAgregarUsuarios.value = false;
   mostrarFormularioEditarUsuarios.value = true;
@@ -234,7 +234,7 @@ const editarUsuario = async () => {
       console.error("Máquina seleccionada no encontrada", select);
       console.log("Máquina seleccionada:", label);
       return;
-      }
+    }
 
     const idSede = select.id;
 
@@ -247,7 +247,7 @@ const editarUsuario = async () => {
     if (!sele) {
       console.error("Máquina seleccionada no encontrada", sele);
       return;
-      }
+    }
 
     const datosUsuario = {
       sede: idSede,
@@ -292,7 +292,7 @@ const actualizarListadoUsuarios = async () => {
 
 onMounted(() => {
   listarUsuarios(),
-  listarSedes()
+    listarSedes()
 });
 
 watch(selectedOption, (newValue) => {
@@ -339,37 +339,41 @@ const selectAllText = (event) => {
 
       <div>
         <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
-          <q-btn label="Agregar Usuario" @click="mostrarFormularioAgregarUsuarios = true" >
-          <!-- <q-btn label="Editar Usuario" @click="mostrarFormularioEditarUsuarios = true" /> -->
-          <q-tooltip>
-                {{ 'Agregar Usuario' }}
-              </q-tooltip>
-            </q-btn>
+          <q-btn label="Agregar Usuario" @click="mostrarFormularioAgregarUsuarios = true">
+            <!-- <q-btn label="Editar Usuario" @click="mostrarFormularioEditarUsuarios = true" /> -->
+            <q-tooltip>
+              Agregar Usuario
+            </q-tooltip>
+          </q-btn>
         </div>
 
         <!-- Formulario para agregar usuario -->
-        <q-dialog v-model="mostrarFormularioAgregarUsuarios">
+        <q-dialog v-model="mostrarFormularioAgregarUsuarios"
+          v-bind="mostrarFormularioAgregarUsuarios && limpiarCamposUsuario()">
           <q-card>
             <q-card-section>
               <div class="text-h6">Agregar Usuario</div>
             </q-card-section>
             <q-card-section>
               <q-form @submit.prevent="agregarUsuario">
-                <q-select v-model="sede" label="Sede" filled outlined :options="sedeOptions" class="q-mb-md" style="max-width: 100%;" >
+                <q-select v-model="sede" label="Sede" filled outlined :options="sedeOptions" class="q-mb-md"
+                  style="max-width: 100%;">
                   <template v-slot:no-option>
-                      <q-item>
-                        <q-item-section>
-                          No results
-                        </q-item-section>
-                      </q-item>
-                    </template>
-                  </q-select>
-                <q-input v-model="nombre" label="Nombre" filled outlined autocomplete="username" @dblclick="selectAllText" class="q-mb-md" />
-                <q-input v-model="email" label="Email" filled type="email" outlined autocomplete="email" class="q-mb-md" />
-                <q-input v-model="telefono" label="Telefono" filled type="tel" outlined autocomplete="tel"
+                    <q-item>
+                      <q-item-section>
+                        No results
+                      </q-item-section>
+                    </q-item>
+                  </template>
+                </q-select>
+                <q-input v-model.trim="nombre" label="Nombre" filled outlined autocomplete="username"
+                  @dblclick="selectAllText" class="q-mb-md" />
+                <q-input v-model.trim="email" label="Email" filled type="email" outlined autocomplete="email"
+                  class="q-mb-md" />
+                <q-input v-model="telefono" label="Telefono" type="number" filled outlined autocomplete="tel"
                   @dblclick="selectAllText" class="q-mb-md" />
                 <q-input v-model="password" filled :type="showPassword ? 'text' : 'password'" placeholder="Password"
-                  autocomplete="current-password" @dblclick="selectAllText" class="q-mb-md" >
+                  autocomplete="current-password" @dblclick="selectAllText" class="q-mb-md">
                   <template v-slot:append>
                     <div class="eye-wrapper" @click="togglePasswordVisibility">
                       <div style="display: flex; flex-direction: column;">
@@ -388,18 +392,23 @@ const selectAllText = (event) => {
                     </div>
                   </template>
                 </q-input>
-                <q-select v-model="rol" label="Rol" filled outlined :options="rolOptions" class="q-mb-md" @dblclick="selectAllText"  style="max-width: 100%;" />
-                <q-select v-model="estado" label="Estado" filled outlined :options="estadoOptions" class="q-mb-md"  style="max-width: 100%;" />
+                <q-select v-model="rol" label="Rol" filled outlined :options="rolOptions" class="q-mb-md"
+                  @dblclick="selectAllText" style="max-width: 100%;" />
+                <q-select v-model="estado" label="Estado" filled outlined :options="estadoOptions" class="q-mb-md"
+                  style="max-width: 100%;" />
                 <q-btn @click="cancelarUsuario" label="Cancelar" class="q-ma-sm">
-                <q-tooltip>
-                    {{ 'Cancelar' }}
+                  <q-tooltip>
+                    Cancelar
                   </q-tooltip>
-                </q-btn>                
-                <q-btn type="submit" label="Guardar Usuario" color="primary" class="q-ma-sm">
-                <q-tooltip>
-                {{ 'Guardar Usuario' }}
-              </q-tooltip>
-            </q-btn>
+                </q-btn>
+                <q-btn :loading="useUsuario.loading" type="submit" label="Guardar Usuario" color="primary" class="q-ma-sm">
+                  <q-tooltip>
+                    Guardar Usuario
+                  </q-tooltip>
+                  <template v-slot:loading>
+                      <q-spinner color="primary" size="1em" />
+                    </template>
+                </q-btn>
               </q-form>
             </q-card-section>
           </q-card>
@@ -413,20 +422,24 @@ const selectAllText = (event) => {
             </q-card-section>
             <q-card-section>
               <q-form @submit.prevent="editarUsuario">
-                <q-select v-model="sede" label="Sede" filled outlined :options="sedeOptions" class="q-mb-md" style="max-width: 100%;" >
+                <q-select v-model="sede" label="Sede" filled outlined :options="sedeOptions" class="q-mb-md"
+                  style="max-width: 100%;">
                   <template v-slot:no-option>
-                      <q-item>
-                        <q-item-section>
-                          No results
-                        </q-item-section>
-                      </q-item>
-                    </template>
-                  </q-select>
-                <q-input v-model="nombre" label="Nombre" filled outlined autocomplete="username" @dblclick="selectAllText" class="q-mb-md" />
-                <q-input v-model="email" label="Email" type="email" filled outlined autocomplete="email" class="q-mb-md" />
-                <q-input v-model="telefono" label="Telefono" type="tel" filled outlined autocomplete="tel" @dblclick="selectAllText" class="q-mb-md" />
+                    <q-item>
+                      <q-item-section>
+                        No results
+                      </q-item-section>
+                    </q-item>
+                  </template>
+                </q-select>
+                <q-input v-model.trim="nombre" label="Nombre" filled outlined autocomplete="username"
+                  @dblclick="selectAllText" class="q-mb-md" />
+                <q-input v-model.trim="email" label="Email" type="email" filled outlined autocomplete="email"
+                  class="q-mb-md" />
+                <q-input v-model="telefono" label="Telefono" type="number" filled outlined autocomplete="tel"
+                  @dblclick="selectAllText" class="q-mb-md" />
                 <q-input v-model="password" filled :type="showPassword ? 'text' : 'password'" placeholder="Password"
-                  autocomplete="current-password" @dblclick="selectAllText" class="q-mb-md" >
+                  autocomplete="current-password" @dblclick="selectAllText" class="q-mb-md">
                   <template v-slot:append>
                     <div class="eye-wrapper" @click="togglePasswordVisibility">
                       <div style="display: flex; flex-direction: column;">
@@ -445,17 +458,22 @@ const selectAllText = (event) => {
                     </div>
                   </template>
                 </q-input>
-                <q-select v-model="rol" label="Rol" filled outlined :options="rolOptions" class="q-mb-md" @dblclick="selectAllText" style="max-width: 100%;" />
+                <q-select v-model="rol" label="Rol" filled outlined :options="rolOptions" class="q-mb-md"
+                  @dblclick="selectAllText" style="max-width: 100%;" />
                 <q-btn @click="cancelarUsuario" label="Cancelar" class="q-ma-sm">
-                <q-tooltip>
-                    {{ 'Cancelar' }}
+                  <q-tooltip>
+                    Cancelar
                   </q-tooltip>
                 </q-btn>
-                <q-btn type="submit" label="Guardar cambios" color="primary" class="q-ma-sm">
-                <q-tooltip>
-                {{ 'Guardar cambios' }}
-              </q-tooltip>
-            </q-btn>
+                <q-btn :loading="useUsuario.loading" type="submit" label="Guardar cambios" color="primary"
+                  class="q-ma-sm">
+                  <q-tooltip>
+                    Guardar cambios
+                  </q-tooltip>
+                  <template v-slot:loading>
+                    <q-spinner color="primary" size="1em" />
+                  </template>
+                </q-btn>
               </q-form>
             </q-card-section>
           </q-card>
@@ -470,20 +488,20 @@ const selectAllText = (event) => {
           <q-td :props="props">
             <q-btn @click="mostrarDatosParaEditar(props.row)">
               ✏️
-            <q-tooltip>
-                {{ 'Editar Usuario' }}
+              <q-tooltip>
+                Editar Usuario
               </q-tooltip>
             </q-btn>
             <q-btn v-if="props.row.estado == 1" @click="inactivarUsuario(props.row._id)">
               ❌
               <q-tooltip>
-                {{ 'Inactivar Usuario' }}
+                Inactivar Usuario
               </q-tooltip>
             </q-btn>
             <q-btn v-else @click="activarUsuario(props.row._id)">
               ✅
               <q-tooltip>
-                {{ 'Activar Usuario' }}
+                Activar Usuario
               </q-tooltip>
             </q-btn>
           </q-td>

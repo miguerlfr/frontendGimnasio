@@ -25,6 +25,8 @@ const idProductoSeleccionado = ref(null);
 const selectedOption = ref("Listar Productos"); // Establecer 'Listar Productos' como valor por defecto
 const options = [
   { label: "Listar Productos", value: "Listar Productos" },
+  { label: "Listar Productos Activos", value: "Listar Productos Activos" },
+  { label: "Listar Productos Inactivos", value: "Listar Productos Inactivos" },
   { label: "Listar Producto por Código", value: "Listar Producto por Código" }
 ];
 
@@ -39,7 +41,8 @@ const columns = ref([
   },
   { name: "valor", label: "Valor", field: (row) => formatoNumerico(row.valor), align: "center" },
   { name: "cantidad", label: "Cantidad", field: (row) => formatoNumerico(row.cantidad), align: "center" },
-  { name: "opciones", label: "Opciones", field: "opciones", align: "center" },
+  { name: "estado", label: "Estado", field: "estado", align: "center" },
+  { name: "opciones", label: "Opciones", field: "opciones", align: "center" }
 ]);
 
 const filteredRows = computed(() => {
@@ -60,6 +63,18 @@ async function listarProductos() {
   } catch (error) {
     console.error('Error al obtener los productos:', error);
   }
+}
+
+async function listarProductosActivos() {
+  const r = await useProducto.getProductosActivos();
+  // console.log(r);
+  rows.value = r.data.productosAc;
+}
+
+async function listarProductosInactivos() {
+  const r = await useProducto.getProductosInactivos();
+  // console.log(r.data);
+  rows.value = r.data.productosIn;
 }
 
 const listarProductoCodigo = computed(() => {
@@ -135,6 +150,32 @@ async function editarProducto() {
   }
 }
 
+const actualizarListadoProductos = () => {
+  switch (selectedOption.value) {
+    case "Listar Productos Activos":
+      listarProductosActivos();
+      break;
+    case "Listar Productos Inactivos":
+      listarProductosInactivos();
+      break;
+    default:
+      listarProductos();
+      break;
+  }
+};
+
+async function inactivarProducto(id) {
+  const r = await useProducto.putProductosInactivar(id);
+  console.log(r.data);
+  actualizarListadoProductos();
+}
+
+async function activarProducto(id) {
+  const r = await useProducto.putProductosActivar(id);
+  console.log(r.data);
+  actualizarListadoProductos();
+}
+
 const cancelarProducto = () => {
   mostrarFormularioAgregarProducto.value = false;
   mostrarFormularioEditarProducto.value = false;
@@ -153,12 +194,12 @@ const cambiarFormulario = (agregar) => {
   mostrarFormularioEditarProducto.value = !agregar;
 };
 
-watch(selectedOption, () => {
-  listarProductos()
+onMounted(() => {
+  actualizarListadoProductos();
 });
 
-onMounted(() => {
-  listarProductos();
+watch(selectedOption, () => {
+  actualizarListadoProductos()
 });
 </script>
 
@@ -182,14 +223,14 @@ onMounted(() => {
         <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
           <q-btn label="Agregar Producto" @click="mostrarFormularioAgregarProducto = true">
             <q-tooltip>
-              {{ 'Agregar Producto' }}
+              Agregar Producto
             </q-tooltip>
           </q-btn>
           <!-- <q-btn label="Editar Producto" @click="mostrarFormularioEditarProducto = true" /> -->
         </div>
 
         <!-- Diálogo para agregar producto -->
-        <q-dialog v-model="mostrarFormularioAgregarProducto">
+        <q-dialog v-model="mostrarFormularioAgregarProducto" v-bind="mostrarFormularioAgregarProducto && limpiarCampos()">
           <q-card>
             <q-card-section>
               <div class="text-h5" style="padding: 10px 0 0 25px;">Agregar Producto</div>
@@ -197,9 +238,9 @@ onMounted(() => {
 
             <q-card-section>
               <q-form @submit.prevent="agregarProducto">
-                <q-input v-model="codigoProducto" label="Código del producto" filled required class="q-mb-md" />
-                <q-input v-model="descripcionProducto" label="Descripción del producto" filled required
-                  class="q-mb-md" />
+                <q-input v-model.trim="codigoProducto" label="Código del producto" filled required class="q-mb-md" />
+                <q-input v-model.trim="descripcionProducto" type="textarea" label="Descripción del producto" filled
+                  required class="q-mb-md" />
                 <q-input v-model="valorProducto" label="Valor del producto" type="number" filled required
                   class="q-mb-md" />
                 <q-input v-model="cantidadProducto" label="Cantidad del producto" type="number" filled required
@@ -207,15 +248,18 @@ onMounted(() => {
 
                 <!-- Botones de acción -->
                 <div class="q-mt-md">
-                  <q-btn @click="cancelarProducto" label="Cancelar" color="negative" class="q-mr-sm" >
-                                    <q-tooltip>
-                    {{ 'Cancelar' }}
-                  </q-tooltip>
-                </q-btn>   
-                  <q-btn type="submit" label="Agregar Producto" color="primary">
+                  <q-btn @click="cancelarProducto" label="Cancelar" color="negative" class="q-mr-sm">
                     <q-tooltip>
-                      {{ 'Agregar Plan' }}
+                      Cancelar
                     </q-tooltip>
+                  </q-btn>
+                  <q-btn :loading="useProducto.loading" type="submit" label="Guardar Producto" color="primary">
+                    <q-tooltip>
+                      Guardar Producto
+                    </q-tooltip>
+                    <template v-slot:loading>
+                      <q-spinner color="primary" size="1em" />
+                    </template>
                   </q-btn>
                 </div>
               </q-form>
@@ -232,25 +276,28 @@ onMounted(() => {
 
             <q-card-section>
               <q-form @submit.prevent="editarProducto">
-                <q-input v-model="codigoProducto" label="Código del producto" filled required class="q-mb-md" />
-                <q-input v-model="descripcionProducto" label="Descripción del producto" filled required
-                  class="q-mb-md" />
+                <q-input v-model.trim="codigoProducto" label="Código del producto" filled required class="q-mb-md" />
+                <q-input v-model.trim="descripcionProducto" type="textarea" label="Descripción del producto" filled
+                  required class="q-mb-md" />
                 <q-input v-model="valorProducto" label="Valor del producto" type="number" filled required
                   class="q-mb-md" />
                 <q-input v-model="cantidadProducto" label="Cantidad del producto" type="number" filled required
                   class="q-mb-md" />
- <!-- style="padding: 10px 0 0 25px;" -->
+                <!-- style="padding: 10px 0 0 25px;" -->
                 <!-- Botones de acción -->
                 <div class="q-mt-md">
-                  <q-btn @click="cancelarProducto" label="Cancelar" color="negative" class="q-mr-sm" >
-                                    <q-tooltip>
-                    {{ 'Cancelar' }}
-                  </q-tooltip>
-                </q-btn>   
-                  <q-btn type="submit" label="Guardar Cambios" color="primary">
+                  <q-btn @click="cancelarProducto" label="Cancelar" color="negative" class="q-mr-sm">
                     <q-tooltip>
-                      {{ 'Guardar Cambios' }}
+                      Cancelar
                     </q-tooltip>
+                  </q-btn>
+                  <q-btn :loading="useProducto.loading" type="submit" label="Guardar Cambios" color="primary">
+                    <q-tooltip>
+                      Guardar Cambios
+                    </q-tooltip>
+                    <template v-slot:loading>
+                      <q-spinner color="primary" size="1em" />
+                    </template>
                   </q-btn>
                 </div>
               </q-form>
@@ -266,9 +313,32 @@ onMounted(() => {
             <q-btn @click="cargarProductoParaEdicion(props.row)">
               ✏️
               <q-tooltip>
-                {{ 'Editar Plan' }}
+                Editar Producto
               </q-tooltip>
             </q-btn>
+            <q-btn v-if="props.row.estado == 1" @click="inactivarProducto(props.row._id)">
+              ❌
+              <q-tooltip>
+                Inactivar Producto
+              </q-tooltip>
+            </q-btn>
+            <q-btn v-else @click="activarProducto(props.row._id)">
+              ✅
+              <q-tooltip>
+                Activar Producto
+              </q-tooltip>
+            </q-btn>
+          </q-td>
+        </template>
+
+        <template class="a" v-slot:body-cell-estado="props">
+          <q-td class="b" :props="props">
+            <p :style="{
+              color: props.row.estado === 1 ? 'green' : 'red',
+              margin: 0,
+            }">
+              {{ props.row.estado === 1 ? "Activo" : "Inactivo" }}
+            </p>
           </q-td>
         </template>
 

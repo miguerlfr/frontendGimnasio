@@ -14,6 +14,11 @@ const usePlan = useStorePlanes();
 // loading
 const visible = ref(true);
 
+// variables para mostrar el div que aparece al pasarle el mouse a las observaciones
+const tooltipText = ref('');
+const tooltipVisible = ref(false);
+const tooltipPosition = ref({ top: 0, left: 0 });
+
 // variables parra mostrar formularios
 const mostrarFormularioAgregarCliente = ref(false);
 const mostrarFormularioEditarCliente = ref(false);
@@ -47,10 +52,14 @@ const nombreCliente = ref(""),
   fechaVencimientoCliente = ref(""),
   seguimientoCliente = ref([]);
 
+//Variables para aparecer le h5 de seguimientos
+const hasSeguimientos = computed(() => seguimientoCliente.value.length > 0);
+
 const nuevoSeguimiento = ref({
   fecha: '',
   peso: '',
   imc: '',
+  estadoIMC: '',
   brazo: '',
   pierna: '',
   cintura: '',
@@ -67,6 +76,7 @@ const addSeguimiento = () => {
     fecha: '',
     peso: '',
     imc: '',
+    estadoIMC: '',
     brazo: '',
     pierna: '',
     cintura: '',
@@ -150,18 +160,20 @@ let columns = ref([
     align: "center",
   },
   { name: "telefono", label: "Telefono", field: "telefono", align: "center" },
-  { name: "objetivo", label: "Objetivo", field: "objetivo", align: "center" },
+  {
+    name: "objetivo",
+    label: "Objetivo",
+    field: "objetivo",
+    align: "center",
+    format: val => val ? val.substring(0, 20) : ''
+  },
   {
     name: "observaciones",
     label: "Observaciones",
-    field: (row) => {
-      const maxLength = 20;
-      const obs = row.observaciones;
-      return obs.length > maxLength ? `${obs.substring(0, maxLength)}...` : obs;
-    },
+    field: "observaciones",
     align: "center",
+    format: val => val ? val.substring(0, 20) : ''
   },
-  { name: "estado", label: "Estado", field: "estado", align: "center" },
   { name: "plan", label: "Plan", field: row => row.plan ? row.plan.descripcion : '', align: "center" },
   {
     name: "fechaVencimiento",
@@ -181,6 +193,7 @@ let columns = ref([
     align: "center",
     field: "seguimiento",
   },
+  { name: "estado", label: "Estado", field: "estado", align: "center" },
   { name: "opciones", label: "Opciones", field: "opciones", align: "center" },
 ]);
 
@@ -207,6 +220,7 @@ async function listarClientes() {
     console.log("clientes", clientes.data.clientes);
     rows.value = clientes.data.clientes;
     visible.value = false
+
   } catch (error) {
     console.error("Error al listar clientes:", error);
     rows.value = [];
@@ -318,10 +332,12 @@ const cargarClienteParaEdicion = (cliente) => {
     fecha: item.fecha.split("T")[0],
     peso: item.peso || "",
     imc: item.imc || "",
+    estadoIMC: item.estadoIMC || "",
     brazo: item.brazo || "",
     pierna: item.pierna || "",
     cintura: item.cintura || "",
-    estatura: item.estatura || "",
+    estaturaMetros: item.estaturaMetros || "",
+    estaturaCentimetros: item.estaturaCentimetros,
   }));
 
   console.log("Datos Cargados:", {
@@ -356,132 +372,143 @@ const limpiarCampos = () => {
   observacionesCliente.value = '';
   planCliente.value = '';
   fechaVencimientoCliente.value = '';
-  seguimientoCliente.value = [{ fecha: '', peso: '', imc: '', brazo: '', pierna: '', cintura: '', estatura: '' }];
+  seguimientoCliente.value = [{ fecha: '', peso: '', imc: '', estadoIMC: '', brazo: '', pierna: '', cintura: '', estatura: '' }];
 };
 
 async function validarDatosCliente(cliente) {
-  const errores = {};
-  const { plan } = cliente;
+  const { fechaIngreso, fechaNacimiento, documento, telefono, plan } = cliente;
 
-  if (plan === '') {
-    const campos = {
-      plan: "Plan",
-    };
+  // Validar longitud del documento
+  const documentoLength = documento.toString().length;
+  const telefonoLength = telefono.toString();
 
-    for (const campo in campos) {
-      if (!cliente[campo] || cliente[campo] === '') {
-        errores[campo] = `El ${campos[campo]} es requerido.`;
-        notifyErrorRequest(errores[campo]);
-      }
-    }
+  // Validar fecha de ingreso
+  // if (fechaIngreso && new Date(fechaIngreso).toISOString().split('T')[0] < new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().split('T')[0]) {
+  //   notifyErrorRequest('La fecha de ingreso no puede ser anterior a la fecha de hoy.');
+  //   return false;
+  // }
+
+  if (fechaNacimiento && new Date(fechaNacimiento) < new Date().setFullYear(new Date().getFullYear() - 100)) {
+    notifyErrorRequest(`La fecha de nacimiento no es válida.`);
     return false;
   }
+
+  if (documentoLength < 6) {
+    notifyErrorRequest(`El Documento debe tener al menos 6 dígitos.`);
+    return false;
+  }
+
+  if (documentoLength > 18) {
+    notifyErrorRequest(`El Documento no puede tener más de 18 dígitos.`);
+    return false;
+  }
+
+  if (telefonoLength.length < 7) {
+    notifyErrorRequest("El Teléfono debe tener al menos 7 dígitos.");
+    return false;
+  }
+
+  if (telefonoLength.length > 15) {
+    notifyErrorRequest("El Teléfono no puede tener más de 15 dígitos.");
+    return false;
+  }
+
+  // Validar plan
+  if (plan === '') {
+    notifyErrorRequest(`El Plan es requerido.`);
+    return false;
+  }
+
+  // Si no hay errores, retornar true
   return true;
 }
 
 async function agregarCliente() {
-  try {
-    let estadoActivo = estadoCliente.value === "Activo" ? 1 : 0;
-    let planSeleccionado = planCliente.value ? planCliente.value.id : ''
+  let estadoActualizado = estadoCliente.value === "Activo" ? 1 : 0;
+  let planSeleccionado = planCliente.value == '' ? '' : planCliente.value.id;
 
-    const nuevoCliente = {
-      nombre: nombreCliente.value,
-      fechaIngreso: fechaIngresoCliente.value,
-      documento: documentoCliente.value,
-      fechaNacimiento: fechaNacimientoCliente.value,
-      edad: edadCliente.value,
-      direccion: direccionCliente.value,
-      telefono: telefonoCliente.value,
-      objetivo: objetivoCliente.value,
-      observaciones: observacionesCliente.value,
-      estado: estadoActivo,
-      plan: planSeleccionado,
-      fechaVencimiento: fechaVencimientoCliente.value,
-      seguimiento: seguimientoCliente.value
-    };
-    
-    console.log("Cliente a agregar", nuevoCliente);
-    console.log("Seguimiento(s) a agregar", seguimientoCliente.value);
-    
-    validarDatosCliente(nuevoCliente);
+  const nuevoCliente = {
+    nombre: nombreCliente.value,
+    fechaIngreso: fechaIngresoCliente.value,
+    documento: documentoCliente.value,
+    fechaNacimiento: fechaNacimientoCliente.value,
+    edad: edadCliente.value,
+    direccion: direccionCliente.value,
+    telefono: telefonoCliente.value,
+    objetivo: objetivoCliente.value,
+    observaciones: observacionesCliente.value,
+    estado: estadoActualizado,
+    plan: planSeleccionado,
+    fechaVencimiento: fechaVencimientoCliente.value,
+    seguimiento: seguimientoCliente.value
+  };
 
-    try {
-      const response = await useCliente.postClientes(nuevoCliente);
-      if (response.status === 200) {
-        console.log("Cliente agregado exitosamente:", response.data);
-        listarClientes();
-        mostrarFormularioAgregarCliente.value = false;
-        mostrarFormularioEditarCliente.value = false;
-        limpiarCampos();
-      } else {
-        console.error("Cliente agregado exitosamente:", response);
-      }
-    } catch (error) {
-      console.error("Error al agregar el cliente:", error);
-    }
-  } catch (error) {
-    console.error("Error al validar datos del cliente:", error);
+  console.log("Cliente a agregar", nuevoCliente);
+  // console.log("Seguimiento(s) a agregar", seguimientoCliente.value);
+
+  // Validar datos del cliente antes de continuar
+  const datosValidos = await validarDatosCliente(nuevoCliente);
+  if (!datosValidos) {
+    return;
+  }
+
+  const response = await useCliente.postClientes(nuevoCliente);
+
+  if (response.status === 200) {
+    mostrarFormularioAgregarCliente.value = false;
+    actualizarListadoClientes();
+    limpiarCampos();
+    console.log("Cliente agregado exitosamente:", response.data)
   }
 }
 
 async function editarCliente() {
-  try {
-    // console.log(planCliente.value);
-    const sele = planCliente.value;
-    let labe = sele.id;
 
-    if (!labe) {
-      // console.error("Error: No se encontró el valor del plan seleccionado");
-      labe = planCliente.value ? planCliente.id : ''; // Si labe es vacío, asigna planCliente.value a labe
+  // console.log(planCliente.value);
+  let planActual = planCliente.value.id;
+  let planAgregar;
+
+  for (let plan of planes.value) {
+    if (plan.descripcion === planCliente.value) {
+      planAgregar = plan._id;
+      break;
     }
+  }
 
-    const clienteEditado = {
-      nombre: nombreCliente.value,
-      fechaIngreso: fechaIngresoCliente.value,
-      documento: documentoCliente.value,
-      fechaNacimiento: fechaNacimientoCliente.value,
-      edad: edadCliente.value,
-      direccion: direccionCliente.value,
-      telefono: telefonoCliente.value,
-      objetivo: objetivoCliente.value,
-      observaciones: observacionesCliente.value,
-      plan: labe,
-      fechaVencimiento: fechaVencimientoCliente.value,
-      seguimiento: seguimientoCliente.value.map((seguimiento) => {
-        return {
-          fecha: new Date(seguimiento.fecha),
-          peso: Number(seguimiento.peso),
-          imc: Number(seguimiento.peso / ((seguimiento.estatura / 100) * (seguimiento.estatura / 100))),
-          brazo: Number(seguimiento.brazo),
-          pierna: Number(seguimiento.pierna),
-          cintura: Number(seguimiento.cintura),
-          estatura: Number(seguimiento.estatura),
-        };
-      }),
-    };
+  if (!planActual) {
+    planActual = planCliente.value ? planAgregar : planActual;
+  }
 
-    console.log("Cliente editado", clienteEditado);
-    validarDatosCliente(clienteEditado);
+  const clienteEditado = {
+    nombre: nombreCliente.value,
+    fechaIngreso: fechaIngresoCliente.value,
+    documento: documentoCliente.value,
+    fechaNacimiento: fechaNacimientoCliente.value,
+    edad: edadCliente.value,
+    direccion: direccionCliente.value,
+    telefono: telefonoCliente.value,
+    objetivo: objetivoCliente.value,
+    observaciones: observacionesCliente.value,
+    plan: planActual,
+    fechaVencimiento: fechaVencimientoCliente.value,
+    seguimiento: seguimientoCliente.value
+  };
 
-    try {
-      const response = await useCliente.putClientes(
-        idClienteSeleccionado.value,
-        clienteEditado
-      );
-      if (response.status === 200) {
-        listarClientes();
-        mostrarFormularioAgregarCliente.value = false;
-        mostrarFormularioEditarCliente.value = false;
-        limpiarCampos()
-        idClienteSeleccionado.value = null;
-      } else {
-        console.error("Error al editar el cliente:", response);
-      }
-    } catch (error) {
-      console.error("Error al editar el cliente:", error);
-    }
-  } catch (error) {
-    console.error("Error al validar datos del cliente:", error);
+  console.log("Cliente editado", clienteEditado);
+
+  // Validar datos del cliente antes de continuar
+  const datosValidos = await validarDatosCliente(clienteEditado);
+  if (!datosValidos) {
+    return;
+  }
+
+  const response = await useCliente.putClientes(idClienteSeleccionado.value, clienteEditado);
+
+  if (response.status === 200) {
+    mostrarFormularioEditarCliente.value = false;
+    actualizarListadoClientes();
+    limpiarCampos()
+    idClienteSeleccionado.value = null;
   }
 }
 
@@ -518,8 +545,8 @@ const cancelarCliente = () => {
 };
 
 const mostrarSeguimiento = (row) => {
-  console.log('Row:', row);
-  console.log('Seguimiento:', row.seguimiento);
+  // console.log('Row:', row);
+  // console.log('Seguimiento:', row.seguimiento);
 
   seguimientoSeleccionado.value = row.seguimiento;
 
@@ -530,12 +557,51 @@ const mostrarSeguimiento = (row) => {
   }
 };
 
+const getColor = (estadoIMC) => {
+  switch (estadoIMC) {
+    case "Bajo peso":
+      return { backgroundColor: '#009ddb31' };
+    case "Normal":
+      return { backgroundColor: '#93c12031' };
+    case "Sobrepeso":
+      return { backgroundColor: '#fbc03831' };
+    case "Obesidad 1":
+      return { backgroundColor: '#EA991441' };
+    case "Obesidad 2":
+      return { backgroundColor: '#EF590C31' };
+    case "Obesidad 3":
+      return { backgroundColor: '#E8031726' };
+  }
+};
+
+function showTooltip(event, text) {
+  tooltipText.value = text;
+  tooltipVisible.value = true;
+  tooltipPosition.value = { top: event.clientY, left: event.clientX };
+}
+
+function hideTooltip() {
+  tooltipVisible.value = false;
+}
+
+function truncateText(text, maxLength) {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+}
+
+function checkAndShowTooltip(event, text, maxLength) {
+  if (text.length > maxLength) {
+    showTooltip(event, text);
+  }
+}
+
 onMounted(() => {
   actualizarListadoClientes();
   listarPlanes();
 });
 
-watch(selectedOption, () => {
+watch(selectedOption, (newValue) => {
   actualizarListadoClientes();
 });
 </script>
@@ -583,62 +649,78 @@ watch(selectedOption, () => {
         </div>
 
         <!-- Dialogo para agregar cliente -->
-        <q-dialog v-if="!isInstructor" v-model="mostrarFormularioAgregarCliente">
-          <q-card>
+        <q-dialog v-if="!isInstructor" v-model="mostrarFormularioAgregarCliente"
+          v-bind="mostrarFormularioAgregarCliente && limpiarCampos()">
+          <q-card style="width: 377px;">
             <q-card-section>
-              <div class="text-h5">{{ isInstructor ? 'Agregar Seguimiento' : 'Agregar Cliente' }}</div>
+              <div class="text-h5" style="padding-left: 18px; font-weight: bold;">{{ isInstructor ? `Agregar
+                Seguimiento` : `Agregar Cliente` }}</div>
             </q-card-section>
 
             <q-card-section>
               <q-form @submit.prevent="agregarCliente">
-              
-                <!-- Datos del Cliente -->
-                <q-input v-model="nombreCliente" label="Nombre" filled required class="q-mb-md" />
-                <q-input v-model="fechaIngresoCliente" label="Fecha de Ingreso" type="date" filled required
-                  class="q-mb-md" />
-                <q-input v-model="documentoCliente" label="Documento" type="number" filled required class="q-mb-md" />
-                <q-input v-model="fechaNacimientoCliente" label="Fecha de Nacimiento" type="date" filled required
-                  class="q-mb-md" />
-                <q-input v-model="edadCliente" label="Edad" type="number" filled required class="q-mb-md" />
-                <q-input v-model="direccionCliente" label="Dirección" filled required class="q-mb-md" />
-                <q-input v-model="telefonoCliente" label="Teléfono" type="number" filled required class="q-mb-md" />
-                <q-input v-model="objetivoCliente" label="Objetivo" filled required class="q-mb-md" />
-                <q-input v-model="observacionesCliente" label="Observaciones" type="textarea" filled required
-                  class="q-mb-md" style="max-width: 100%;" />
-                <q-select v-model="estadoCliente" label="Estado" filled outlined :options="estadoOptions" required
-                  class="q-mb-md" style="max-width: 100%;" />
-                <q-select v-model="planCliente" label="Plan" filled outlined :options="planOptions" required
-                  class="q-mb-md" style="max-width: 100%;">
-                  <template v-slot:no-option>
-                    <q-item>
-                      <q-item-section>
-                        No results
-                      </q-item-section>
-                    </q-item>
-                  </template>
-                </q-select>
-                <q-input v-model="fechaVencimientoCliente" label="Fecha de Vencimiento" type="date" filled required
-                  class="q-mb-md" />
+                <div style="padding-inline: 18px;">
+                  <!-- Datos del Cliente -->
+                  <q-input v-model.trim="nombreCliente" label="Nombre" filled required class="q-mb-md" />
+                  <q-input v-model="fechaIngresoCliente" label="Fecha de Ingreso" type="date" filled required
+                    class="q-mb-md" />
+                  <q-input v-model="documentoCliente" label="Documento" type="number" filled required class="q-mb-md"
+                    min="0" />
+                  <q-input v-model="fechaNacimientoCliente" label="Fecha de Nacimiento" type="date" filled required
+                    class="q-mb-md" />
+                  <q-input v-model="edadCliente" label="Edad" type="number" filled class="q-mb-md"
+                    style="display: none" />
+                  <q-input v-model.trim="direccionCliente" label="Dirección" filled required class="q-mb-md" />
+                  <q-input v-model="telefonoCliente" label="Teléfono" type="number" filled required class="q-mb-md"
+                    min="0" />
+                  <q-input v-model.trim="objetivoCliente" label="Objetivo" type="textarea" filled required
+                    class="q-mb-md" />
+                  <q-input v-model.trim="observacionesCliente" label="Observaciones" type="textarea" filled required
+                    class="q-mb-md" style="max-width: 100%;" />
+                  <q-select v-model="estadoCliente" label="Estado" filled outlined :options="estadoOptions" required
+                    class="q-mb-md" style="max-width: 100%;" />
+                  <q-select v-model="planCliente" label="Plan" filled outlined :options="planOptions" class="q-mb-md"
+                    style="max-width: 100%;">
+                    <template v-slot:no-option>
+                      <q-item>
+                        <q-item-section>
+                          No results
+                        </q-item-section>
+                      </q-item>
+                    </template>
+                  </q-select>
+                  <q-input v-model="fechaVencimientoCliente" label="Fecha de Vencimiento" type="date" filled
+                    class="q-mb-md" style="display: none" />
+                </div>
 
                 <!-- Contenedor principal para el formulario y seguimientos -->
                 <div class="seguimientos-container">
+                  <q-card-section v-if="hasSeguimientos" class="text-h5" style="text-align: center; font-weight: bold;">
+                    Seguimientos
+                  </q-card-section>
                   <!-- Seguimientos -->
                   <div v-for="(item, index) in seguimientoCliente" :key="index" class="seguimiento-item">
-                    <q-card-section class="text-h5">Seguimiento {{ index + 1 }}</q-card-section>
-                    <q-input v-model="item.fecha" :label="'Fecha de Seguimiento ' + (index + 1)" type="date" filled
-                      class="q-mb-md" required />
-                    <q-input v-model="item.peso" :label="'Peso ' + (index + 1)" type="number" filled class="q-mb-md"
+                    <q-card-section class="text-h5"># {{ index + 1 }}</q-card-section>
+                    <q-input v-model="item.fecha" :label="'Fecha de Seguimiento'" type="date" filled class="q-mb-md"
                       required />
-                    <q-input v-model="item.imc" :label="'IMC ' + (index + 1)" type="text" filled class="q-mb-md"
-                       style="display: none;"/>
-                    <q-input v-model="item.brazo" :label="'Brazo ' + (index + 1)" type="number" filled class="q-mb-md"
-                      required />
-                    <q-input v-model="item.pierna" :label="'Pierna ' + (index + 1)" type="number" filled class="q-mb-md"
-                      required />
-                    <q-input v-model="item.cintura" :label="'Cintura ' + (index + 1)" type="number" filled
-                      class="q-mb-md" required />
-                    <q-input v-model="item.estatura" :label="'Estatura ' + (index + 1)" type="number" filled
-                      class="q-mb-md" required />
+                    <q-input v-model="item.peso" :label="'Peso'" type="number" filled class="q-mb-md" required
+                      min="0" />
+                    <q-input v-model="item.imc" :label="'IMC'" type="text" filled class="q-mb-md" style="display: none;"
+                      min="0" />
+                    <q-input v-model="item.estadoIMC" :label="'Estado del IMC'" type="text" filled class="q-mb-md"
+                      style="display: none;" min="0" />
+                    <q-input v-model="item.brazo" :label="'Brazo'" type="number" filled class="q-mb-md" required
+                      min="0" />
+                    <q-input v-model="item.pierna" :label="'Pierna'" type="number" filled class="q-mb-md" required
+                      min="0" />
+                    <q-input v-model="item.cintura" :label="'Cintura'" type="number" filled class="q-mb-md" required
+                      min="0" />
+                    <div>
+                      <q-input v-model="item.estaturaMetros" :label="'Estatura (m)'" type="number" filled
+                        class="q-mb-md" required :min="0" :max="2" />'
+                      <q-input v-model="item.estaturaCentimetros" :label="'Estatura (cm)'" type="number" filled
+                        class="q-mb-md" :min="0" :max="99" />
+                    </div>
                   </div>
 
                   <!-- Botones de acción -->
@@ -656,21 +738,21 @@ watch(selectedOption, () => {
                         Eliminar Seguimiento
                       </q-tooltip>
                     </q-btn>
-                    <q-btn @click="cancelarCliente" label="Cancelar" class="q-ma-sm">
-                      <q-tooltip>
-                        Cancelar
-                      </q-tooltip>
-                    </q-btn>
-                    <q-btn :loading="useCliente.loading" type="submit" label="Guardar Cambios" color="primary"
-                      class="q-ma-sm">
-                      <q-tooltip>
-                        Guardar Cambios
-                      </q-tooltip>
-                      <template v-slot:loading>
-                        <q-spinner color="primary" size="1em" />
-                      </template>
-                    </q-btn>
                   </div>
+                  <q-btn :loading="useCliente.loading" type="submit" label="Guardar Cliente" color="primary"
+                    class="q-ma-sm">
+                    <q-tooltip>
+                      Guardar Cliente
+                    </q-tooltip>
+                    <template v-slot:loading>
+                      <q-spinner color="primary" size="1em" />
+                    </template>
+                  </q-btn>
+                  <q-btn @click="cancelarCliente" label="Cancelar" class="q-ma-sm">
+                    <q-tooltip>
+                      Cancelar
+                    </q-tooltip>
+                  </q-btn>
                 </div>
               </q-form>
             </q-card-section>
@@ -679,94 +761,91 @@ watch(selectedOption, () => {
 
         <!-- Dialogo para editar cliente -->
         <q-dialog v-model="mostrarFormularioEditarCliente">
-          <q-card>
+          <q-card style="width: 377px;">
             <q-card-section>
-              <div class="text-h5">{{ isInstructor ? 'Editar Seguimiento' : 'Editar Cliente' }}</div>
+              <div class="text-h5" style="padding-left: 18px; font-weight: bold;">{{ isInstructor ? 'Editar Seguimiento'
+                :
+                'Editar Cliente' }}</div>
             </q-card-section>
 
             <q-card-section>
               <q-form @submit.prevent="editarCliente">
                 <!-- Datos del Cliente -->
-                <q-input v-model="nombreCliente" label="Nombre" filled required class="q-mb-md" />
-                <q-input v-model="fechaIngresoCliente" label="Fecha de Ingreso" type="date" filled class="q-mb-md"
-                  required />
-                <q-input v-model="documentoCliente" label="Documento" type="number" filled required class="q-mb-md" />
-                <q-input v-model="fechaNacimientoCliente" label="Fecha de Nacimiento" type="date" filled class="q-mb-md"
-                  required />
-                <q-input v-model="edadCliente" label="Edad" type="number" filled class="q-mb-md" required />
-                <q-input v-model="direccionCliente" label="Dirección" filled class="q-mb-md" required />
-                <q-input v-model="telefonoCliente" label="Teléfono" type="number" filled required class="q-mb-md" />
-                <q-input v-model="objetivoCliente" label="Objetivo" filled required class="q-mb-md" />
-                <q-input v-model="observacionesCliente" label="Observaciones" type="textarea" filled class="q-mb-md"
-                  required />
-                <q-select v-model="planCliente" label="Plan" filled outlined :options="planOptions" class="q-mb-md"
-                  style="max-width: 100%;" required>
-                  <template v-slot:no-option>
-                    <q-item>
-                      <q-item-section>
-                        No results
-                      </q-item-section>
-                    </q-item>
-                  </template>
-                </q-select>
-                <q-input v-model="fechaVencimientoCliente" label="Fecha de Vencimiento" type="date" filled required
-                  class="q-mb-md" />
+                <div style="padding-inline: 18px;">
+                  <q-input v-model.trim="nombreCliente" label="Nombre" filled required class="q-mb-md" />
+                  <q-input v-model="fechaIngresoCliente" label="Fecha de Ingreso" type="date" filled class="q-mb-md"
+                    required />
+                  <q-input v-model="documentoCliente" label="Documento" type="number" filled required class="q-mb-md"
+                    min="0" />
+                  <q-input v-model="fechaNacimientoCliente" label="Fecha de Nacimiento" type="date" filled
+                    class="q-mb-md" required />
+                  <q-input v-model="edadCliente" label="Edad" type="number" filled class="q-mb-md"
+                    style="display: none" />
+                  <q-input v-model.trim="direccionCliente" label="Dirección" filled class="q-mb-md" required />
+                  <q-input v-model="telefonoCliente" label="Teléfono" type="number" filled required class="q-mb-md"
+                    min="0" />
+                  <q-input v-model.trim="objetivoCliente" label="Objetivo" type="textarea" filled required
+                    class="q-mb-md" />
+                  <q-input v-model.trim="observacionesCliente" label="Observaciones" type="textarea" filled
+                    class="q-mb-md" required />
+                  <q-select v-model="planCliente" label="Plan" filled outlined :options="planOptions" class="q-mb-md"
+                    style="max-width: 100%;" required>
+                    <template v-slot:no-option>
+                      <q-item>
+                        <q-item-section>
+                          No results
+                        </q-item-section>
+                      </q-item>
+                    </template>
+                  </q-select>
+                  <q-input v-model="fechaVencimientoCliente" label="Fecha de Vencimiento" type="date" filled
+                    class="q-mb-md" style="display: none" />
+                </div>
 
                 <!-- Contenedor principal para el formulario y seguimientos -->
                 <div class="seguimientos-container">
+                  <q-card-section v-if="hasSeguimientos" class="text-h5" style="text-align: center; font-weight: bold;">
+                    Seguimientos
+                  </q-card-section>
                   <!-- Mostrar Seguimientos Existentes -->
                   <div v-for="(item, index) in seguimientoCliente" :key="index" class="seguimiento-item">
-                    <q-card-section class="text-h5">Seguimiento {{ index + 1 }}</q-card-section>
-                    <q-input v-model="item.fecha" :label="'Fecha de Seguimiento ' + (index + 1)" type="date" filled
-                      class="q-mb-md" required />
-                    <q-input v-model="item.peso" :label="'Peso ' + (index + 1)" type="number" filled class="q-mb-md"
+                    <q-card-section class="text-h5"># {{ index + 1 }}</q-card-section>
+                    <q-input v-model="item.fecha" :label="'Fecha de Seguimiento'" type="date" filled class="q-mb-md"
                       required />
-                    <q-input v-model="item.imc" :label="'IMC ' + (index + 1)" type="text" filled class="q-mb-md"
-                       style="display: none;"/>
-                    <q-input v-model="item.brazo" :label="'Brazo ' + (index + 1)" type="number" filled class="q-mb-md"
-                      required />
-                    <q-input v-model="item.pierna" :label="'Pierna ' + (index + 1)" type="number" filled class="q-mb-md"
-                      required />
-                    <q-input v-model="item.cintura" :label="'Cintura ' + (index + 1)" type="number" filled
-                      class="q-mb-md" required />
-                    <q-input v-model="item.estatura" :label="'Estatura ' + (index + 1)" type="number" filled
-                      class="q-mb-md" required />
+                    <q-input v-model="item.peso" :label="'Peso'" type="number" filled class="q-mb-md" required
+                      min="0" />
+                    <q-input v-model="item.imc" :label="'IMC'" type="text" filled class="q-mb-md" style="display: none;"
+                      min="0" />
+                    <q-input v-model="item.estadoIMC" :label="'Estado del IMC'" type="text" filled class="q-mb-md"
+                      style="display: none;" min="0" />
+                    <q-input v-model="item.brazo" :label="'Brazo'" type="number" filled class="q-mb-md" required
+                      min="0" />
+                    <q-input v-model="item.pierna" :label="'Pierna'" type="number" filled class="q-mb-md" required
+                      min="0" />
+                    <q-input v-model="item.cintura" :label="'Cintura'" type="number" filled class="q-mb-md" required
+                      min="0" />
+                    <div>
+                      <q-input v-model="item.estaturaMetros" :label="'Estatura (m)'" type="number" filled
+                        class="q-mb-md" required :min="0" :max="2" />'
+                      <q-input v-model="item.estaturaCentimetros" :label="'Estatura (cm)'" type="number" filled
+                        class="q-mb-md" :min="0" :max="99" />
+                    </div>
                   </div>
 
-                  <!-- Añadir Nuevos Seguimientos -->
-                  <div v-if="mostrarFormularioSeguimiento">
-                    <q-card-section class="text-h5">Agregar Seguimiento</q-card-section>
-                    <q-input v-model="nuevoSeguimiento.fecha" label="Fecha de Seguimiento" type="date" filled
-                      class="q-mb-md" />
-                    <q-input v-model="nuevoSeguimiento.peso" label="Peso" type="number" filled class="q-mb-md" />
-                    <q-input v-model="nuevoSeguimiento.imc" label="IMC" type="number" filled class="q-mb-md" />
-                    <q-input v-model="nuevoSeguimiento.brazo" label="Brazo" type="number" filled class="q-mb-md" />
-                    <q-input v-model="nuevoSeguimiento.pierna" label="Pierna" type="number" filled class="q-mb-md" />
-                    <q-input v-model="nuevoSeguimiento.cintura" label="Cintura" type="number" filled class="q-mb-md" />
-                    <q-input v-model="nuevoSeguimiento.estatura" label="Estatura" type="number" filled
-                      class="q-mb-md" />
+                  <div class="q-mt-md"
+                    style="position: relative; display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center;">
+                    <!-- Botón para agregar seguimiento -->
+                    <q-btn @click="addSeguimiento" label="Agregar Seguimiento" color="primary" class="q-ma-sm">
+                      <q-tooltip>
+                        Agregar Seguimiento
+                      </q-tooltip>
+                    </q-btn>
+                    <q-btn @click="deleteSeguimiento" label="Eliminar Seguimiento" color="primary" class="q-ma-sm">
+                      <q-tooltip>
+                        Eliminar Seguimiento
+                      </q-tooltip>
+                    </q-btn>
                   </div>
-
-                  <!-- Botón para agregar seguimiento -->
-                  <q-btn @click="addSeguimiento" label="Agregar Seguimiento" color="primary" class="q-ma-sm">
-                    <q-tooltip>
-                      Agregar Seguimiento
-                    </q-tooltip>
-                  </q-btn>
-                  <q-btn @click="deleteSeguimiento" label="Eliminar Seguimiento" color="primary" class="q-ma-sm">
-                    <q-tooltip>
-                      Eliminar Seguimiento
-                    </q-tooltip>
-                  </q-btn>
-                </div>
-
-                <!-- Botones de acción -->
-                <div class="q-mt-md" style="position: relative; display: flex; flex-direction: row; flex-wrap: wrap;">
-                  <q-btn @click="cancelarCliente" label="Cancelar" class="q-ma-sm">
-                    <q-tooltip>
-                      Cancelar
-                    </q-tooltip>
-                  </q-btn>
                   <q-btn type="submit" label="Guardar Cambios" color="primary" class="q-ma-sm"
                     :loading="useCliente.loading">
                     <q-tooltip>
@@ -776,6 +855,11 @@ watch(selectedOption, () => {
                       <q-spinner color="primary" size="1em" />
                     </template>
                   </q-btn>
+                  <q-btn @click="cancelarCliente" label="Cancelar" class="q-ma-sm">
+                    <q-tooltip>
+                      Cancelar
+                    </q-tooltip>
+                  </q-btn>
                 </div>
               </q-form>
             </q-card-section>
@@ -784,35 +868,46 @@ watch(selectedOption, () => {
 
         <!-- Modal o div para mostrar el seguimiento seleccionado -->
         <q-dialog v-model="mostrarSeguimientoModal" style="margin: 0; ">
-          <q-card style="max-width: 100%; min-width: 300px;  margin: 0;">
+          <q-card style="max-width: 100%; min-width: 280px;  margin: 0; padding: 5px;">
             <q-card-section style="margin: 0; padding: 0; ">
-              <div class="some-page-wrapper">
-                <div class="row">
-                  <div class="column" style="width: 100%;">
-                    <div class="blue-column">
-                      <p style="margin-top: 10px; text-align: center; font-size: 21px;">Seguimientos del Cliente</p>
+
+              <div class="some-page-wrapper" style="display: flex;">
+                <div class="row" style="display: flex; align-items: center; width: 100%;">
+                  <div class="column" style="flex: 1;">
+                    <div class="blue-column" style="width: 100%;">
+                      <p>Seguimientos
+                        del
+                        Cliente</p>
                     </div>
                   </div>
-                  <q-btn
-                    style="padding-top: 15px; background-color: red; color: white; margin: 0; padding: 0; font-size: 19px; width: 50px; height: 100%;"
-                    flat label="x" v-close-popup />
+                  <div class="btnCerrar">
+                    <q-btn class="btn" flat label="X" v-close-popup />
+                  </div>
                 </div>
               </div>
+
               <div
-                style="display: flex; justify-content: center; align-items: center; flex-direction: row; flex-wrap: wrap; width: auto;"
+                style="padding-top: 30px; padding-bottom: 10px;display: flex; justify-content: center; align-items: center; flex-direction: row; flex-wrap: wrap; width: auto;"
                 v-if="seguimientoSeleccionado">
 
-                <div
-                  style="box-shadow: rgba(17, 17, 26, 0.1) 0px 4px 16px, rgba(17, 17, 26, 0.05) 0px 8px 32px; margin: 20px; padding: 20px;"
-                  v-for="(seguimiento, index) in seguimientoSeleccionado" :key="index">
-                  <h6 style="padding-bottom: 40px; margin: 0;">Seguimiento {{ (index + 1) }}</h6>
-                  <p style="margin: 0; border-bottom: 1px solid #ccc;">{{ `Fecha: ${new Date(seguimiento.fecha).toLocaleDateString('es-ES')}` }}</p>
-                  <p style="margin: 0; border-bottom: 1px solid #ccc;">{{ `Peso: ${seguimiento.peso}` }}</p>
-                  <p style="margin: 0; border-bottom: 1px solid #ccc;">{{ `IMC: ${typeof seguimiento.imc === 'number' ? seguimiento.imc.toFixed(2).replace(/\.(\d{2})\d*$/, '.$1...') : seguimiento.imc}` }}</p>
-                  <p style="margin: 0; border-bottom: 1px solid #ccc;">{{ `Brazo: ${seguimiento.brazo}` }}</p>
-                  <p style="margin: 0; border-bottom: 1px solid #ccc;">{{ `Pierna: ${seguimiento.pierna}` }}</p>
-                  <p style="margin: 0; border-bottom: 1px solid #ccc;">{{ `Cintura: ${seguimiento.cintura}` }}</p>
-                  <p style="margin: 0; border-bottom: 1px solid #ccc;">{{ `Estatura: ${seguimiento.estatura}` }}</p>
+                <div class="datosSeguimiento" v-for="(seguimiento, index) in seguimientoSeleccionado" :key="index"
+                  :style="getColor(seguimiento.estadoIMC)">
+                  <h6># {{ (index + 1) }}</h6>
+                  <p>{{ `Fecha: ${new
+                    Date(seguimiento.fecha).toLocaleDateString('es-ES')}` }}</p>
+                  <p>{{ `Peso: ${seguimiento.peso}` }}</p>
+                  <p>{{ `IMC: ${typeof seguimiento.imc === 'number' ?
+                    seguimiento.imc.toFixed(0).replace(/\.(\d{2})\d*$/, '.$1...') : seguimiento.imc}` }}</p>
+                  <p>{{ `estadoIMC: ${seguimiento.estadoIMC}` }}</p>
+                  <p>{{ `Brazo: ${seguimiento.brazo}` }}</p>
+                  <p>{{ `Pierna: ${seguimiento.pierna}` }}</p>
+                  <p>{{ `Cintura: ${seguimiento.cintura}` }}</p>
+                  <p>
+                    {{
+                      `Estatura: ${seguimiento.estaturaMetros}'${seguimiento.estaturaCentimetros.toString().padStart(2,
+                        '0')}`
+                    }}
+                  </p>
                 </div>
               </div>
             </q-card-section>
@@ -865,7 +960,31 @@ watch(selectedOption, () => {
             </q-btn>
           </q-td>
         </template>
+
+        <!-- Observaciones Column -->
+        <template v-slot:body-cell-observaciones="props">
+          <q-td :props="props" class="relative">
+            <div class="truncated-text" @mouseover="checkAndShowTooltip($event, props.row.observaciones, 20)"
+              @mouseleave="hideTooltip">
+              {{ truncateText(props.row.observaciones, 20) }}
+            </div>
+          </q-td>
+        </template>
+        <!-- Objetivo Column -->
+        <template v-slot:body-cell-objetivo="props">
+          <q-td :props="props" class="relative">
+            <div class="truncated-text" @mouseover="checkAndShowTooltip($event, props.row.objetivo, 20)"
+              @mouseleave="hideTooltip">
+              {{ truncateText(props.row.objetivo, 20) }}
+            </div>
+          </q-td>
+        </template>
       </q-table>
+
+      <div v-if="tooltipVisible && tooltipText !== truncateText(tooltipText, 20)" class="tooltip-content"
+        :style="{ top: tooltipPosition.top + 'px', left: tooltipPosition.left + 'px' }">
+        <p>{{ tooltipText }}</p>
+      </div>
     </div>
   </div>
   <q-inner-loading :showing="visible" label="Por favor espere..." label-class="text-teal"
@@ -873,6 +992,68 @@ watch(selectedOption, () => {
 </template>
 
 <style scoped>
+/* .truncated-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+} */
+
+.tooltip-content {
+  position: fixed;
+  background: white;
+  border: 2px solid #ddd;
+  padding: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  max-width: 300px;
+  z-index: 100;
+}
+
+.datosSeguimiento {
+  box-shadow: rgb(0, 0, 0) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
+  margin: 20px;
+  padding: 20px;
+  width: 191px;
+}
+
+.datosSeguimiento h6 {
+  padding-bottom: 15px;
+  margin: 0;
+  text-align: right;
+  font-weight: bold;
+}
+
+.datosSeguimiento p {
+  margin: 0;
+  border-bottom: 1px solid black;
+  padding: 3px;
+}
+
+.btnCerrar {
+  /* background-color: red; */
+  width: 47px;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid #ccc;
+}
+
+.btnCerrar .btn {
+  color: red;
+  width: 70%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  font-size: 15px;
+  transform: scaleX(1.4);
+  /* font-weight: bold; */
+}
+
 .card-example {
   width: 288px;
   height: 315px;
@@ -883,9 +1064,20 @@ watch(selectedOption, () => {
 }
 
 .blue-column {
-  background-color: rgba(0, 0, 255, 0.767);
-  color: white;
-  height: 51px;
+  background-color: rgba(190, 145, 145, 0.211);
+  color: black;
+  height: 45px;
+  border-bottom: 1px solid #ccc;
+}
+
+.blue-column p {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: sticky;
+  text-align: center;
+  font-size: 17px;
+  height: 100%;
 }
 
 .seguimientos-container {
@@ -898,6 +1090,12 @@ watch(selectedOption, () => {
   margin-bottom: 16px;
   padding-bottom: 16px;
   border-bottom: 1px solid #ccc;
+}
+
+.seguimiento-item div {
+  display: grid;
+  grid-template-columns: 1fr .1fr 1fr;
+  gap: 20px;
 }
 
 .seguimiento-item:last-child {
@@ -961,7 +1159,14 @@ watch(selectedOption, () => {
   color: blue;
 }
 
+
 .q-table__row {
   background-color: #f0f0f0;
+}
+
+table {
+  box-shadow: rgba(0, 0, 0, 0.17) 0px -23px 25px 0px inset, rgba(0, 0, 0, 0.15) 0px -36px 30px 0px inset, rgba(0, 0, 0, 0.1) 0px -79px 40px 0px inset, rgba(0, 0, 0, 0.06) 0px 2px 1px, rgba(0, 0, 0, 0.09) 0px 4px 2px, rgba(0, 0, 0, 0.09) 0px 8px 4px, rgba(0, 0, 0, 0.09) 0px 16px 8px, rgba(0, 0, 0, 0.09) 0px 32px 16px;
+  color: blue !important;
+  background-color: red;
 }
 </style>

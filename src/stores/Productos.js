@@ -1,9 +1,8 @@
 import { defineStore } from "pinia";
-import axios from "axios";
-import { useStoreUsuarios } from "../stores/Usuarios.js";
 import { ref } from "vue"
-import { notifyErrorRequest } from "../routes/routes.js";
-import { notifySuccessRequest } from "../routes/routes.js";
+import { useStoreUsuarios } from "../stores/Usuarios.js";
+import axios from "axios";
+import { notifyErrorRequest, notifySuccessRequest } from "../routes/routes.js";
 
 const url = "https://backendgimnasio-ip8j.onrender.com"
 // const url = "http://localhost:4505"
@@ -23,7 +22,45 @@ export const useStoreProductos = defineStore("Producto", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar los productos:", error);
+            console.log("Error al listar los productos:", error.response.data);
+            return error
+        } finally{
+            loading.value=false
+        }
+    };
+
+    const getProductosActivos = async () => {
+        try {
+            loading.value=true
+            const r = await axios.get(`${url}/api/productos/activos`, {
+                headers: {
+                    token: useUsuario.token
+                }
+            });
+            notifySuccessRequest("Productos activos listados exitosamente");
+            return r;
+        } catch (error) {
+            loading.value=true
+            console.log("Error al listar productos activos:", error.response.data);
+            return error
+        } finally{
+            loading.value=false
+        }
+    };
+
+    const getProductosInactivos = async () => {
+        try {
+            loading.value=true
+            const r = await axios.get(`${url}/api/productos/inactivos`, {
+                headers: {
+                    token: useUsuario.token
+                }
+            });
+            notifySuccessRequest("Productos inactivos listados exitosamente");
+            return r;
+        } catch (error) {
+            loading.value=true
+            console.log("Error al listar productos inactivos:", error.response.data);
             return error
         } finally{
             loading.value=false
@@ -41,7 +78,7 @@ export const useStoreProductos = defineStore("Producto", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar el total de los productos:", error);
+            console.log("Error al listar el total de los productos:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -59,7 +96,7 @@ export const useStoreProductos = defineStore("Producto", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar productos por su ID:", error);
+            console.log("Error al listar productos por su ID:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -77,7 +114,7 @@ export const useStoreProductos = defineStore("Producto", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al agregar el producto:", error);
+            console.log("Error al agregar el producto:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -95,8 +132,46 @@ export const useStoreProductos = defineStore("Producto", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al modificar el producto:", error);
+            console.log("Error al modificar el producto:", error.response.data);
             return error;
+        } finally{
+            loading.value=false
+        }
+    };
+
+    const putProductosActivar = async (id) => {
+        try {
+            loading.value=true
+            const r = await axios.put(`${url}/api/productos/activar/${id}`, {
+                headers: {
+                    token: useUsuario.token
+                }
+            });
+            notifySuccessRequest("Productos listados exitosamente");
+            return r;
+        } catch (error) {
+            loading.value=true
+            console.log("Error al activar el cliente:", error.response.data);
+            return error
+        } finally{
+            loading.value=false
+        }
+    };
+
+    const putProductosInactivar = async (id) => {
+        try {
+            loading.value=true
+            const r = await axios.put(`${url}/api/productos/inactivar/${id}`, {
+                headers: {
+                    token: useUsuario.token
+                }
+            });
+            notifySuccessRequest("Productos listados exitosamente");
+            return r;
+        } catch (error) {
+            loading.value=true
+            console.log("Error al inactivar el cliente:", error.response.data);
+            return error
         } finally{
             loading.value=false
         }
@@ -105,10 +180,14 @@ export const useStoreProductos = defineStore("Producto", () => {
 
     return {
         getProductos,
+        getProductosActivos,
+        getProductosInactivos,
         getProductosTotal,
         getProductosID,
         postProductos,
         putProductos,
+        putProductosActivar,
+        putProductosInactivar,
         loading
     };
 },

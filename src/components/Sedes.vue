@@ -243,16 +243,16 @@ watch(selectedOption, (newValue) => {
       <div>
         <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
           <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
-            <q-btn label="Agregar Sede" @click="mostrarFormularioAgregarSedes = true" >
-            <q-tooltip>
-                {{ 'Agregar Sede' }}
+            <q-btn label="Agregar Sede" @click="mostrarFormularioAgregarSedes = true">
+              <q-tooltip>
+                Agregar Sede
               </q-tooltip>
             </q-btn>
           </div>
 
         </div>
         <!-- Dialogo para agregar sede -->
-        <q-dialog v-model="mostrarFormularioAgregarSedes">
+        <q-dialog v-model="mostrarFormularioAgregarSedes" v-bind="mostrarFormularioAgregarSedes && limpiarCamposSede()">
           <q-card>
             <q-card-section>
               <div class="text-h6">Agregar Sede</div>
@@ -260,24 +260,28 @@ watch(selectedOption, (newValue) => {
 
             <q-card-section>
               <q-form @submit.prevent="agregarSede">
-                <q-input v-model="nombre" label="Nombre" filled required class="q-mb-md" />
-                <q-input v-model="direccion" label="Dirección" filled required class="q-mb-md" />
+                <q-input v-model.trim="nombre" label="Nombre" filled required class="q-mb-md" />
+                <q-input v-model.trim="direccion" label="Dirección" filled required class="q-mb-md" />
                 <q-input v-model="codigo" label="Código" type="number" filled required class="q-mb-md" />
-                <q-input v-model="horario" label="Horario" filled required class="q-mb-md" />
-                <q-input v-model="ciudad" label="Ciudad" filled required class="q-mb-md" />
-                <q-input v-model="telefono" label="Teléfono" filled required class="q-mb-md" />
-                <q-select v-model="estado" label="Estado" filled required :options="estadoOptions" class="q-mb-md" style="max-width: 100%;" />
+                <q-input v-model.trim="horario" label="Horario" filled required class="q-mb-md" />
+                <q-input v-model.trim="ciudad" label="Ciudad" filled required class="q-mb-md" />
+                <q-input v-model="telefono" label="Teléfono" type="number" filled required class="q-mb-md" />
+                <q-select v-model="estado" label="Estado" filled required :options="estadoOptions" class="q-mb-md"
+                  style="max-width: 100%;" />
                 <div class="q-mt-md">
-                  <q-btn @click="cancelarSede" label="Cancelar" class="q-mr-sm" >
-                  <q-tooltip>
-                    {{ 'Cancelar' }}
-                  </q-tooltip>
-                </q-btn>   
-                  <q-btn type="submit" label="Guardar Sede" color="primary" class="q-ma-sm" >
-                  <q-tooltip>
-                {{ 'Guardar Sede' }}
-              </q-tooltip>
-            </q-btn>
+                  <q-btn @click="cancelarSede" label="Cancelar" class="q-mr-sm">
+                    <q-tooltip>
+                      Cancelar
+                    </q-tooltip>
+                  </q-btn>
+                  <q-btn :loading="useSede.loading" type="submit" label="Guardar Sede" color="primary" class="q-ma-sm">
+                    <q-tooltip>
+                      Guardar Sede
+                    </q-tooltip>
+                    <template v-slot:loading>
+                      <q-spinner color="primary" size="1em" />
+                    </template>
+                  </q-btn>
                 </div>
               </q-form>
             </q-card-section>
@@ -293,23 +297,26 @@ watch(selectedOption, (newValue) => {
 
             <q-card-section>
               <q-form @submit.prevent="editarSede">
-                <q-input v-model="nombre" label="Nombre" filled required class="q-mb-md" />
-                <q-input v-model="direccion" label="Dirección" filled required class="q-mb-md" />
+                <q-input v-model.trim="nombre" label="Nombre" filled required class="q-mb-md" />
+                <q-input v-model.trim="direccion" label="Dirección" filled required class="q-mb-md" />
                 <q-input v-model="codigo" label="Código" type="number" filled required class="q-mb-md" />
-                <q-input v-model="horario" label="Horario" filled required class="q-mb-md" />
-                <q-input v-model="ciudad" label="Ciudad" filled required class="q-mb-md" />
-                <q-input v-model="telefono" label="Teléfono" filled required class="q-mb-md" />
+                <q-input v-model.trim="horario" label="Horario" filled required class="q-mb-md" />
+                <q-input v-model.trim="ciudad" label="Ciudad" filled required class="q-mb-md" />
+                <q-input v-model="telefono" label="Teléfono" type="number" filled required class="q-mb-md" />
                 <div class="q-mt-md">
-                  <q-btn @click="cancelarSede" label="Cancelar" class="q-mr-sm" >
-                  <q-tooltip>
-                    {{ 'Cancelar' }}
-                  </q-tooltip>
-                </q-btn>   
-                  <q-btn type="submit" label="Guardar cambios" color="primary" class="q-ma-sm" >
-                  <q-tooltip>
-                {{ 'Guardar cambios' }}
-              </q-tooltip>
-            </q-btn>
+                  <q-btn @click="cancelarSede" label="Cancelar" class="q-mr-sm">
+                    <q-tooltip>
+                      Cancelar
+                    </q-tooltip>
+                  </q-btn>
+                  <q-btn :loading="useSede.loading" type="submit" label="Guardar cambios" color="primary" class="q-ma-sm">
+                    <q-tooltip>
+                      Guardar cambios
+                    </q-tooltip>
+                    <template v-slot:loading>
+                      <q-spinner color="primary" size="1em" />
+                    </template>
+                  </q-btn>
                 </div>
               </q-form>
             </q-card-section>
@@ -322,21 +329,21 @@ watch(selectedOption, (newValue) => {
         <template v-slot:body-cell-opciones="props">
           <q-td :props="props">
             <q-btn @click="mostrarDatosParaEditar(props.row)">
-            ✏️
+              ✏️
               <q-tooltip>
-                {{ 'Editar Sede' }}
+                Editar Sede
               </q-tooltip>
             </q-btn>
             <q-btn v-if="props.row.estado == 1" @click="inactivarSede(props.row._id)">
               ❌
               <q-tooltip>
-                {{ 'Inactivar Sede' }}
+                Inactivar Sede
               </q-tooltip>
             </q-btn>
             <q-btn v-else @click="activarSede(props.row._id)">
               ✅
               <q-tooltip>
-                {{ 'Activar Sede' }}
+                Activar Sede
               </q-tooltip>
             </q-btn>
           </q-td>

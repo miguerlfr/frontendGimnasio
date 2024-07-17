@@ -286,8 +286,13 @@ const cargarPagoParaEdicion = (pago) => {
   fechaPago.value = pago.fecha.split("T")[0];
   valorPago.value = pago.valor;
 
-  mostrarFormularioEditarPago.value = true;
-
+  clientes.value.forEach(cliente => {
+    if (cliente.nombre === pago.cliente.nombre) {
+      clientePago.value = `${cliente.nombre} - ${cliente.documento}`;
+      return clientePago.value;
+    }
+  });
+  
   console.log("Datos cargados para edición:", {
     idPagoSeleccionada: idPagoSeleccionada.value,
     clientePago: clientePago.value,
@@ -295,6 +300,8 @@ const cargarPagoParaEdicion = (pago) => {
     fechaPago: fechaPago.value,
     valorPago: valorPago.value,
   });
+
+  mostrarFormularioEditarPago.value = true;
 };
 
 async function editarPago() {
@@ -387,13 +394,13 @@ watch(selectedOption, () => {
           <q-btn label="Agregar Pago" @click="mostrarFormularioAgregarPago = true">
             <!-- <q-btn label="Editar Pago" @click="mostrarFormularioEditarPago = true" /> -->
             <q-tooltip>
-              {{ 'Agregar Pago' }}
+              Agregar Pago
             </q-tooltip>
           </q-btn>
         </div>
 
         <!-- Dialogo para agregar pago -->
-        <q-dialog v-model="mostrarFormularioAgregarPago">
+        <q-dialog v-model="mostrarFormularioAgregarPago" v-bind="mostrarFormularioAgregarPago && limpiarCamposPago()">
           <q-card>
             <q-card-section>
               <div class="text-h5" style="padding: 10px 0 0 25px;">Agregar Pago</div>
@@ -434,13 +441,16 @@ watch(selectedOption, () => {
                   <div class="q-mt-md">
                     <q-btn @click="cancelarEdicionPago" label="Cancelar" color="negative" class="q-mr-sm">
                       <q-tooltip>
-                        {{ 'Cancelar' }}
+                        Cancelar
                       </q-tooltip>
                     </q-btn>
-                    <q-btn type="submit" label="Guardar Pago" color="primary">
+                    <q-btn :loading="usePago.loading" type="submit" label="Guardar pago" color="primary">
                       <q-tooltip>
-                        {{ 'Guardar Pago' }}
+                        Guardar pago
                       </q-tooltip>
+                      <template v-slot:loading>
+                        <q-spinner color="primary" size="1em" />
+                      </template>
                     </q-btn>
                   </div>
                 </q-form>
@@ -489,13 +499,16 @@ watch(selectedOption, () => {
                   <div class="q-mt-md">
                     <q-btn @click="cancelarEdicionPago" label="Cancelar" color="negative" class="q-mr-sm">
                       <q-tooltip>
-                        {{ 'Cancelar' }}
+                        Cancelar
                       </q-tooltip>
                     </q-btn>
-                    <q-btn type="submit" label="Guardar cambios" color="primary">
+                    <q-btn :loading="usePago.loading" type="submit" label="Guardar cambios" color="primary">
                       <q-tooltip>
-                        {{ 'Guardar cambios' }}
+                        Guardar cambios
                       </q-tooltip>
+                      <template v-slot:loading>
+                        <q-spinner color="primary" size="1em" />
+                      </template>
                     </q-btn>
                   </div>
                 </q-form>
@@ -512,19 +525,19 @@ watch(selectedOption, () => {
             <q-btn @click="cargarPagoParaEdicion(props.row)">
               ✏️
               <q-tooltip>
-                {{ 'Editar Pago' }}
+                Editar Pago
               </q-tooltip>
             </q-btn>
             <q-btn v-if="props.row.estado == 1" @click="inactivarPago(props.row._id)">
               ❌
               <q-tooltip>
-                {{ 'Inactivar Pago' }}
+                Inactivar Pago
               </q-tooltip>
             </q-btn>
             <q-btn v-else @click="activarPago(props.row._id)">
               ✅
               <q-tooltip>
-                {{ 'Activar Pago' }}
+                Activar Pago
               </q-tooltip>
             </q-btn>
           </q-td>

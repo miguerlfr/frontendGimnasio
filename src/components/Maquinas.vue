@@ -333,12 +333,12 @@ watch(selectedOption, () => {
           <q-btn label="Agregar Máquina" @click="mostrarFormularioAgregarMaquina = true">
             <!-- <q-btn label="Editar Máquina" @click="mostrarFormularioEditarMaquina = true" /> -->
             <q-tooltip>
-              {{ 'Agregar Máquina' }}
+              Agregar Máquina
             </q-tooltip>
           </q-btn>
         </div>
         <!-- Dialogo para agregar máquina -->
-        <q-dialog v-model="mostrarFormularioAgregarMaquina">
+        <q-dialog v-model="mostrarFormularioAgregarMaquina" v-bind="mostrarFormularioAgregarMaquina && limpiarCampos()">
           <q-card>
             <q-card-section>
               <div class="text-h5" style="padding: 10px 0 0 25px;">Agregar Máquina</div>
@@ -348,9 +348,10 @@ watch(selectedOption, () => {
               <div class="q-pa-md">
                 <q-form @submit.prevent="agregarMaquina">
                   <!-- Campos del formulario de agregar máquina -->
-                  <q-input v-model="codigo" label="Código" filled outlined class="q-mb-md" />
-                  <q-select v-model="sede" label="Sede" filled outlined :options="sedeOptions" class="q-mb-md" style="max-width: 100%;" >
-                  <template v-slot:no-option>
+                  <q-input v-model.trim="codigo" label="Código" filled outlined class="q-mb-md" />
+                  <q-select v-model="sede" label="Sede" filled outlined :options="sedeOptions" class="q-mb-md"
+                    style="max-width: 100%;">
+                    <template v-slot:no-option>
                       <q-item>
                         <q-item-section>
                           No results
@@ -358,23 +359,30 @@ watch(selectedOption, () => {
                       </q-item>
                     </template>
                   </q-select>
-                  <q-input v-model="descripcion" label="Descripción" filled outlined class="q-mb-md" />
-                  <q-input v-model="fechaIngreso" label="Fecha de Ingreso" filled type="date" outlined class="q-mb-md" />
+                  <q-input v-model.trim="descripcion" label="Descripción" type="textarea" filled outlined
+                    class="q-mb-md" />
+                  <q-input v-model="fechaIngreso" label="Fecha de Ingreso" filled type="date" outlined
+                    class="q-mb-md" />
                   <q-input v-model="fechaUltMan" label="Fecha de Último Mantenimiento" filled type="date" outlined
                     class="q-mb-md" />
-                  <q-select v-model="estadoM" label="Estado" outlined :options="estadoOptions" filled class="q-mb-md" style="max-width: 100%;" />
+                  <q-select v-model="estadoM" label="Estado" outlined :options="estadoOptions" filled class="q-mb-md"
+                    style="max-width: 100%;" />
 
                   <!-- Botones de acción -->
                   <div class="q-mt-md">
-                    <q-btn @click="cancelarMaquina" label="Cancelar" color="negative" class="q-ma-sm" >
+                    <q-btn @click="cancelarMaquina" label="Cancelar" color="negative" class="q-ma-sm">
                       <q-tooltip>
-                    {{ 'Cancelar' }}
-                  </q-tooltip>
-                </q-btn>   
-                    <q-btn type="submit" label="Guardar Máquina" color="primary" class="q-ma-sm">
-                      <q-tooltip>
-                        {{ 'Guardar Máquina' }}
+                        Cancelar
                       </q-tooltip>
+                    </q-btn>
+                    <q-btn :loading="useMaquina.loading" type="submit" label="Guardar Máquina" color="primary"
+                      class="q-ma-sm">
+                      <q-tooltip>
+                        Guardar Máquina
+                      </q-tooltip>
+                      <template v-slot:loading>
+                        <q-spinner color="primary" size="1em" />
+                      </template>
                     </q-btn>
                   </div>
                 </q-form>
@@ -394,9 +402,10 @@ watch(selectedOption, () => {
               <div class="q-pa-md">
                 <q-form @submit.prevent="editarMaquina">
                   <!-- Campos del formulario de editar máquina -->
-                  <q-input v-model="codigo" label="Código" filled outlined :disabled="true" class="q-mb-md" />
-                  <q-select v-model="sede" label="Sede" filled outlined :options="sedeOptions" class="q-mb-md" style="max-width: 100%;" >
-                  <template v-slot:no-option>
+                  <q-input v-model.trim="codigo" label="Código" filled outlined :disabled="true" class="q-mb-md" />
+                  <q-select v-model="sede" label="Sede" filled outlined :options="sedeOptions" class="q-mb-md"
+                    style="max-width: 100%;">
+                    <template v-slot:no-option>
                       <q-item>
                         <q-item-section>
                           No results
@@ -404,21 +413,27 @@ watch(selectedOption, () => {
                       </q-item>
                     </template>
                   </q-select>
-                  <q-input v-model="descripcion" label="Descripción" filled outlined class="q-mb-md" />
-                  <q-input v-model="fechaIngreso" label="Fecha de Ingreso" filled type="date" outlined class="q-mb-md" />
+                  <q-input v-model.trim="descripcion" label="Descripción" type="textarea" filled outlined
+                    class="q-mb-md" />
+                  <q-input v-model="fechaIngreso" label="Fecha de Ingreso" filled type="date" outlined
+                    class="q-mb-md" />
                   <q-input v-model="fechaUltMan" label="Fecha de Último Mantenimiento" filled type="date" outlined
                     class="q-mb-md" />
                   <!-- Botones de acción -->
                   <div class="q-mt-md">
-                    <q-btn @click="cancelarEdicion" label="Cancelar" color="negative" class="q-ma-sm" >
+                    <q-btn @click="cancelarEdicion" label="Cancelar" color="negative" class="q-ma-sm">
                       <q-tooltip>
-                    {{ 'Cancelar' }}
-                  </q-tooltip>
-                </q-btn>   
-                    <q-btn type="submit" label="Guardar Cambios" color="primary" class="q-ma-sm">
-                      <q-tooltip>
-                        {{ 'Guardar Cambios' }}
+                        Cancelar
                       </q-tooltip>
+                    </q-btn>
+                    <q-btn :loading="useMaquina.loading" type="submit" label="Guardar Cambios" color="primary"
+                      class="q-ma-sm">
+                      <q-tooltip>
+                        Guardar Cambios
+                      </q-tooltip>
+                      <template v-slot:loading>
+                        <q-spinner color="primary" size="1em" />
+                      </template>
                     </q-btn>
                   </div>
                 </q-form>
@@ -435,19 +450,19 @@ watch(selectedOption, () => {
             <q-btn @click="cargarMaquinaParaEdicion(props.row)">
               ✏️
               <q-tooltip>
-                {{ 'Editar Maquina' }}
+                Editar Maquina
               </q-tooltip>
             </q-btn>
             <q-btn v-if="props.row.estado == 1" @click="inactivarMaquina(props.row._id)">
               ❌
               <q-tooltip>
-                {{ 'Inactivar Maquina' }}
+                Inactivar Maquina
               </q-tooltip>
             </q-btn>
             <q-btn v-else @click="activarMaquina(props.row._id)">
               ✅
               <q-tooltip>
-                {{ 'Activar Maquina' }}
+                Activar Maquina
               </q-tooltip>
             </q-btn>
           </q-td>

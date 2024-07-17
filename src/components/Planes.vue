@@ -17,7 +17,7 @@ const valor = ref("");
 const dias = ref("");
 
 const estadoOptions = [
-  { label: "Activo" }, 
+  { label: "Activo" },
   { label: "Inactivo" },
 ];
 
@@ -79,8 +79,8 @@ const listarPlanCodigo = computed(() => {
       plan.codigo.toString().includes(codigoInput)
     );
   } else {
-    return rows.value   
-     // Devuelve todos los planes si no hay un código especificado
+    return rows.value
+    // Devuelve todos los planes si no hay un código especificado
   }
 });
 
@@ -233,15 +233,15 @@ watch(selectedOption, (newValue) => {
           <q-btn label="Agregar Plan" @click="mostrarFormularioAgregarPlan = true">
             <!-- <q-btn label="Editar Plan" @click="mostrarFormularioEditarPlan = true" /> -->
             <q-tooltip>
-              {{ 'Agregar Plan' }}
+              Agregar Plan
             </q-tooltip>
           </q-btn>
         </div>
 
         <!-- Dialogo para agregar plan -->
-        <q-dialog v-model="mostrarFormularioAgregarPlan">
+        <q-dialog v-model="mostrarFormularioAgregarPlan" v-bind="mostrarFormularioAgregarPlan && limpiarCamposPlan()">
           <q-card>
-            <q-card-section >
+            <q-card-section>
               <div class="text-h5" style="padding: 10px 0 0 25px;">Agregar Plan</div>
             </q-card-section>
 
@@ -249,23 +249,28 @@ watch(selectedOption, (newValue) => {
               <div class="q-pa-md">
                 <q-form @submit.prevent="agregarPlan">
                   <!-- Campos del formulario de agregar plan -->
-                  <q-input v-model="codigo" label="Código" filled outlined class="q-mb-md" />
-                  <q-input v-model="descripcion" label="Descripción" filled outlined class="q-mb-md" />
+                  <q-input v-model.trim="codigo" label="Código" filled outlined class="q-mb-md" />
+                  <q-input v-model.trim="descripcion" label="Descripción" type="textarea" filled outlined
+                    class="q-mb-md" />
                   <q-input v-model="valor" label="Valor" type="number" filled outlined class="q-mb-md" />
-                  <q-input v-model="dias" label="Días" filled outlined class="q-mb-md" />
-                  <q-select v-model="estado" label="Estado" filled outlined :options="estadoOptions" class="q-mb-md" style="max-width: 100%;" />
+                  <q-input v-model="dias" label="Días" type="number" filled outlined class="q-mb-md" />
+                  <q-select v-model="estado" label="Estado" filled outlined :options="estadoOptions" class="q-mb-md"
+                    style="max-width: 100%;" />
 
                   <!-- Botones de acción -->
                   <div class="q-mt-md">
-                    <q-btn @click="cancelarPlan" label="Cancelar" color="negative" class="q-mr-sm" >
-                                      <q-tooltip>
-                    {{ 'Cancelar' }}
-                  </q-tooltip>
-                </q-btn>   
-                    <q-btn type="submit" label="Guardar Plan" color="primary">
+                    <q-btn @click="cancelarPlan" label="Cancelar" color="negative" class="q-mr-sm">
                       <q-tooltip>
-                        {{ 'Guardar Plan' }}
+                        Cancelar
                       </q-tooltip>
+                    </q-btn>
+                    <q-btn :loading="usePlan.loading" type="submit" label="Guardar plan" color="primary">
+                      <q-tooltip>
+                        Guardar plan
+                      </q-tooltip>
+                      <template v-slot:loading>
+                        <q-spinner color="primary" size="1em" />
+                      </template>
                     </q-btn>
                   </div>
                 </q-form>
@@ -285,22 +290,26 @@ watch(selectedOption, (newValue) => {
               <div class="q-pa-md">
                 <q-form @submit.prevent="editarPlan">
                   <!-- Campos del formulario de editar plan -->
-                  <q-input v-model="codigo" label="Código" filled outlined class="q-mb-md" />
-                  <q-input v-model="descripcion" label="Descripción" filled outlined class="q-mb-md" />
+                  <q-input v-model.trim="codigo" label="Código" filled outlined class="q-mb-md" />
+                  <q-input v-model.trim="descripcion" label="Descripción" type="textarea" filled outlined
+                    class="q-mb-md" />
                   <q-input v-model="valor" label="Valor" type="number" filled outlined class="q-mb-md" />
-                  <q-input v-model="dias" label="Días" filled outlined class="q-mb-md" />
+                  <q-input v-model="dias" label="Días" type="number" filled outlined class="q-mb-md" />
 
                   <!-- Botones de acción -->
                   <div class="q-mt-md">
-                    <q-btn @click="cancelarPlan" label="Cancelar" color="negative" class="q-mr-sm" >
-                                      <q-tooltip>
-                    {{ 'Cancelar' }}
-                  </q-tooltip>
-                </q-btn>   
-                    <q-btn type="submit" label="Guardar cambios" color="primary">
+                    <q-btn @click="cancelarPlan" label="Cancelar" color="negative" class="q-mr-sm">
                       <q-tooltip>
-                        {{ 'Guardar cambios' }}
+                        Cancelar
                       </q-tooltip>
+                    </q-btn>
+                    <q-btn :loading="usePlan.loading" type="submit" label="Guardar cambios" color="primary">
+                      <q-tooltip>
+                        Guardar cambios
+                      </q-tooltip>
+                      <template v-slot:loading>
+                        <q-spinner color="primary" size="1em" />
+                      </template>
                     </q-btn>
                   </div>
                 </q-form>
@@ -317,19 +326,19 @@ watch(selectedOption, (newValue) => {
             <q-btn @click="setPlanToEdit(props.row)">
               ✏️
               <q-tooltip>
-                {{ 'Editar Plan' }}
+                Editar Plan
               </q-tooltip>
             </q-btn>
             <q-btn v-if="props.row.estado == 1" @click="inactivarPlan(props.row._id)">
               ❌
               <q-tooltip>
-                {{ 'Inactivar Plan' }}
+                Inactivar Plan
               </q-tooltip>
             </q-btn>
             <q-btn v-else @click="activarPlan(props.row._id)">
               ✅
               <q-tooltip>
-                {{ 'Activar Plan' }}
+                Activar Plan
               </q-tooltip>
             </q-btn>
           </q-td>

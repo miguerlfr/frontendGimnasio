@@ -1,8 +1,7 @@
 import { defineStore } from "pinia";
-import axios from "axios";
 import { ref } from "vue";
-import { notifyErrorRequest } from "../routes/routes.js";
-import { notifySuccessRequest } from "../routes/routes.js";
+import axios from "axios";
+import { notifyErrorRequest, notifySuccessRequest } from "../routes/routes.js";
 
 const url = "https://backendgimnasio-ip8j.onrender.com"
 // const url = "http://localhost:4505"
@@ -24,7 +23,7 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar usuarios:", error);
+            console.log("Error al listar usuarios:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -43,7 +42,7 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar usuarios activos:", error);
+            console.log("Error al listar usuarios activos:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -62,7 +61,7 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar usuarios inactivos:", error);
+            console.log("Error al listar usuarios inactivos:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -77,11 +76,11 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
                     token: token.value
                 }
             });
-            notifySuccessRequest("Usuario buscado exitosamente");
+            notifySuccessRequest("Usuario buscado por su id exitosamente");
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar usuarios por su ID:", error);
+            console.log("Error al listar usuarios por su ID:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -127,7 +126,7 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
         } catch (error) {
             loading.value=true
             notifyErrorRequest(error.response.data.msg);
-            console.log("Error al agregar el usuario:", error);
+            console.log("Error al agregar el usuario:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -142,13 +141,13 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
                     token: token.value
                 }
             });
-            notifySuccessRequest("Usuario modificado exitosamente");
+            notifySuccessRequest("Usuario editado exitosamente");
             console.log(r);
             return r;
         } catch (error) {
             loading.value=true
             notifyErrorRequest(error.response.data.msg);
-            console.log("Error al modificar el usuario:", error.response.data);
+            console.log("Error al editar el usuario:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -167,7 +166,8 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al activar el usuario:", error);
+            notifyErrorRequest(error.response.data);
+            console.log("Error al activar el usuario:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -186,8 +186,8 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
             return r;
         } catch (error) {
             loading.value=true
-            notifyErrorRequest(error.response.data.msg);
-            console.log("Error al desactivar el usuario:", error);
+            notifyErrorRequest(error.response.data);
+            console.log("Error al desactivar el usuario:", error.response.data);
             return error;
         } finally{
             loading.value=false

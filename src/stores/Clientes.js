@@ -1,9 +1,8 @@
 import { defineStore } from "pinia";
-import axios from "axios";
-import { useStoreUsuarios } from "../stores/Usuarios.js";
 import { ref } from "vue"
-import { notifyErrorRequest } from "../routes/routes.js";
-import { notifySuccessRequest } from "../routes/routes.js";
+import { useStoreUsuarios } from "../stores/Usuarios.js";
+import axios from "axios";
+import { notifyErrorRequest, notifySuccessRequest } from "../routes/routes.js";
 
 const url = "https://backendgimnasio-ip8j.onrender.com" 
 // const url = "http://localhost:4505"
@@ -20,11 +19,11 @@ export const useStoreClientes = defineStore("Cliente", () => {
                     token: useUsuario.token
                 }
             });
-            notifySuccessRequest("Clientes listados exitosamente");
+            notifySuccessRequest("Clientes listados exitosamente.");
             return r;
         } catch (error) {
             loading.value=true
-            console.error("Error al listar clientes:", error);
+            console.error("Error al listar clientes:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -39,11 +38,11 @@ export const useStoreClientes = defineStore("Cliente", () => {
                     token: useUsuario.token
                 }
             });
-            notifySuccessRequest("Clientes activos listados exitosamente");
+            notifySuccessRequest("Clientes activos listados exitosamente.");
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar clientes activos:", error);
+            console.log("Error al listar clientes activos:", error.response.data);
             return error
         } finally{
             loading.value=false
@@ -58,11 +57,11 @@ export const useStoreClientes = defineStore("Cliente", () => {
                     token: useUsuario.token
                 }
             });
-            notifySuccessRequest("Clientes inactivos listados exitosamente");
+            notifySuccessRequest("Clientes inactivos listados exitosamente.");
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar clientes inactivos:", error);
+            console.log("Error al listar clientes inactivos:", error.response.data);
             return error
         } finally{
             loading.value=false
@@ -77,11 +76,11 @@ export const useStoreClientes = defineStore("Cliente", () => {
                     token: useUsuario.token
                 }
             });
-            notifySuccessRequest("Clientes por su ID listados exitosamente");
+            notifySuccessRequest("Cliente encontrado.");
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar el cliente por su ID:", error.response.data);
+            console.log("Error al buscar el cliente:", error.response.data);
             return error
         } finally{
             loading.value=false
@@ -96,11 +95,11 @@ export const useStoreClientes = defineStore("Cliente", () => {
                     token: useUsuario.token
                 }
             });
-            notifySuccessRequest("Clientes listados exitosamente");
+            notifySuccessRequest("Clientes listados por su fecha de seguimiento exitosamente.");
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar el cliente por el ID de se seguimiento:", error.response.data);
+            console.log("Error al listar clientes por su fecha de seguimiento:", error.response.data);
             return error
         } finally{
             loading.value=false
@@ -115,11 +114,11 @@ export const useStoreClientes = defineStore("Cliente", () => {
                     token: useUsuario.token
                 }
             });
-            notifySuccessRequest("Clientes listados exitosamente");
+            notifySuccessRequest("Clientes listados por plan exitosamente.");
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar los clientes por su plan:", error.response.data);
+            console.log("Error al listar clientes por su plan:", error.response.data);
             return error
         } finally{
             loading.value=false
@@ -134,11 +133,11 @@ export const useStoreClientes = defineStore("Cliente", () => {
                     token: useUsuario.token
                 }
             });
-            notifySuccessRequest("Clientes listados exitosamente");
+            notifySuccessRequest("Clientes listados por su fecha de cumpleaños exitosamente.");
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar los clientes por su fecha de cumpleaños:", error.response.data);
+            console.log("Error al listar clientes por su fecha de cumpleaños:", error.response.data);
             return error
         } finally{
             loading.value=false
@@ -153,11 +152,11 @@ export const useStoreClientes = defineStore("Cliente", () => {
                     token: useUsuario.token
                 }
             });
-            notifySuccessRequest("Clientes listados exitosamente");
+            notifySuccessRequest("Clientes listados por su fecha de ingreso exitosamente.");
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar los clientes por su fecha de ingreso:", error.response.data);
+            console.log("Error al listar clientes por su fecha de ingreso:", error.response.data);
             return error
         } finally{
             loading.value=false
@@ -169,20 +168,20 @@ export const useStoreClientes = defineStore("Cliente", () => {
             loading.value=true
             const r = await axios.post(`${url}/api/clientes`, datos, {
                 headers: {
-                    'Content-Type': 'application/json', // Asegúrate de configurar el encabezado Content-Type correctamente
-                    'Authorization': `Bearer ${useUsuario.token}` // Si estás usando tokens JWT para autenticación
+                    token: useUsuario.token
                 }
             });
-            return r.data; // Devuelve solo los datos de la respuesta, no toda la respuesta de Axios
+            notifySuccessRequest("Cliente agregado exitosamente.")
+            return r; // Devuelve solo los datos de la respuesta, no toda la respuesta de Axios
         } catch (error) {
             loading.value=true
-            console.error("Error al agregar el cliente:", error.response.data);
-            throw error; // Lanza el error para que pueda ser manejado en el contexto donde se llama a esta función
+            notifyErrorRequest(error.response.data.errors[0].msg);
+            console.error("Error al agregar el cliente:", error.response.data.errors);
+            return error;
         } finally{
             loading.value=false
         }
     }
-
 
     const putClientes = async (id, datos) => {
         try {
@@ -192,10 +191,12 @@ export const useStoreClientes = defineStore("Cliente", () => {
                     token: useUsuario.token
                 }
             });
+            notifySuccessRequest("Cliente editado exitosamente.")
             return r
         } catch (error) {
             loading.value=true
-            console.log("Error al modificar el cliente:", error.response.data);
+            notifyErrorRequest(error.response.data.errors[0].msg);
+            console.error("Error al editar el cliente:", error.response.data.errors[0].msg);
             return error
         } finally{
             loading.value=false
@@ -210,10 +211,11 @@ export const useStoreClientes = defineStore("Cliente", () => {
                     token: useUsuario.token
                 }
             });
-            notifySuccessRequest("Clientes listados exitosamente");
+            notifySuccessRequest("Cliente activado exitosamente.");
             return r;
         } catch (error) {
             loading.value=true
+            notifyErrorRequest(error.response.data);
             console.log("Error al activar el cliente:", error.response.data);
             return error
         } finally{
@@ -229,10 +231,11 @@ export const useStoreClientes = defineStore("Cliente", () => {
                     token: useUsuario.token
                 }
             });
-            notifySuccessRequest("Clientes listados exitosamente");
+            notifySuccessRequest("Cliente inactivado exitosamente.");
             return r;
         } catch (error) {
             loading.value=true
+            notifyErrorRequest(error.response.data);
             console.log("Error al inactivar el cliente:", error.response.data);
             return error
         } finally{

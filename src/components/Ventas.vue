@@ -269,13 +269,13 @@ watch(selectedOption, () => {
           <q-btn label="Agregar Venta" @click="mostrarFormularioAgregarVenta = true">
             <!-- <q-btn label="Editar Venta" @click="mostrarFormularioEditarVenta = true" /> -->
             <q-tooltip>
-              {{ 'Agregar Venta' }}
+              Agregar Venta
             </q-tooltip>
           </q-btn>
         </div>
 
         <!-- Formulario para agregar venta -->
-        <q-dialog v-model="mostrarFormularioAgregarVenta">
+        <q-dialog v-model="mostrarFormularioAgregarVenta" v-bind="mostrarFormularioAgregarVenta && limpiarCampos()">
           <q-card>
             <q-card-section>
               <div class="text-h6">Agregar Venta</div>
@@ -298,13 +298,16 @@ watch(selectedOption, () => {
                 <q-input v-model="cantidad" label="Cantidad" type="number" filled outlined class="q-mb-md" required/>
                 <q-btn label="Cancelar" color="negative" class="q-ma-sm" @click="cancelarEdicion">
                   <q-tooltip>
-                    {{ 'Cancelar' }}
+                    Cancelar
                   </q-tooltip>
                 </q-btn>
-                <q-btn type="submit" label="Guardar Cambios" color="primary" class="q-ma-sm">
+                <q-btn :loading="useProducto.loading" type="submit" label="Guardar Producto" color="primary" class="q-ma-sm">
                   <q-tooltip>
-                    {{ 'Guardar Cambios' }}
+                    Guardar Producto
                   </q-tooltip>
+                  <template v-slot:loading>
+                      <q-spinner color="primary" size="1em" />
+                    </template>
                 </q-btn>
               </q-form>
             </q-card-section>
@@ -335,13 +338,16 @@ watch(selectedOption, () => {
                 <q-input v-model="cantidad" label="Cantidad" type="number" filled outlined class="q-mb-md" required/>
                 <q-btn label="Cancelar" color="negative" class="q-ma-sm" @click="cancelarEdicion">
                   <q-tooltip>
-                    {{ 'Cancelar' }}
+                    Cancelar
                   </q-tooltip>
                 </q-btn>
-                <q-btn type="submit" label="Guardar Cambios" color="primary" class="q-ma-sm">
+                <q-btn :loading="useProducto.loading" type="submit" label="Guardar Cambios" color="primary" class="q-ma-sm">
                   <q-tooltip>
-                    {{ 'Guardar Cambios' }}
+                    Guardar Cambios
                   </q-tooltip>
+                  <template v-slot:loading>
+                      <q-spinner color="primary" size="1em" />
+                    </template>
                 </q-btn>
               </q-form>
             </q-card-section>
@@ -356,7 +362,7 @@ watch(selectedOption, () => {
             <q-btn @click="cargarVentaParaEdicion(props.row)">
               ✏️
               <q-tooltip>
-                {{ 'Editar Venta' }}
+                Editar Venta
               </q-tooltip>
             </q-btn>
           </q-td>

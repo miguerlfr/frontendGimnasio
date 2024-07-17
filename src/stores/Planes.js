@@ -1,9 +1,8 @@
 import { defineStore } from "pinia";
-import axios from "axios";
-import { useStoreUsuarios } from "../stores/Usuarios.js";
 import { ref } from "vue"
-import { notifyErrorRequest } from "../routes/routes.js";
-import { notifySuccessRequest } from "../routes/routes.js";
+import { useStoreUsuarios } from "../stores/Usuarios.js";
+import axios from "axios";
+import { notifyErrorRequest, notifySuccessRequest } from "../routes/routes.js";
 
 const url = "https://backendgimnasio-ip8j.onrender.com"
 // const url = "http://localhost:4505"
@@ -23,7 +22,7 @@ export const useStorePlanes = defineStore("Plane", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar los planes:", error);
+            console.log("Error al listar los planes:", error.response.data);
             return error
         } finally{
             loading.value=false
@@ -41,7 +40,7 @@ export const useStorePlanes = defineStore("Plane", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar planes activos:", error);
+            console.log("Error al listar planes activos:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -59,7 +58,7 @@ export const useStorePlanes = defineStore("Plane", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar planes inactivos:", error);
+            console.log("Error al listar planes inactivos:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -77,7 +76,7 @@ export const useStorePlanes = defineStore("Plane", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar planes por su ID:", error);
+            console.log("Error al listar planes por su ID:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -95,7 +94,7 @@ export const useStorePlanes = defineStore("Plane", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar agregar el plan:", error);
+            console.log("Error al listar agregar el plan:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -113,7 +112,7 @@ export const useStorePlanes = defineStore("Plane", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar modificar el plan:", error);
+            console.log("Error al listar modificar el plan:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -131,7 +130,7 @@ export const useStorePlanes = defineStore("Plane", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al activar el plan:", error);
+            console.log("Error al activar el plan:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -149,7 +148,7 @@ export const useStorePlanes = defineStore("Plane", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al inactivar el plan:", error);
+            console.log("Error al inactivar el plan:", error.response.data);
             return error;
         } finally{
             loading.value=false

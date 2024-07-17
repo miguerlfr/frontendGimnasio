@@ -3,6 +3,7 @@ import { ref, onMounted, computed, watch } from "vue";
 import { useStoreClientes } from "../stores/Clientes.js";
 import { useStoreIngresos } from "../stores/Ingresos.js";
 import { useStoreSedes } from "../stores/Sedes.js";
+import { notifyErrorRequest } from "../routes/routes.js";
 import { format } from "date-fns";
 
 const useCliente = useStoreClientes();
@@ -18,10 +19,13 @@ const nombreClienteIngreso = ref("");
 const idIngresoSeleccionado = ref(null);
 const fecha = ref("");
 const sede = ref("")
+const nombreCliente = ref("");
 
+// valor del input de cliente a agregar
 const input = ref('');
 
 const sedes = ref([])
+const clientes = ref([]);
 
 async function listarSedes() {
   try {
@@ -45,10 +49,6 @@ const sedeOptions = computed(() => {
       id: sede._id,
     }));
 });
-
-// const cliente = ref("");
-const clientes = ref([]);
-const nombreCliente = ref("");
 
 const selectedOption = ref("Listar Ingresos"); // Establecer 'Listar Ingresos' como valor por defecto
 const options = [
@@ -97,12 +97,10 @@ const filteredRows = computed(() => {
 
 async function listarIngresos() {
   try {
-    // Realizar todas las llamadas de forma simultánea
-    const ingresosResponse = await useIngreso.getIngresos()
-    console.log("Ingresos", ingresosResponse.data.ingresos);
+    const ingresos = await useIngreso.getIngresos()
+    console.log("Ingresos", ingresos.data.ingresos);
 
-    // Asignar los ingresos actualizados a la variable 'rows'
-    rows.value = ingresosResponse.data.ingresos;
+    rows.value = ingresos.data.ingresos;
     visible.value = false
   } catch (error) {
     console.error("Error al listar ingresos:", error);
@@ -133,27 +131,6 @@ const listarClientes = async () => {
   }
 };
 
-const cargarIngresoParaEdicion = (ingreso) => {
-  idIngresoSeleccionado.value = ingreso._id;
-  fecha.value = ingreso.fecha.split("T")[0];
-  sede.value = ingreso.sede.nombre;
-  nombreCliente.value = ingreso.cliente.nombre;
-
-  console.log("Datos a cargar:", {
-    idIngresoSeleccionado: idIngresoSeleccionado.value,
-    fecha: fecha.value,
-    sede: sede.value,
-    nombreCliente: nombreCliente.value
-  });
-
-  mostrarFormularioAgregarIngreso.value = false;
-  mostrarFormularioEditarIngreso.value = true;
-};
-
-const setModel = value => {
-  nombreCliente.value = value;
-};
-
 const clientesOptions = computed(() => {
   const needle = input.value.toLocaleLowerCase();
 
@@ -168,6 +145,33 @@ const clientesOptions = computed(() => {
     }));
 });
 
+const cargarIngresoParaEdicion = (ingreso) => {
+  idIngresoSeleccionado.value = ingreso._id;
+  fecha.value = ingreso.fecha.split("T")[0];
+  sede.value = ingreso.sede.nombre;
+
+  clientes.value.forEach(cliente => {
+    if (cliente.nombre === ingreso.cliente.nombre) {
+      nombreCliente.value = `${cliente.nombre} - ${cliente.documento}`;
+      return nombreCliente.value;
+    }
+  });
+
+  console.log("Datos a cargar:", {
+    idIngresoSeleccionado: idIngresoSeleccionado.value,
+    fecha: fecha.value,
+    sede: sede.value,
+    nombreCliente: nombreCliente.value
+  });
+
+  mostrarFormularioAgregarIngreso.value = false;
+  mostrarFormularioEditarIngreso.value = true;
+};
+
+
+const setModel = value => {
+  nombreCliente.value = value;
+};
 
 const filterFn = (val, update, abort) => {
   update(() => {
@@ -175,14 +179,37 @@ const filterFn = (val, update, abort) => {
   });
 };
 
-function quitarTildes(texto) {
-  return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+async function validarDatosIngreso(ingreso) {
+  const { fecha, sede, cliente } = ingreso;
+
+  console.log('Validando datos de ingreso...');
+  console.log('Fecha:', fecha);
+  console.log('Sede:', sede);
+  console.log('Cliente:', cliente);
+
+  // if (fecha.toISOString().split('T')[0] < new Date().toISOString().split('T')[0]) {
+  //   notifyErrorRequest('La fecha del ingreso del cliente no puede ser anterior a la fecha de hoy.');
+  //   return false;
+  // }
+
+  // Validar sede
+  if (!sede) {
+    notifyErrorRequest('La sede es requerida.');
+    return false;
+  }
+
+  return true;
 }
 
 const agregarIngreso = async () => {
-  console.log("Nombre del cliente ingresado:", nombreCliente.value);
 
+  console.log("fecha", fecha.value);
+  console.log("cliente:", nombreCliente.value);
+  console.log("sede", sede.value);
+
+  const fechaActual = new Date(new Date(fecha.value).setDate(new Date(fecha.value).getDate() + 1));
   let idCliente;
+  const idSede = sede.value.id
 
   for (let cliente of clientes.value) {
     if (cliente.nombre === nombreCliente.value) {
@@ -194,25 +221,6 @@ const agregarIngreso = async () => {
     }
   }
 
-  // Buscar la máquina seleccionada por su descripción
-  const select = sede.value
-  const nombre = select.nombre
-
-  // Verificar si se encontró la máquina seleccionada
-  if (!select) {
-    console.log("Máquina seleccionada:", nombre);
-    console.error("Máquina seleccionada no encontrada");
-    return;
-  }
-
-  const idSede = select.id;
-
-  // Obtener la fecha actual
-  const fechaActual = new Date(fecha.value);
-
-  // Sumar un día a la fecha actual
-  fechaActual.setDate(fechaActual.getDate());
-
   // Crear un nuevo ingreso
   const nuevoIngreso = {
     fecha: fechaActual,
@@ -221,20 +229,18 @@ const agregarIngreso = async () => {
   };
   console.log(idSede);
 
-  try {
-    // Utilizar useIngreso.postIngresos para agregar el nuevo ingreso
-    const response = await useIngreso.postIngresos(nuevoIngreso);
-
-    if (response.status === 200) {
-      mostrarFormularioAgregarIngreso.value = false
-      listarIngresos();
-      limpiarCamposIngreso();
-    } else {
-      console.error("Error al agregar el ingreso:", response);
-    }
-  } catch (error) {
-    console.error("Error al agregar el ingreso:", error);
+  // Validar datos del cliente antes de continuar
+  const datosValidos = await validarDatosIngreso(nuevoIngreso);
+  if (!datosValidos) {
+    // Detener la ejecución de la función si los datos son inválidos
+    return;
   }
+  // Utilizar useIngreso.postIngresos para agregar el nuevo ingreso
+  const response = await useIngreso.postIngresos(nuevoIngreso);
+  mostrarFormularioAgregarIngreso.value = false
+  limpiarCamposIngreso();
+  listarIngresos();
+  console.error("Ingreso Agregado:", response.data);
 
 };
 
@@ -335,13 +341,13 @@ watch(selectedOption, () => {
           <q-btn label="Agregar Ingreso" @click="mostrarFormularioAgregarIngreso = true">
             <!-- <q-btn label="Editar Ingreso" @click="mostrarFormularioEditarIngreso = true" /> -->
             <q-tooltip>
-              {{ 'Agregar Ingreso' }}
+              Agregar Ingreso
             </q-tooltip>
           </q-btn>
         </div>
 
         <!-- Dialogo para agregar ingreso -->
-        <q-dialog v-model="mostrarFormularioAgregarIngreso">
+        <q-dialog v-model="mostrarFormularioAgregarIngreso" v-bind="mostrarFormularioAgregarIngreso && limpiarCamposIngreso()">
           <q-card>
             <q-card-section>
               <div class="text-h6">Agregar Ingreso</div>
@@ -349,7 +355,7 @@ watch(selectedOption, () => {
 
             <q-card-section>
               <q-form @submit.prevent="agregarIngreso">
-                <q-input v-model="fecha" label="Fecha" type="date" filled outlined class="q-mb-md" />
+                <q-input v-model="fecha" label="Fecha" type="date" filled outlined class="q-mb-md" required />
                 <q-select v-model="sede" label="Sede" filled outlined :options="sedeOptions" class="q-mb-md"
                   style="max-width: 100%;">
                   <template v-slot:no-option>
@@ -362,7 +368,7 @@ watch(selectedOption, () => {
                 </q-select>
                 <q-select filled outlined v-model="nombreCliente" use-input hide-selected fill-input input-debounce="0"
                   :options="clientesOptions" label="Cliente" emit-value map-options @filter="filterFn"
-                  @input-value="setModel" class="q-mb-md" style="min-width: 100%;">
+                  @input-value="setModel" class="q-mb-md" style="min-width: 100%;" required>
                   <template v-slot:no-option>
                     <q-item>
                       <q-item-section>
@@ -374,13 +380,17 @@ watch(selectedOption, () => {
                 <div class="q-mt-md">
                   <q-btn @click="cancelarIngreso" label="Cancelar" color="negative" class="q-ma-sm">
                     <q-tooltip>
-                      {{ 'Cancelar' }}
+                      Cancelar
                     </q-tooltip>
                   </q-btn>
-                  <q-btn type="submit" label="Guardar Ingreso" color="primary" class="q-ma-sm">
+                  <q-btn :loading="useIngreso.loading" type="submit" label="Guardar Ingreso" color="primary"
+                    class="q-ma-sm">
                     <q-tooltip>
-                      {{ 'Guardar Ingreso' }}
+                      Guardar Ingreso
                     </q-tooltip>
+                    <template v-slot:loading>
+                      <q-spinner color="primary" size="1em" />
+                    </template>
                   </q-btn>
                 </div>
               </q-form>
@@ -397,7 +407,7 @@ watch(selectedOption, () => {
 
             <q-card-section>
               <q-form @submit.prevent="editarIngreso">
-                <q-input v-model="fecha" label="Fecha" type="date" filled outlined class="q-mb-md" />
+                <q-input v-model="fecha" label="Fecha" type="date" filled outlined class="q-mb-md" required/>
                 <q-select v-model="sede" label="Sede" filled outlined :options="sedeOptions" class="q-mb-md"
                   style="max-width: 100%;">
                   <template v-slot:no-option>
@@ -410,7 +420,7 @@ watch(selectedOption, () => {
                 </q-select>
                 <q-select filled outlined v-model="nombreCliente" use-input hide-selected fill-input input-debounce="0"
                   :options="clientesOptions" label="Cliente" emit-value map-options @filter="filterFn"
-                  @input-value="setModel" class="q-mb-md" style="min-width: 100%;">
+                  @input-value="setModel" class="q-mb-md" style="min-width: 100%;" required>
                   <template v-slot:no-option>
                     <q-item>
                       <q-item-section>
@@ -422,13 +432,17 @@ watch(selectedOption, () => {
                 <div class="q-mt-md">
                   <q-btn @click="cancelarIngreso" label="Cancelar" color="negative" class="q-ma-sm">
                     <q-tooltip>
-                      {{ 'Cancelar' }}
+                      Cancelar
                     </q-tooltip>
                   </q-btn>
-                  <q-btn type="submit" label="Guardar Cambios" color="primary" class="q-ma-sm">
+                  <q-btn :loading="useIngreso.loading" type="submit" label="Guardar Cambios" color="primary"
+                    class="q-ma-sm">
                     <q-tooltip>
-                      {{ 'Guardar Cambios' }}
+                      Guardar Cambios
                     </q-tooltip>
+                    <template v-slot:loading>
+                      <q-spinner color="primary" size="1em" />
+                    </template>
                   </q-btn>
                 </div>
               </q-form>
@@ -444,7 +458,7 @@ watch(selectedOption, () => {
             <q-btn @click="cargarIngresoParaEdicion(props.row)">
               ✏️
               <q-tooltip>
-                {{ 'Editar Ingreso' }}
+                Editar Ingreso
               </q-tooltip>
             </q-btn>
           </q-td>

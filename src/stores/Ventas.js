@@ -1,9 +1,8 @@
 import { defineStore } from "pinia";
-import axios from "axios";
-import { useStoreUsuarios } from "../stores/Usuarios.js";
 import { ref } from "vue"
-import { notifyErrorRequest } from "../routes/routes.js";
-import { notifySuccessRequest } from "../routes/routes.js";
+import { useStoreUsuarios } from "../stores/Usuarios.js";
+import axios from "axios";
+import { notifyErrorRequest, notifySuccessRequest } from "../routes/routes.js";
 
 const url = "https://backendgimnasio-ip8j.onrender.com"
 // const url = "http://localhost:4505"
@@ -24,7 +23,7 @@ export const useStoreVentas = defineStore("Venta", () => {
 			return r;
 		} catch (error) {
             loading.value=true
-			console.log("Error al listar ventas:", error);
+			console.log("Error al listar ventas:", error.response.data);
 			return error;
 		} finally{
             loading.value=false
@@ -62,7 +61,8 @@ export const useStoreVentas = defineStore("Venta", () => {
 			return r;
 		} catch (error) {
             loading.value=true
-			console.log("Error al agregar la venta:", error);
+            notifyErrorRequest(error.response.data.errors[0].msg);
+			console.log("Error al agregar la venta:", error.response.data);
 			return error;
 		} finally{
             loading.value=false
@@ -81,7 +81,8 @@ export const useStoreVentas = defineStore("Venta", () => {
 			return r;
 		} catch (error) {
             loading.value=true
-			console.log("Error al modificar la venta:", error);
+            notifyErrorRequest(error.response.data.errors[0].msg);
+			console.log("Error al modificar la venta:", error.response.data);
 			return error;
 		} finally{
             loading.value=false

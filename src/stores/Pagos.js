@@ -1,9 +1,8 @@
 import { defineStore } from "pinia";
-import axios from "axios";
-import { useStoreUsuarios } from "../stores/Usuarios.js";
 import { ref } from "vue"
-import { notifyErrorRequest } from "../routes/routes.js";
-import { notifySuccessRequest } from "../routes/routes.js";
+import { useStoreUsuarios } from "../stores/Usuarios.js";
+import axios from "axios";
+import { notifyErrorRequest, notifySuccessRequest } from "../routes/routes.js";
 
 const url = "https://backendgimnasio-ip8j.onrender.com"
 // const url = "http://localhost:4505"
@@ -23,7 +22,7 @@ export const useStorePagos = defineStore("Pago", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar los pagos:", error);
+            console.log("Error al listar los pagos:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -41,7 +40,7 @@ export const useStorePagos = defineStore("Pago", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar pagos activos:", error);
+            console.log("Error al listar pagos activos:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -59,7 +58,7 @@ export const useStorePagos = defineStore("Pago", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar pagos inactivos:", error);
+            console.log("Error al listar pagos inactivos:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -77,7 +76,7 @@ export const useStorePagos = defineStore("Pago", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar el pago por su ID:", error);
+            console.log("Error al listar el pago por su ID:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -95,7 +94,7 @@ export const useStorePagos = defineStore("Pago", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar pagos por la fecha del pago:", error);
+            console.log("Error al listar pagos por la fecha del pago:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -113,7 +112,7 @@ export const useStorePagos = defineStore("Pago", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar los pagos por el plan del cliente:", error);
+            console.log("Error al listar los pagos por el plan del cliente:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -131,7 +130,7 @@ export const useStorePagos = defineStore("Pago", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar el pago del cliente por su nombre:", error);
+            console.log("Error al listar el pago del cliente por su nombre:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -149,7 +148,7 @@ export const useStorePagos = defineStore("Pago", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al agregar el pago:", error.response.data);
+            console.log("Error al agregar el pago:", error.response.data.errors);
             return error;
         } finally{
             loading.value=false
@@ -163,7 +162,7 @@ export const useStorePagos = defineStore("Pago", () => {
             return response;
         } catch (error) {
             loading.value=true
-            console.error("Error al modificar el pago:", error.response ? error.response.data : error.message);
+            console.error("Error al modificar el pago:", error.response.data.errors);
             throw error;
         } finally{
             loading.value=false
@@ -181,7 +180,7 @@ export const useStorePagos = defineStore("Pago", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al activar el pago:", error);
+            console.log("Error al activar el pago:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -199,7 +198,7 @@ export const useStorePagos = defineStore("Pago", () => {
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al inactivar el pago:", error);
+            console.log("Error al inactivar el pago:", error.response.data);
             return error;
         } finally{
             loading.value=false

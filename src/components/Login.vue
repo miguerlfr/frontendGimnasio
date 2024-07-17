@@ -18,10 +18,10 @@
                         <label>Password</label>
                     </div>
                 </div>
-                <p style="font-size: 13px;margin: -10px; padding: 0; border: 0;"><a href="#">¿Olvidaste tu
+                <p style="font-size: 12px;margin: -10px; padding: 0; border: 0;"><a href="#">¿Olvidaste tu
                         contraseña?</a></p>
 
-                <q-btn style="margin: 30px;" type="submit" :loading="useUsuario.loading" @click="login">
+                <q-btn style="margin-top: 40px; margin-bottom: 15px;" type="submit" :loading="useUsuario.loading" @click="login">
                     Sign In
                     <template v-slot:loading>
                         <q-spinner color="black" size="1em" />
@@ -119,16 +119,20 @@ async function validateCredentials() {
 }
 
 .login-container {
-    opacity: 0.9;
     text-align: center;
-    margin-top: 50px;
     width: 300px;
-    background-color: #fff;
-    padding: 30px;
-    border: 1px solid #ddd;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.842), rgb(255, 255, 255), rgb(255, 255, 255), rgb(255, 255, 255), rgba(255, 255, 255, 0.918));
+    padding: 50px;
+    border: 2px solid #ddd;
     border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    padding-bottom: 40px;
+    box-shadow: rgba(0, 0, 0, 0.17) 0px -23px 25px 0px inset, 
+                rgba(0, 0, 0, 0.15) 0px -36px 30px 0px inset, 
+                rgba(0, 0, 0, 0.1) 0px -79px 40px 0px inset, 
+                rgba(0, 0, 0, 0.06) 0px 2px 1px, 
+                rgba(0, 0, 0, 0.09) 0px 4px 2px, 
+                rgba(0, 0, 0, 0.09) 0px 8px 4px, 
+                rgba(0, 0, 0, 0.09) 0px 16px 8px, 
+                rgba(0, 0, 0, 0.09) 0px 32px 16px;
 }
 
 .input:hover {
@@ -139,6 +143,7 @@ async function validateCredentials() {
     font-weight: bold;
     color: red;
     line-height: 0.9;
+    padding-bottom: 10px;
 }
 
 form {
@@ -154,7 +159,7 @@ form {
 
 .input-container input {
     width: 100%;
-    padding: 10px 10px 10px 5px;
+    padding: 10px 2px 10px 5px;
     display: block;
     border: none;
     border-bottom: 1px solid #757575;
@@ -195,7 +200,7 @@ form {
 }
 
 button[type="submit"] {
-    width: 83%;
+    width: 82%;
     height: 40px;
     background-color: #ff69b4;
     color: white;

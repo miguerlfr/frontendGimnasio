@@ -37,11 +37,11 @@ const listarMaquinas = async () => {
 
 const maquinasOptions = computed(() => {
   return maquinas.value
-  .filter(maquina => maquina.estado != 0)
-  .map((maquina) => ({
-    label: maquina.descripcion,
-    id: maquina._id,
-  }));
+    .filter(maquina => maquina.estado != 0)
+    .map((maquina) => ({
+      label: maquina.descripcion,
+      id: maquina._id,
+    }));
 });
 
 const selectedMachine = ref(null);
@@ -178,31 +178,32 @@ const listarMantenimientosPorFecha = computed(() => {
   }
 });
 
+async function validarDatosMantenimiento(mantenimiento) {
+  const { fecha, sede, cliente } = mantenimiento;
+
+  console.log('Validando datos de mantenimiento...');
+  console.log('Fecha:', fecha);
+  console.log('Sede:', sede);
+  console.log('Cliente:', cliente);
+
+  if (fecha.toISOString().split('T')[0] < new Date().toISOString().split('T')[0]) {
+    notifyErrorRequest('La fecha del mantenimiento del cliente no puede ser anterior a la fecha de hoy.');
+    return false;
+  }
+
+  // Validar sede
+  if (!sede) {
+    notifyErrorRequest('La sede es requerida.');
+    return false;
+  }
+
+  return true;
+}
+
 const agregarMantenimiento = async () => {
   try {
-    // Buscar la máquina seleccionada por su descripción
-    const select = selectedMachine.value
-    const label = select.label
-
-    // Verificar si se encontró la máquina seleccionada
-    if (!select) {
-      console.log("Máquina seleccionada:", label);
-      console.error("Máquina seleccionada no encontrada");
-      return;
-    }
-
-    const idMaquinaSeleccionada = select.id;
-
-    // console.log("ID de la máquina seleccionada:", idMaquinaSeleccionada);
-
-    // Verifica si fecha.value tiene un valor válido antes de continuar
-    if (!fecha.value) {
-      console.error("El valor de fecha es nulo o indefinido");
-      return;
-    }
-
-    const fechaDate = new Date(fecha.value);
-    fechaDate.setDate(fechaDate.getDate() + 1);
+    const idMaquinaSeleccionada = selectedMachine.value.id;
+    const fechaActual = new Date(new Date(fecha.value).setDate(new Date(fecha.value).getDate() + 1));
 
     // Asignar el valor de eA basado en el estado seleccionado
     const eA = estadoM.value === "Activo" ? 1 : 0;
@@ -236,7 +237,7 @@ const cargarMantenimientoParaEdicion = (mantenimiento) => {
   idMantenimientoSeleccionado.value = mantenimiento._id;
   selectedMachine.value = mantenimiento.idMaquina.descripcion;
   fecha.value = mantenimiento.fecha.split("T")[0],
-  descripcion.value = mantenimiento.descripcion;
+    descripcion.value = mantenimiento.descripcion;
   responsable.value = mantenimiento.responsable;
   precio.value = mantenimiento.precio;
 
@@ -366,12 +367,12 @@ watch(selectedOption, () => {
           <q-btn label="Agregar Mantenimiento" @click="mostrarFormularioAgregarMantenimiento = true">
             <!-- <q-btn label="Editar Mantenimiento" @click="mostrarFormularioEditarMantenimiento = true" /> -->
             <q-tooltip>
-              {{ 'Agregar Mantenimiento' }}
+              Agregar Mantenimiento
             </q-tooltip>
           </q-btn>
         </div>
         <!-- Dialogo para agregar mantenimiento -->
-        <q-dialog v-model="mostrarFormularioAgregarMantenimiento">
+        <q-dialog v-model="mostrarFormularioAgregarMantenimiento"n v-bind="mostrarFormularioAgregarMantenimiento && limpiarCampos()">
           <q-card>
             <q-card-section>
               <div class="text-h5" style="padding: 10px 0 0 25px;">Agregar Mantenimiento</div>
@@ -383,7 +384,7 @@ watch(selectedOption, () => {
                   <!-- Campos del formulario de agregar mantenimiento -->
                   <!-- Selección de máquina -->
                   <q-select v-model="selectedMachine" filled outlined label="Máquina" :options="maquinasOptions"
-                    class="q-mb-md" style="max-width: 100%;" >
+                    class="q-mb-md" style="max-width: 100%;">
                     <template v-slot:no-option>
                       <q-item>
                         <q-item-section>
@@ -392,23 +393,27 @@ watch(selectedOption, () => {
                       </q-item>
                     </template>
                   </q-select>
-                  <q-input v-model="fecha" label="Fecha" type="date" filled class="q-mb-md" />
-                  <q-input v-model="descripcion" label="Descripción" filled class="q-mb-md" />
-                  <q-input v-model="responsable" label="Responsable" filled class="q-mb-md" />
-                  <q-input v-model="precio" label="Precio" type="number" filled class="q-mb-md" />
-                  <q-select v-model="estadoM" label="Estado" outlined :options="estadoOptions" filled class="q-mb-md" style="max-width: 100%;" />
+                  <q-input v-model="fecha" label="Fecha" type="date" filled class="q-mb-md" required/>
+                  <q-input v-model.trim="descripcion" label="Descripción" type="textarea" filled class="q-mb-md" required/>
+                  <q-input v-model.trim="responsable" label="Responsable" filled class="q-mb-md" required/>
+                  <q-input v-model="precio" label="Precio" type="number" filled class="q-mb-md" required min="0"/>
+                  <q-select v-model="estadoM" label="Estado" outlined :options="estadoOptions" filled class="q-mb-md"
+                    style="max-width: 100%;" />
 
                   <!-- Botón para agregar mantenimiento -->
                   <div class="q-mt-md">
-                    <q-btn @click="cancelarMantenimiento" label="Cancelar" color="negative" class="q-ma-sm" >
-                                      <q-tooltip>
-                    {{ 'Cancelar' }}
-                  </q-tooltip>
-                </q-btn>   
-                    <q-btn type="submit" label="Guardar Mantenimiento" color="primary" class="q-ma-sm">
+                    <q-btn @click="cancelarMantenimiento" label="Cancelar" color="negative" class="q-ma-sm">
                       <q-tooltip>
-                        {{ 'Guardar Mantenimiento' }}
+                        Cancelar
                       </q-tooltip>
+                    </q-btn>
+                    <q-btn :loading="useMantenimiento.loading" type="submit" label="Guardar Mantenimiento" color="primary" class="q-ma-sm">
+                      <q-tooltip>
+                        Guardar Mantenimiento
+                      </q-tooltip>
+                      <template v-slot:loading>
+                      <q-spinner color="primary" size="1em" />
+                    </template>
                     </q-btn>
                   </div>
                 </q-form>
@@ -430,7 +435,7 @@ watch(selectedOption, () => {
                   <!-- Campos del formulario de editar mantenimiento -->
                   <!-- Selección de máquina -->
                   <q-select v-model="selectedMachine" filled outlined label="Máquina" :options="maquinasOptions"
-                    class="q-mb-md" style="max-width: 100%;" >
+                    class="q-mb-md" style="max-width: 100%;">
                     <template v-slot:no-option>
                       <q-item>
                         <q-item-section>
@@ -440,21 +445,24 @@ watch(selectedOption, () => {
                     </template>
                   </q-select>
                   <q-input v-model="fecha" label="Fecha" type="date" filled class="q-mb-md" />
-                  <q-input v-model="descripcion" label="Descripción" filled class="q-mb-md" />
-                  <q-input v-model="responsable" label="Responsable" filled class="q-mb-md" />
+                  <q-input v-model.trim="descripcion" label="Descripción" type="textarea" filled class="q-mb-md" />
+                  <q-input v-model.trim="responsable" label="Responsable" filled class="q-mb-md" />
                   <q-input v-model="precio" label="Precio" type="number" filled class="q-mb-md" />
 
                   <!-- Botón para editar mantenimiento -->
                   <div class="q-mt-md">
-                    <q-btn @click="cancelarMantenimiento" label="Cancelar" color="negative" class="q-ma-sm" >
-                                      <q-tooltip>
-                    {{ 'Cancelar' }}
-                  </q-tooltip>
-                </q-btn>   
-                    <q-btn type="submit" label="Guardar Cambios" color="primary" class="q-ma-sm">
+                    <q-btn @click="cancelarMantenimiento" label="Cancelar" color="negative" class="q-ma-sm">
                       <q-tooltip>
-                        {{ 'Guardar Cambios' }}
+                        Cancelar
                       </q-tooltip>
+                    </q-btn>
+                    <q-btn :loading="useMantenimiento.loading" type="submit" label="Guardar Cambios" color="primary" class="q-ma-sm">
+                      <q-tooltip>
+                        Guardar Cambios
+                      </q-tooltip>
+                    <template v-slot:loading>
+                      <q-spinner color="primary" size="1em" />
+                    </template>
                     </q-btn>
                   </div>
                 </q-form>
@@ -470,20 +478,20 @@ watch(selectedOption, () => {
           <q-td :props="props">
             <q-btn @click="cargarMantenimientoParaEdicion(props.row)">
               ✏️
-            <q-tooltip>
-                {{ 'Editar Mantenimiento' }}
+              <q-tooltip>
+                Editar Mantenimiento
               </q-tooltip>
             </q-btn>
             <q-btn v-if="props.row.estado == 1" @click="inactivarMantenimiento(props.row._id)">
               ❌
               <q-tooltip>
-                {{ 'Inactivar Mantenimiento' }}
+                Inactivar Mantenimiento
               </q-tooltip>
             </q-btn>
             <q-btn v-else @click="activarMantenimiento(props.row._id)">
               ✅
               <q-tooltip>
-                {{ 'Activar Mantenimiento' }}
+                Activar Mantenimiento
               </q-tooltip>
             </q-btn>
           </q-td>

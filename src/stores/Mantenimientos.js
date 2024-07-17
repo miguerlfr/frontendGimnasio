@@ -1,9 +1,8 @@
 import { defineStore } from "pinia";
-import axios from "axios";
-import { useStoreUsuarios } from "../stores/Usuarios.js";
 import { ref } from "vue"
-import { notifyErrorRequest } from "../routes/routes.js";
-import { notifySuccessRequest } from "../routes/routes.js";
+import { useStoreUsuarios } from "../stores/Usuarios.js";
+import axios from "axios";
+import { notifyErrorRequest, notifySuccessRequest } from "../routes/routes.js";
 
 const url = "https://backendgimnasio-ip8j.onrender.com"
 // const url = "http://localhost:4505"
@@ -20,6 +19,7 @@ export const useStoreMantenimientos = defineStore("Mantenimiento", () => {
                     token: useUsuario.token
                 }
             });
+            notifySuccessRequest("Mantenimientos listados exitosamente.");
             return r;
         } catch (error) {
             loading.value=true
@@ -38,10 +38,11 @@ export const useStoreMantenimientos = defineStore("Mantenimiento", () => {
                     token: useUsuario.token
                 }
             });
+            notifySuccessRequest("Mantenimiento encontrado exitosamente.");
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al listar el mantenimiento por su ID:", error.response.data);
+            console.log("Error al buscar el mantenimiento:", error.response.data);
             return error;
         } finally{
             loading.value=false
@@ -56,6 +57,7 @@ export const useStoreMantenimientos = defineStore("Mantenimiento", () => {
                     token: useUsuario.token
                 }
             });
+            notifySuccessRequest("Mantenimientos listados por fechas exitosamente.");
             return r;
         } catch (error) {
             loading.value=true
@@ -70,10 +72,11 @@ export const useStoreMantenimientos = defineStore("Mantenimiento", () => {
         try {
             loading.value=true
             const r = await axios.post(`${url}/api/mantenimientos`, datos);
+            notifySuccessRequest("Mantenimiento agregado exitosamente.");
             return r;
         } catch (error) {
             loading.value=true
-            console.error("Error al agregar el mantenimiento:", error);
+            console.error("Error al agregar el mantenimiento:", error.response.data.errors[0].msg);
             return error;
         } finally{
             loading.value=false
@@ -89,10 +92,11 @@ export const useStoreMantenimientos = defineStore("Mantenimiento", () => {
                     token: useUsuario.token
                 }
             });
+            notifySuccessRequest("Mantenimiento editado exitosamente.");
             return r;
         } catch (error) {
             loading.value=true
-            console.log("Error al modificar el mantenimiento:", error.response.data);
+            console.log("Error al editar el mantenimiento:", error.response.data.errors[0].msg);
             return error;
         } finally{
             loading.value=false

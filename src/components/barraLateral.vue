@@ -22,12 +22,25 @@
       <q-toolbar>
         <q-btn dense flat round icon="menu" @click="toggleLeftDrawer" />
         <q-toolbar-title>
-          <em>Gym Natural</em>
+          <em style="font-weight: bold; font-family: cursive;">Gym</em>
         </q-toolbar-title>
+        <div class="tooltip-container" @click="handleLogout">
+            <svg class="cerrar" height="24" viewBox="0 0 24 24" width="24" focusable="false" >
+              <path d="M0 0h24v24H0z" fill="none">
+              </path>
+              <path
+                d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z">
+              </path>
+            </svg>
+          <q-tooltip ref="cerrarTooltip" anchor="top middle" self="bottom middle">
+            Cerrar Sesión
+          </q-tooltip>
+        </div>
       </q-toolbar>
     </q-header>
 
-    <q-drawer v-if="isAuthenticated" :model-value="leftDrawerOpen" show-if-above side="left" bordered overlay style="background-color: #f0f0f0b8;">
+    <q-drawer v-if="isAuthenticated" :model-value="leftDrawerOpen" show-if-above side="left" bordered overlay
+      style="background-color: #f0f0f0b8; overflow-y: hidden;">
 
       <div class="q-img q-img--menu relative-top" role="img" style="height: 204px;">
         <div style="padding-bottom: 82.5195%;"></div>
@@ -38,23 +51,19 @@
         <div class="q-img__content absolute-full q-anchor--skip">
           <div class="absolute-bottom bg-transparent">
             <div class="q-avatar q-mb-sm" style="font-size: 56px;">
-              <div class="q-avatar__content row flex-center overflow-hidden"><img
-                  src="../img/avatar.png"></div>
+              <div class="q-avatar__content row flex-center overflow-hidden"><img src="../img/avatar.png"></div>
             </div>
-            <div class="text-weight-bold">&nbsp;&nbsp;¡¡ Bienvenido {{ useUsuario.user.nombre }} !!</div>
-            <div>{{ useUsuario.user.email }}</div>
+            <div class="text-weight-bold">¡¡ Bienvenido
+              {{ useUsuario.user.nombre }} !!</div>
+            <div
+              style="font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;">
+              {{ useUsuario.user.email }}</div>
+            <div class="rol">Rol:&nbsp;<b class="rolP">{{ useUsuario.user.rol }}</b></div>
           </div>
         </div>
       </div>
 
       <div class="drawer-links">
-
-        <div class="tooltip-container">
-          <img class="cerrar" src="../img/CerrarSesion.png" alt="Logo de Cerrar Sesión" @click="handleLogout" />
-          <q-tooltip ref="cerrarTooltip" anchor="top middle" self="bottom middle">
-            Cerrar Sesión
-          </q-tooltip>
-        </div>
         <div v-if="hasAccess(['Administrador', 'Recepcionista', 'Instructor'])">
           🗣️
           <router-link id="link" class="r" to="/Clientes">Clientes</router-link>
@@ -87,7 +96,7 @@
           🏘️
           <router-link id="link" class="r" to="/Sedes">Sedes</router-link>
         </div>
-        <div v-if="hasAccess(['Administrador', 'Recepcionista'])">
+        <div v-if="hasAccess(['Administrador'])">
           👤
           <router-link id="link" class="r" to="/Usuarios">Usuarios</router-link>
         </div>
@@ -141,6 +150,46 @@ const handleLogout = () => {
 </script>
 
 <style scoped>
+.text-weight-bold {
+  font-family: cursive;
+  font-variant: small-caps;
+  font-style: italic;
+  padding-bottom: 5px;
+}
+
+.rol {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 14px;
+  font-weight: bold;
+  font-family: cursive;
+  padding-right: 20px;
+  padding: 10px 20px;
+  font-size: 16px;
+  outline: none;
+  text-shadow: 0 0 5px rgb(61, 55, 167);
+  /* transition: border-color 0.3s ease; */
+}
+
+/* @keyframes brillar {
+  0% {
+    text-shadow: 0 0 5px rgba(240, 240, 240, 0.281);
+  }
+
+  50% {
+    text-shadow: 0 0 5px rgb(0, 0, 0);
+  }
+
+  100% {
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.151);
+  }
+} */
+
+.rolP {
+  animation: brillar 1s infinite;
+}
+
 .logoCasa {
   width: 19px;
 }
@@ -157,24 +206,28 @@ const handleLogout = () => {
   margin: 0;
   padding-top: 20px;
   padding-bottom: 20px;
-  overflow-y: auto;
 }
 
 .cerrar {
   position: fixed;
   top: 0;
+  right: 0;
   cursor: pointer;
+  width: 33px;
+  height: 50px;
+  margin-right: 13px;
+  filter: invert(1);
 }
 
 .tooltip-container {
   position: absolute;
   top: 100px;
-  margin-left: 227px;
+  left: 94%;
   display: inline-block;
 }
 
 .bg-primary {
-  background-color: rgb(45, 75, 207) !important;
+  background-color: #20c15ed0 !important;
 }
 
 body {
@@ -214,6 +267,9 @@ body {
   position: absolute;
   bottom: 0;
   width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 
 #sideDrawer {
