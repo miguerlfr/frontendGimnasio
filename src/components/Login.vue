@@ -21,10 +21,11 @@
                 <p style="font-size: 12px;margin: -10px; padding: 0; border: 0;"><a href="#">¿Olvidaste tu
                         contraseña?</a></p>
 
-                <q-btn style="margin-top: 40px; margin-bottom: 15px;" type="submit" :loading="useUsuario.loading" @click="login">
+                <q-btn style="margin-top: 40px; margin-bottom: 15px;" type="submit" :loading="useUsuario.loading"
+                    @click="login">
                     Sign In
                     <template v-slot:loading>
-                        <q-spinner color="black" size="1em" />
+                        <q-spinner color="white" size="1em" />
                     </template>
                 </q-btn>
             </form>
@@ -125,14 +126,14 @@ async function validateCredentials() {
     padding: 50px;
     border: 2px solid #ddd;
     border-radius: 10px;
-    box-shadow: rgba(0, 0, 0, 0.17) 0px -23px 25px 0px inset, 
-                rgba(0, 0, 0, 0.15) 0px -36px 30px 0px inset, 
-                rgba(0, 0, 0, 0.1) 0px -79px 40px 0px inset, 
-                rgba(0, 0, 0, 0.06) 0px 2px 1px, 
-                rgba(0, 0, 0, 0.09) 0px 4px 2px, 
-                rgba(0, 0, 0, 0.09) 0px 8px 4px, 
-                rgba(0, 0, 0, 0.09) 0px 16px 8px, 
-                rgba(0, 0, 0, 0.09) 0px 32px 16px;
+    box-shadow: rgba(0, 0, 0, 0.17) 0px -23px 25px 0px inset,
+        rgba(0, 0, 0, 0.15) 0px -36px 30px 0px inset,
+        rgba(0, 0, 0, 0.1) 0px -79px 40px 0px inset,
+        rgba(0, 0, 0, 0.06) 0px 2px 1px,
+        rgba(0, 0, 0, 0.09) 0px 4px 2px,
+        rgba(0, 0, 0, 0.09) 0px 8px 4px,
+        rgba(0, 0, 0, 0.09) 0px 16px 8px,
+        rgba(0, 0, 0, 0.09) 0px 32px 16px;
 }
 
 .input:hover {

@@ -106,11 +106,11 @@
         </div>
       </div>
 
-      <div class="footerBarra">
+      <!-- <div class="footerBarra">
         <hr width="70%" size="2" color="blue">
         <p style="text-align: center; font-size: 10px;">Los términos y condiciones son</p>
         <p style="text-align: center; font-size: 10px; margin-top: -20px;">autorizados...</p>
-      </div>
+      </div> -->
     </q-drawer>
 
     <q-page-container>
@@ -227,7 +227,8 @@ const handleLogout = () => {
 }
 
 .bg-primary {
-  background-color: #20c15ed0 !important;
+  background-color: #4d6aaf !important;
+  padding-bottom: 5px;
 }
 
 body {
@@ -263,14 +264,14 @@ body {
   font-size: 20px;
 }
 
-.footerBarra {
+/* .footerBarra {
   position: absolute;
   bottom: 0;
   width: 100%;
   margin: 0;
   padding: 0;
   border: 0;
-}
+} */
 
 #sideDrawer {
   position: fixed;

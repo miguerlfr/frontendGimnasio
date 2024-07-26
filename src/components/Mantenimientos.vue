@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
+import { notifyErrorRequest } from "../routes/routes.js";
 import { useStoreMantenimientos } from "../stores/Mantenimientos.js";
 import { useStoreMaquinas } from "../stores/Maquinas.js";
 import { format } from "date-fns";
@@ -10,6 +11,11 @@ function formatoNumerico(numero) {
 
 const visible = ref(true);
 
+// variables para mostrar el div que aparece al pasarle el mouse a la descripción
+const tooltipText = ref('');
+const tooltipVisible = ref(false);
+const tooltipPosition = ref({ top: 0, left: 0 });
+
 const mostrarFormularioAgregarMantenimiento = ref(false);
 const mostrarFormularioEditarMantenimiento = ref(false);
 
@@ -17,7 +23,8 @@ const useMaquina = useStoreMaquinas();
 const useMantenimiento = useStoreMantenimientos();
 
 const nombreMaquinaMantenimiento = ref("");
-const fechaSeleccionada = ref("");
+const fecha1 = ref("");
+const fecha2 = ref("")
 
 const maquinas = ref([]);
 
@@ -45,20 +52,17 @@ const maquinasOptions = computed(() => {
 });
 
 const selectedMachine = ref(null);
-const idMaquina = ref('');
 const fecha = ref('');
 const descripcion = ref('');
 const responsable = ref('');
 const precio = ref("");
 const idMantenimientoSeleccionado = ref(null);
 
-
 const estadoOptions = [
   { label: "Activo" },
   { label: "Inactivo" },
 ];
-
-const estadoM = ref(estadoOptions.find(option => option.label === "Activo").label);
+const estadoM = ref("Activo");
 
 const selectedOption = ref("Listar Mantenimientos"); // Establecer 'Listar Mantenimientos' como valor por defecto
 const options = [
@@ -67,9 +71,11 @@ const options = [
     label: "Listar Mantenimiento de la Máquina por su Nombre",
     value: "Listar Mantenimiento de la Máquina por su Nombre",
   },
+  { label: "Listar Mantenimientos Activos", value: "Listar Mantenimientos Activos" },
+  { label: "Listar Mantenimientos Inactivos", value: "Listar Mantenimientos Inactivos" },
   {
-    label: "Listar Mantenimientos por Fecha",
-    value: "Listar Mantenimientos por Fecha",
+    label: "Listar Mantenimientos por Fechas",
+    value: "Listar Mantenimientos por Fechas",
   }
 ];
 
@@ -91,7 +97,6 @@ const columns = ref([
       fecha.setDate(fecha.getDate() + 1);
       // Formatear la fecha sumada como "día/mes/año" usando date-fns
       const fechaFormateada = format(fecha, "dd/MM/yyyy");
-
       return fechaFormateada;
     },
   },
@@ -100,6 +105,7 @@ const columns = ref([
     label: "Descripción",
     field: "descripcion",
     align: "center",
+    format: val => val ? val.substring(0, 20) : ''
   },
   {
     name: "responsable",
@@ -127,73 +133,74 @@ const columns = ref([
   },
 ]);
 
-const filteredRows = computed(() => {
-  switch (selectedOption.value) {
-    case "Listar Mantenimiento de la Máquina por su Nombre":
-      return listarMantenimientosPorNombreMaquina.value;
-    case "Listar Mantenimientos por Fecha":
-      return listarMantenimientosPorFecha.value;
-    default:
-      return rows.value;
-  }
-});
+async function actualizarListadoMantenimientos() {
+  const mantenimientosPromise = selectedOption.value === "Listar Mantenimientos Activos"
+    ? useMantenimiento.getMantenimientosActivos()
+    : selectedOption.value === "Listar Mantenimientos Inactivos"
+      ? useMantenimiento.getMantenimientosInactivos()
+      : useMantenimiento.getMantenimientos();
 
-async function listarMantenimientos() {
-  const mantenimientos = await useMantenimiento.getMantenimientos();
-  const mantR = mantenimientos.data.mantenimientos;
+  rows.value = (await mantenimientosPromise).data.mantenimientos;
   visible.value = false;
-  rows.value = mantR;
+  console.log("Mantenimientos", rows.value);
 }
 
-const listarMantenimientosPorNombreMaquina = computed(() => {
-  if (
-    selectedOption.value ===
-    "Listar Mantenimiento de la Máquina por su Nombre" &&
-    nombreMaquinaMantenimiento.value
-  ) {
-    const nombreMaquina = nombreMaquinaMantenimiento.value.toLowerCase(); // Convertir a minúsculas para comparación sin distinción entre mayúsculas y minúsculas
-    return rows.value.filter((row) =>
-      row.idMaquina.toLowerCase().includes(nombreMaquina)
-    );
-  } else {
-    return rows.value;
-  }
+const filtrarFilas = computed(() => {
+  const searchTermNombreMaquina = nombreMaquinaMantenimiento.value || '';
+  const fecha1Value = fecha1.value ? new Date(fecha1.value) : null;
+  const fecha2Value = fecha2.value ? new Date(fecha2.value) : null;
+
+  return rows.value.filter(mantenimiento => {
+    switch (selectedOption.value) {
+      case "Listar Mantenimiento de la Máquina por su Nombre":
+        if (mantenimiento.idMaquina.descripcion.includes(searchTermNombreMaquina)) {
+          // notifySuccessRequest('Listado correctamente por nombre de máquina.');
+          return true;
+        }
+        return false;
+
+      case "Listar Mantenimientos por Fechas":
+        if (!fecha1Value || !fecha2Value) return true; // No hay filtro aplicado si no hay fechas seleccionadas
+        const fechaMantenimiento = new Date(mantenimiento.fecha);
+        if (fechaMantenimiento >= fecha1Value && fechaMantenimiento <= fecha2Value) {
+          // notifySuccessRequest('Mantenimientos listados por fechas exitosamente.');
+          return true;
+        } else {
+          // notifyErrorRequest('Fechas inválidas o inconsistentes.');
+          return false;
+        }
+
+      default:
+        return true;
+    }
+  });
 });
 
-const listarMantenimientosPorFecha = computed(() => {
-  if (
-    selectedOption.value === "Listar Mantenimientos por Fecha" &&
-    fechaSeleccionada.value
-  ) {
-    const fechaSeleccionadaValue = new Date(fechaSeleccionada.value); // Usar la fecha seleccionada almacenada en fechaSeleccionada.value
-    return rows.value.filter((row) => {
-      const fechaMantenimiento = new Date(row.fecha);
-      return (
-        fechaMantenimiento.toDateString() ===
-        fechaSeleccionadaValue.toDateString()
-      );
-    });
-  } else {
-    return rows.value;
-  }
-});
+const cargarMantenimientoParaEdicion = (mantenimiento) => {
+  idMantenimientoSeleccionado.value = mantenimiento._id;
+  selectedMachine.value = mantenimiento.idMaquina.descripcion;
+  fecha.value = mantenimiento.fecha.split("T")[0];
+  descripcion.value = mantenimiento.descripcion;
+  responsable.value = mantenimiento.responsable;
+  precio.value = mantenimiento.precio;
+
+  console.log("Datos del mantenimiento a editar:", {
+    idMantenimientoSeleccionado: mantenimiento._id,
+    maquinaa: mantenimiento.idMaquina.descripcion,
+    fecha: mantenimiento.fecha.split("T")[0],
+    descripcion: mantenimiento.descripcion,
+    responsable: mantenimiento.responsable,
+    precio: mantenimiento.precio,
+  })
+
+  mostrarFormularioEditarMantenimiento.value = true;
+};
 
 async function validarDatosMantenimiento(mantenimiento) {
-  const { fecha, sede, cliente } = mantenimiento;
+  const { idMaquina } = mantenimiento;
 
-  console.log('Validando datos de mantenimiento...');
-  console.log('Fecha:', fecha);
-  console.log('Sede:', sede);
-  console.log('Cliente:', cliente);
-
-  if (fecha.toISOString().split('T')[0] < new Date().toISOString().split('T')[0]) {
-    notifyErrorRequest('La fecha del mantenimiento del cliente no puede ser anterior a la fecha de hoy.');
-    return false;
-  }
-
-  // Validar sede
-  if (!sede) {
-    notifyErrorRequest('La sede es requerida.');
+  if (idMaquina === undefined) {
+    notifyErrorRequest('La Máquina es requerida.');
     return false;
   }
 
@@ -201,74 +208,35 @@ async function validarDatosMantenimiento(mantenimiento) {
 }
 
 const agregarMantenimiento = async () => {
-  try {
-    const idMaquinaSeleccionada = selectedMachine.value.id;
-    const fechaActual = new Date(new Date(fecha.value).setDate(new Date(fecha.value).getDate() + 1));
-
-    // Asignar el valor de eA basado en el estado seleccionado
-    const eA = estadoM.value === "Activo" ? 1 : 0;
-
-    const mantenimientoData = {
-      idMaquina: idMaquinaSeleccionada,
-      fecha: fecha.value,
-      descripcion: descripcion.value,
-      responsable: responsable.value,
-      precio: precio.value,
-      estado: eA
-    };
-
-    // console.log("id", idMaquinaSeleccionada);
-
-    const resultado = await useMantenimiento.postMantenimientos(mantenimientoData);
-    listarMantenimientos();
-    estadoM.value = estadoOptions.find(option => option.label === "Activo").label; // Estado predeterminado
-    limpiarCampos();
-  } catch (error) {
-    console.error("Error al agregar el mantenimiento:", error);
-  }
-};
-
-const cambiarFormulario = (agregar) => {
-  mostrarFormularioAgregarMantenimiento.value = agregar;
-  mostrarFormularioEditarMantenimiento.value = !agregar;
-};
-
-const cargarMantenimientoParaEdicion = (mantenimiento) => {
-  idMantenimientoSeleccionado.value = mantenimiento._id;
-  selectedMachine.value = mantenimiento.idMaquina.descripcion;
-  fecha.value = mantenimiento.fecha.split("T")[0],
-    descripcion.value = mantenimiento.descripcion;
-  responsable.value = mantenimiento.responsable;
-  precio.value = mantenimiento.precio;
-
-  cambiarFormulario(false);
-};
-
-const editarMantenimiento = async () => {
-  console.log("ID de mantenimiento seleccionado:", idMantenimientoSeleccionado.value);
-  console.log("Datos a enviar:", {
-    idMaquina: idMaquina.value,
+  const mantenimientoData = {
+    idMaquina: selectedMachine.value.id,
     fecha: fecha.value,
     descripcion: descripcion.value,
     responsable: responsable.value,
     precio: precio.value,
-  });
+    estado: estadoM.value === "Activo" ? 1 : 0
+  };
 
-  const select = selectedMachine.value
-  const label = select.label
-
-  // Verificar si se encontró la máquina seleccionada
-  if (!select) {
-    console.log("Máquina seleccionada:", label);
-    console.error("Máquina seleccionada no encontrada");
-    return;
+  if (await validarDatosMantenimiento(mantenimientoData)) {
+    const r = await useMantenimiento.postMantenimientos(mantenimientoData);
+    if (r.status == 200) {
+      mostrarFormularioAgregarMantenimiento.value = false;
+      actualizarListadoMantenimientos();
+      estadoM.value = "Activo";
+      console.log("Mantenimiento agregado exitosamente", mantenimientoData);
+    }
   }
+};
 
-  const idMaquinaSeleccionada = select.id;
+const editarMantenimiento = async () => {
+  let idMaquinaSeleccionada = selectedMachine.value.id;
 
-  console.log("ID de la máquina seleccionada:", idMaquinaSeleccionada);
-
-
+  for (let maquina of maquinas.value) {
+    if (maquina.descripcion == selectedMachine.value) {
+      idMaquinaSeleccionada = maquina._id
+      break;
+    }
+  }
   const mantenimientoEditado = {
     idMaquina: idMaquinaSeleccionada,
     fecha: fecha.value,
@@ -277,67 +245,67 @@ const editarMantenimiento = async () => {
     precio: precio.value,
   };
 
-  try {
-    if (!idMantenimientoSeleccionado.value) {
-      throw new Error("ID del Mantenimiento no proporcionado para la actualización");
+  if (await validarDatosMantenimiento(mantenimientoEditado)) {
+    const r = await useMantenimiento.putMantenimientos(idMantenimientoSeleccionado.value, mantenimientoEditado);
+    if (r.status == 200) {
+      mostrarFormularioEditarMantenimiento.value = false;
+      actualizarListadoMantenimientos()
+      console.log("Mantenimiento editado exitosamente", mantenimientoEditado);
     }
-    const response = await useMantenimiento.putMantenimientos(
-      idMantenimientoSeleccionado.value,
-      mantenimientoEditado
-    );
-    if (response.data) {
-      listarMantenimientos()
-      idMantenimientoSeleccionado.value = null;
-      idMaquina.value = "";
-      fecha.value = "";
-      descripcion.value = "";
-      responsable.value = "";
-      precio.value = "";
-      console.log("Mantenimiento editado con éxito:", response.data);
-    } else {
-      console.error("La respuesta no contiene datos:", response);
-    }
-  } catch (error) {
-    console.error("Error al editar el mantenimiento:", error);
   }
 };
 
 const limpiarCampos = () => {
-  idMantenimientoSeleccionado.value = null;
-  idMaquina.value = "";
+  selectedMachine.value = "";
   fecha.value = "";
   descripcion.value = "";
   responsable.value = "";
   precio.value = "";
 };
 
-const cancelarMantenimiento = () => {
-  mostrarFormularioAgregarMantenimiento.value = false;
-  mostrarFormularioEditarMantenimiento.value = false;
-  limpiarCampos();
-};
-
 async function inactivarMantenimiento(id) {
   const r = await useMantenimiento.putMantenimientosInactivar(id);
-  console.log(r.data);
-  listarMantenimientos();
+  // console.log(r.data);
+  actualizarListadoMantenimientos();
 }
 
 async function activarMantenimiento(id) {
   const r = await useMantenimiento.putMantenimientosActivar(id);
-  console.log(r.data);
-  listarMantenimientos();
+  // console.log(r.data);
+  actualizarListadoMantenimientos();
 }
 
+// Funciones auxiliares
+function showTooltip(event, text) {
+  tooltipText.value = text;
+  tooltipVisible.value = true;
+  tooltipPosition.value = { top: event.clientY, left: event.clientX };
+}
+function hideTooltip() {
+  tooltipVisible.value = false;
+}
+function truncateText(text, maxLength) {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+}
+function checkAndShowTooltip(event, text, maxLength) {
+  if (text.length > maxLength) {
+    showTooltip(event, text);
+  }
+}
+
+const isLoading = computed(() => visible.value);
+
 onMounted(async () => {
+  actualizarListadoMantenimientos();
   listarMaquinas();
-  listarMantenimientos();
 });
 
 watch(selectedOption, () => {
-  listarMantenimientos();
+  actualizarListadoMantenimientos(),
+    isLoading
 });
-
 </script>
 
 <template>
@@ -356,10 +324,17 @@ watch(selectedOption, () => {
           selectedOption ===
           'Listar Mantenimiento de la Máquina por su Nombre'
         " v-model="nombreMaquinaMantenimiento" class="q-my-md" type="text" name="search" id="searchMaquina"
-          @dblclick="selectAllText" placeholder="Nombre de la Máquina del Mantenimiento a buscar" />
+          @dblclick="selectAllText" placeholder="Nombre de la Máquina" />
 
-        <input v-if="selectedOption === 'Listar Mantenimientos por Fecha'" v-model="fechaSeleccionada" class="q-my-md"
-          type="date" name="search" id="fechaMantenimiento" placeholder="Selecciona una fecha" />
+        <div v-if="selectedOption === 'Listar Mantenimientos por Fechas'"
+          style="display: flex; flex-direction: row; text-align: center; flex-wrap: wrap; position: absolute; top: 147px; left: 350px;">
+          <label for="fecha1" style="height: 100%; line-height: 88px; margin-left: 40px;">De:</label>
+          <q-input v-model="fecha1" class="q-my-md" type="date" name="search" id="fecha1" />
+
+          <label for="fecha2" style="height: 100%; line-height: 88px; margin-left: 40px;">A:</label>
+          <q-input v-model="fecha2" class="q-my-md" type="date" name="search" id="fecha2" />
+        </div>
+
       </div>
 
       <div>
@@ -372,7 +347,8 @@ watch(selectedOption, () => {
           </q-btn>
         </div>
         <!-- Dialogo para agregar mantenimiento -->
-        <q-dialog v-model="mostrarFormularioAgregarMantenimiento"n v-bind="mostrarFormularioAgregarMantenimiento && limpiarCampos()">
+        <q-dialog v-model="mostrarFormularioAgregarMantenimiento" n
+          v-bind="mostrarFormularioAgregarMantenimiento && limpiarCampos()">
           <q-card>
             <q-card-section>
               <div class="text-h5" style="padding: 10px 0 0 25px;">Agregar Mantenimiento</div>
@@ -393,27 +369,30 @@ watch(selectedOption, () => {
                       </q-item>
                     </template>
                   </q-select>
-                  <q-input v-model="fecha" label="Fecha" type="date" filled class="q-mb-md" required/>
-                  <q-input v-model.trim="descripcion" label="Descripción" type="textarea" filled class="q-mb-md" required/>
-                  <q-input v-model.trim="responsable" label="Responsable" filled class="q-mb-md" required/>
-                  <q-input v-model="precio" label="Precio" type="number" filled class="q-mb-md" required min="0"/>
+                  <q-input v-model="fecha" label="Fecha" type="date" filled class="q-mb-md" required />
+                  <q-input v-model.trim="descripcion" label="Descripción" type="textarea" filled class="q-mb-md"
+                    required />
+                  <q-input v-model.trim="responsable" label="Responsable" filled class="q-mb-md" required />
+                  <q-input v-model="precio" label="Precio" type="number" filled class="q-mb-md" required min="0" />
                   <q-select v-model="estadoM" label="Estado" outlined :options="estadoOptions" filled class="q-mb-md"
                     style="max-width: 100%;" />
 
                   <!-- Botón para agregar mantenimiento -->
                   <div class="q-mt-md">
-                    <q-btn @click="cancelarMantenimiento" label="Cancelar" color="negative" class="q-ma-sm">
+                    <q-btn @click="mostrarFormularioAgregarMantenimiento = false" label="Cancelar" color="negative"
+                      class="q-ma-sm">
                       <q-tooltip>
                         Cancelar
                       </q-tooltip>
                     </q-btn>
-                    <q-btn :loading="useMantenimiento.loading" type="submit" label="Guardar Mantenimiento" color="primary" class="q-ma-sm">
+                    <q-btn :loading="useMantenimiento.loading" type="submit" label="Guardar Mantenimiento"
+                      color="primary" class="q-ma-sm">
                       <q-tooltip>
                         Guardar Mantenimiento
                       </q-tooltip>
                       <template v-slot:loading>
-                      <q-spinner color="primary" size="1em" />
-                    </template>
+                        <q-spinner color="white" size="1em" />
+                      </template>
                     </q-btn>
                   </div>
                 </q-form>
@@ -444,25 +423,28 @@ watch(selectedOption, () => {
                       </q-item>
                     </template>
                   </q-select>
-                  <q-input v-model="fecha" label="Fecha" type="date" filled class="q-mb-md" />
-                  <q-input v-model.trim="descripcion" label="Descripción" type="textarea" filled class="q-mb-md" />
-                  <q-input v-model.trim="responsable" label="Responsable" filled class="q-mb-md" />
-                  <q-input v-model="precio" label="Precio" type="number" filled class="q-mb-md" />
+                  <q-input v-model="fecha" label="Fecha" type="date" filled class="q-mb-md" required />
+                  <q-input v-model.trim="descripcion" label="Descripción" type="textarea" filled class="q-mb-md"
+                    required />
+                  <q-input v-model.trim="responsable" label="Responsable" filled class="q-mb-md" required />
+                  <q-input v-model="precio" label="Precio" type="number" filled class="q-mb-md" required min="0" />
 
                   <!-- Botón para editar mantenimiento -->
                   <div class="q-mt-md">
-                    <q-btn @click="cancelarMantenimiento" label="Cancelar" color="negative" class="q-ma-sm">
+                    <q-btn @click="mostrarFormularioEditarMantenimiento = false" label="Cancelar" color="negative"
+                      class="q-ma-sm">
                       <q-tooltip>
                         Cancelar
                       </q-tooltip>
                     </q-btn>
-                    <q-btn :loading="useMantenimiento.loading" type="submit" label="Guardar Cambios" color="primary" class="q-ma-sm">
+                    <q-btn :loading="useMantenimiento.loading" type="submit" label="Guardar Cambios" color="primary"
+                      class="q-ma-sm">
                       <q-tooltip>
                         Guardar Cambios
                       </q-tooltip>
-                    <template v-slot:loading>
-                      <q-spinner color="primary" size="1em" />
-                    </template>
+                      <template v-slot:loading>
+                        <q-spinner color="white" size="1em" />
+                      </template>
                     </q-btn>
                   </div>
                 </q-form>
@@ -473,7 +455,7 @@ watch(selectedOption, () => {
       </div>
 
       <q-table flat bordered title="Mantenimientos" title-class="text-green text-weight-bolder text-h5"
-        :rows="filteredRows" :columns="columns" row-key="id">
+        :rows="filtrarFilas" :columns="columns" row-key="id">
         <template v-slot:body-cell-opciones="props">
           <q-td :props="props">
             <q-btn @click="cargarMantenimientoParaEdicion(props.row)">
@@ -507,10 +489,20 @@ watch(selectedOption, () => {
             </p>
           </q-td>
         </template>
+
+        <!-- Descripcion Column -->
+        <template v-slot:body-cell-descripcion="props">
+          <q-td :props="props" class="relative">
+            <div class="truncated-text" @mouseover="checkAndShowTooltip($event, props.row.descripcion, 20)"
+              @mouseleave="hideTooltip">
+              {{ truncateText(props.row.descripcion, 20) }}
+            </div>
+          </q-td>
+        </template>
       </q-table>
     </div>
   </div>
-  <q-inner-loading :showing="visible" label="Por favor espere..." label-class="text-teal"
+  <q-inner-loading :showing="isLoading" label="Por favor espere..." label-class="text-teal"
     label-style="font-size: 1.1em" />
 </template>
 
@@ -523,7 +515,6 @@ watch(selectedOption, () => {
 
 .q-select {
   max-width: 250px;
-  /* Puedes ajustar el ancho según tu preferencia */
 }
 
 .q-my-md {

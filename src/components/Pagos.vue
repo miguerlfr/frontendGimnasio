@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
+import { notifyErrorRequest, notifySuccessRequest } from "../routes/routes.js";
 import { useStoreClientes } from "../stores/Clientes.js";
 import { useStorePagos } from "../stores/Pagos.js";
 import { useStorePlanes } from "../stores/Planes.js";
@@ -23,7 +24,8 @@ const usePago = useStorePagos();
 const usePlan = useStorePlanes();
 
 // Variables del input para peticiones get
-const fechaSeleccionada = ref("");
+const fecha1 = ref("");
+const fecha2 = ref("");
 const planC = ref("");
 const nombreCliente = ref("");
 
@@ -54,39 +56,28 @@ const estadoOptions = [
   { label: "Inactivo" },
 ];
 
-async function listarPagosListarInactivosYActivos() {
-  let pagos = [];
+async function actualizarListadoPagos() {
+  const pagosPromise = selectedOption.value === "Listar Pagos Activos"
+    ? usePago.getPagosActivos()
+    : selectedOption.value === "Listar Pagos Inactivos"
+      ? usePago.getPagosInactivos()
+      : usePago.getPagos();
 
-  switch (selectedOption.value) {
-    case "Listar Pagos Activos":
-      pagos = (await usePago.getPagosActivos()).data.pagosAc;
-      break;
-    case "Listar Pagos Inactivos":
-      pagos = (await usePago.getPagosInactivos()).data.pagosIn;
-      break;
-    default:
-      pagos = (await usePago.getPagos()).data.pagos;
-      break;
-  }
-
+  rows.value = (await pagosPromise).data.pagos;
   visible.value = false;
-  rows.value = pagos;
-};
+  console.log("Pagos", rows.value);
+}
 
 async function listarClientes() {
-  try {
-    const clientesResponse = await useCliente.getClientes();
-    clientes.value = clientesResponse.data.clientes;
-    console.log("clientes", clientes.value);
-  } catch (error) {
-    console.error("Error al listar las clientes:", error);
-  }
+  const r = await useCliente.getClientes();
+  clientes.value = r.data.clientes;
+  // console.log("clientes", clientes.value);
 };
 
 async function listarPlanes() {
   const r = await usePlan.getPlanes();
-  console.log("planes", r.data.planes);
   planes.value = r.data.planes;
+  // console.log("planes", r.data.planes);
 }
 
 const clientesOptions = computed(() => {
@@ -112,13 +103,12 @@ const planOptions = computed(() => {
       valor: plan.valor
     }));
 });
-
-const estadoPago = ref(estadoOptions.find(option => option.label === "Activo").label);
+const estadoPago = ref("Activo");
 
 const selectedOption = ref("Listar Pagos");
 const options = [
   { label: "Listar Pagos", value: "Listar Pagos" },
-  { label: "Listar Pagos por Fecha", value: "Listar Pagos por Fecha" },
+  { label: "Listar Pagos por Fechas", value: "Listar Pagos por Fechas" },
   { label: "Listar Pagos por Plan", value: "Listar Pagos por Plan" },
   { label: "Listar Pagos por Cliente", value: "Listar Pagos por Cliente" },
   { label: "Listar Pagos Activos", value: "Listar Pagos Activos" },
@@ -150,79 +140,60 @@ const columns = ref([
   { name: "opciones", label: "Opciones", field: "opciones", align: "center" },
 ]);
 
-const filteredRows = computed(() => {
-  switch (selectedOption.value) {
-    case "Listar Pagos por Fecha":
-      return listarPagosPorFecha.value;
-    case "Listar Pagos por Plan":
-      return listarPagosPorPlan.value;
-    case "Listar Pagos por Cliente":
-      return listarPagosPorCliente.value;
-    default:
-      return rows.value;
-  }
-});
+const filtrarFilas = computed(() => {
+  const fecha1Value = fecha1.value ? new Date(fecha1.value) : null;
+  const fecha2Value = fecha2.value ? new Date(fecha2.value) : null;
+  const planInput = planC.value ? planC.value.toString() : '';
+  const clienteInput = nombreCliente.value ? nombreCliente.value : '';
 
-const listarPagosPorFecha = computed(() => {
-  if (
-    selectedOption.value === "Listar Pagos por Fecha" &&
-    fechaSeleccionada.value
-  ) {
-    const fechaSeleccionadaValue = new Date(fechaSeleccionada.value); // Obtener la fecha seleccionada
-    return rows.value.filter((pago) => {
-      const fechaPago = new Date(pago.fecha); // Convertir la fecha del pago a un objeto Date
-      // Comparar solo el día, mes y año de la fecha del pago y la fecha seleccionada
-      return (
-        fechaPago.getDate() === fechaSeleccionadaValue.getDate() &&
-        fechaPago.getMonth() === fechaSeleccionadaValue.getMonth() &&
-        fechaPago.getFullYear() === fechaSeleccionadaValue.getFullYear()
-      );
-    });
-  } else {
-    return rows.value; // Devolver todos los pagos si no se ha seleccionado una fecha
-  }
-});
+  return rows.value.filter(pago => {
+    switch (selectedOption.value) {
+      case "Listar Pagos por Fechas":
+        if (!fecha1Value || !fecha2Value) return true;
+        const fechaPago = new Date(pago.fecha);
+        if (fechaPago >= fecha1Value && fechaPago <= fecha2Value) {
+          // notifySuccessRequest('Pagos listados por fechas exitosamente.');
+          return true;
+        } else {
+          // notifyErrorRequest('Fechas inválidas o inconsistentes.');
+          return false;
+        }
 
-const listarPagosPorPlan = computed(() => {
-  const planInput = planC.value.toLowerCase();
-  if (selectedOption.value === "Listar Pagos por Plan" && planC.value) {
-    return rows.value.filter((row) =>
-      row.plan.toString().toLowerCase().includes(planInput)
-    );
-  } else {
-    return rows.value;
-  }
-});
+      case "Listar Pagos por Plan":
+        if (pago.plan.descripcion.toString().includes(planInput)) {
+          // notifySuccessRequest('Listado correctamente por plan.');
+          return true;
+        }
+        return false;
 
-const listarPagosPorCliente = computed(() => {
-  const clienteInput = nombreCliente.value.toLowerCase();
-  if (
-    selectedOption.value === "Listar Pagos por Cliente" &&
-    nombreCliente.value
-  ) {
-    return rows.value.filter((row) =>
-      row.cliente.toLowerCase().includes(clienteInput)
-    );
-  } else {
-    return rows.value;
-  }
+      case "Listar Pagos por Cliente":
+        if (pago.cliente.nombre.includes(clienteInput)) {
+          // notifySuccessRequest('Listado correctamente por cliente.');
+          return true;
+        }
+        return false;
+
+      default:
+        return true;
+    }
+  });
 });
 
 async function inactivarPago(id) {
   console.log("Iniciando inactivarPago con ID:", id);
   const r = await usePago.putPagosInactivar(id);
   console.log("Respuesta de inactivarPago:", r.data);
-  listarPagosListarInactivosYActivos();
+  actualizarListadoPagos();
 }
 
 async function activarPago(id) {
   console.log("Iniciando activarPago con ID:", id);
   const r = await usePago.putPagosActivar(id);
   console.log("Respuesta de activarPago:", r.data);
-  listarPagosListarInactivosYActivos();
+  actualizarListadoPagos();
 }
 
-const limpiarCamposPago = () => {
+const limpiarCampos = () => {
   clientePago.value = "";
   planPago.value = "";
   fechaPago.value = "";
@@ -230,52 +201,47 @@ const limpiarCamposPago = () => {
 };
 
 const cancelarEdicionPago = () => {
-  limpiarCamposPago()
   mostrarFormularioEditarPago.value = false;
   mostrarFormularioAgregarPago.value = false;
 };
 
+async function validarDatosPago(pago) {
+  const { plan } = pago
+
+  if (plan === undefined) {
+    notifyErrorRequest(`El Plan es requerido.`);
+    return false;
+  }
+
+  // Si no hay errores, retornar true
+  return true;
+}
+
 const agregarPago = async () => {
-  try {
-    let idCliente;
-    let idPlan = planPago.value.id;
-    let valor = planPago.value.valor;
-    let eA = estadoPago.value === "Activo" ? 1 : 0;
-
-    for (let cliente of clientes.value) {
-      let nameDocumento = `${cliente.nombre} - ${cliente.documento}`
-      if (nameDocumento === clientePago.value) {
-        idCliente = cliente._id;
-        break;
-      } else if (cliente._id === clientePago.value.id) {
-        idCliente = cliente._id
-        break;
-      }
+  let idCliente = clientePago.value.id
+  
+  for (let cliente of clientes.value) {
+    if (`${cliente.nombre} - ${cliente.documento}` === clientePago.value) {
+      idCliente = cliente._id;
+      break;
     }
+  }
+  const nuevoPago = {
+    cliente: idCliente,
+    plan: planPago.value.id,
+    fecha: fechaPago.value,
+    valor: planPago.value.valor,
+    estado: estadoPago.value === "Activo" ? 1 : 0
+  };
 
-    // console.log("idCliente:", idCliente);
-    // console.log("idPlan:", idPlan);
-
-    const nuevoPago = {
-      cliente: idCliente,
-      plan: idPlan,
-      fecha: fechaPago.value,
-      valor: valor,
-      estado: eA,
-    };
-
-    console.log(nuevoPago);
-
-    const response = await usePago.postPagos(nuevoPago);
-    if (response.status === 200) {
-      listarPagosListarInactivosYActivos();
-      eA = estadoOptions.find(option => option.label === "Activo").value;
-      limpiarCamposPago();
-    } else {
-      console.error('Error al agregar el pago:', response.data);
+  if (await validarDatosPago(nuevoPago)) {
+    const r = await usePago.postPagos(nuevoPago)
+    if (r.status == 200) {
+      mostrarFormularioAgregarPago.value = false
+      actualizarListadoPagos();
+      estadoPago.value = "Activo";
+      console.log("Pago agregado exitosamente", nuevoPago);
     }
-  } catch (error) {
-    console.error('Error al agregar el pago:', error);
   }
 };
 
@@ -292,78 +258,67 @@ const cargarPagoParaEdicion = (pago) => {
       return clientePago.value;
     }
   });
-  
-  console.log("Datos cargados para edición:", {
+
+  console.log("Datos del pago del cliente a editar:", {
     idPagoSeleccionada: idPagoSeleccionada.value,
     clientePago: clientePago.value,
     planPago: planPago.value,
     fechaPago: fechaPago.value,
     valorPago: valorPago.value,
   });
-
   mostrarFormularioEditarPago.value = true;
 };
 
 async function editarPago() {
-  let idCliente;
-  let idPlan;
+  let idCliente = clientePago.value.id
+  let idPlan = planPago.value.id
   let valorNuevo;
 
   for (let cliente of clientes.value) {
-    if (cliente.nombre === clientePago.value) {
+    if (`${cliente.nombre} - ${cliente.documento}` === clientePago.value) {
       idCliente = cliente._id;
-      break;
-    } else if (cliente._id === clientePago.value.id) {
-      idCliente = cliente._id
       break;
     }
   }
-
   for (let plan of planes.value) {
     if (plan.descripcion === planPago.value) {
       idPlan = plan._id;
       valorNuevo = plan.valor;
       break;
-    } else if (plan._id === planPago.value.id) {
-      idPlan = plan._id
-      valorNuevo = plan.valor;
-      break;
     }
   }
-
   // console.log("idCliente:", idCliente);
   // console.log("idPlan:", idPlan);
   // console.log("valorPago", valorNuevo);
-
   const pagoEditado = {
+    _id: idPagoSeleccionada.value,
     cliente: idCliente,
     plan: idPlan,
     fecha: fechaPago.value,
     valor: valorNuevo,
   };
 
-  try {
-    const response = await usePago.putPagos(idPagoSeleccionada.value, pagoEditado);
-    if (response.status === 200) {
-      cancelarEdicionPago();
-      listarPagosListarInactivosYActivos();
-
-    } else {
-      console.error("Error al editar el pago:", response.data);
+  if (await validarDatosPago(pagoEditado)) {
+    const r = await usePago.putPagos(idPagoSeleccionada.value, pagoEditado);
+    if (r.status == 200) {
+      mostrarFormularioEditarPago.value = false
+      actualizarListadoPagos();
+      console.log("Pago editado exitosamente", pagoEditado);
     }
-  } catch (error) {
-    console.error("Error al editar el pago:", error);
   }
 }
 
+const isLoading = computed(() => visible.value);
+
 onMounted(() => {
-  listarPagosListarInactivosYActivos();
-  listarPlanes();
+  actualizarListadoPagos();
   listarClientes();
+  listarPlanes();
 });
 
 watch(selectedOption, () => {
-  listarPagosListarInactivosYActivos()
+  actualizarListadoPagos()
+  isLoading
 });
 </script>
 
@@ -379,8 +334,13 @@ watch(selectedOption, () => {
         <q-select background-color="green" class="q-my-md" v-model="selectedOption" outlined dense options-dense
           emit-value :options="options" />
 
-        <input v-if="selectedOption === 'Listar Pagos por Fecha'" v-model="fechaSeleccionada" class="q-my-md"
-          type="date" name="search" id="fechaSeleccionada" />
+        <div v-if="selectedOption === 'Listar Pagos por Fechas'" style="display: flex; flex-direction: row; text-align: center; flex-wrap: wrap; position: absolute; top: 147px; left: 270px;">
+          <label for="fecha1"  style="height: 100%; line-height: 88px; margin-left: 40px;">De:</label>
+          <q-input v-model="fecha1" class="q-my-md" type="date" name="search" id="fecha1" placeholder="Ingrese la fecha" />
+
+          <label for="fecha2"  style="height: 100%; line-height: 88px; margin-left: 40px;">A:</label>
+          <q-input v-model="fecha2" class="q-my-md" type="date" name="search" id="fecha2" placeholder="Ingrese la fecha" />
+        </div>
 
         <input v-if="selectedOption === 'Listar Pagos por Plan'" v-model="planC" class="q-my-md" type="text"
           name="search" id="planC" placeholder="Ingrese el plan" />
@@ -400,7 +360,7 @@ watch(selectedOption, () => {
         </div>
 
         <!-- Dialogo para agregar pago -->
-        <q-dialog v-model="mostrarFormularioAgregarPago" v-bind="mostrarFormularioAgregarPago && limpiarCamposPago()">
+        <q-dialog v-model="mostrarFormularioAgregarPago" v-bind="mostrarFormularioAgregarPago && limpiarCampos()">
           <q-card>
             <q-card-section>
               <div class="text-h5" style="padding: 10px 0 0 25px;">Agregar Pago</div>
@@ -412,7 +372,7 @@ watch(selectedOption, () => {
                   <!-- Campos del formulario de agregar pago -->
                   <q-select filled outlined v-model="clientePago" use-input hide-selected fill-input input-debounce="0"
                     :options="clientesOptions" label="Cliente" emit-value map-options @filter="filterFn"
-                    @input-value="setModel" class="q-mb-md" style="min-width: 100%;">
+                    @input-value="setModel" class="q-mb-md" style="min-width: 100%;" required>
                     <template v-slot:no-option>
                       <q-item>
                         <q-item-section>
@@ -431,7 +391,7 @@ watch(selectedOption, () => {
                       </q-item>
                     </template>
                   </q-select>
-                  <q-input v-model="fechaPago" label="Fecha" filled type="date" outlined class="q-mb-md" />
+                  <q-input v-model="fechaPago" label="Fecha" filled type="date" outlined class="q-mb-md" required />
                   <q-input v-model="valorPago" label="Valor" type="number" outlined class="q-mb-md"
                     style="display: none;" />
                   <q-select v-model="estadoPago" label="Estado" filled outlined :options="estadoOptions" class="q-mb-md"
@@ -449,7 +409,7 @@ watch(selectedOption, () => {
                         Guardar pago
                       </q-tooltip>
                       <template v-slot:loading>
-                        <q-spinner color="primary" size="1em" />
+                        <q-spinner color="white" size="1em" />
                       </template>
                     </q-btn>
                   </div>
@@ -491,7 +451,7 @@ watch(selectedOption, () => {
                       </q-item>
                     </template>
                   </q-select>
-                  <q-input v-model="fechaPago" label="Fecha" filled type="date" outlined class="q-mb-md" />
+                  <q-input v-model="fechaPago" label="Fecha" filled type="date" outlined class="q-mb-md" required />
                   <q-input v-model="valorPago" label="Valor" type="number" outlined class="q-mb-md"
                     style="display: none;" />
 
@@ -507,7 +467,7 @@ watch(selectedOption, () => {
                         Guardar cambios
                       </q-tooltip>
                       <template v-slot:loading>
-                        <q-spinner color="primary" size="1em" />
+                        <q-spinner color="white" size="1em" />
                       </template>
                     </q-btn>
                   </div>
@@ -518,7 +478,7 @@ watch(selectedOption, () => {
         </q-dialog>
       </div>
 
-      <q-table flat bordered title="Pagos" title-class="text-green text-weight-bolder text-h5" :rows="filteredRows"
+      <q-table flat bordered title="Pagos" title-class="text-green text-weight-bolder text-h5" :rows="filtrarFilas"
         :columns="columns" row-key="id">
         <template v-slot:body-cell-opciones="props">
           <q-td :props="props">
@@ -556,7 +516,7 @@ watch(selectedOption, () => {
       </q-table>
     </div>
   </div>
-  <q-inner-loading :showing="visible" label="Por favor espere..." label-class="text-teal"
+  <q-inner-loading :showing="isLoading" label="Por favor espere..." label-class="text-teal"
     label-style="font-size: 1.1em" />
 </template>
 

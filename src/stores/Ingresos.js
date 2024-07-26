@@ -22,8 +22,7 @@ export const useStoreIngresos = defineStore("Ingreso", () => {
             notifySuccessRequest("Ingresos listados exitosamente.");
             return r;
         } catch (error) {
-            loading.value = true
-            console.log("Error al listar ingresos:", error.response.data);
+            console.error("Error al listar ingresos:", error.response.data);
             return error
         } finally {
             loading.value = false
@@ -38,16 +37,33 @@ export const useStoreIngresos = defineStore("Ingreso", () => {
                     token: useUsuario.token
                 }
             });
-            notifySuccessRequest("Ingreso encontrado.")
+            notifySuccessRequest("Ingreso encontrado exitosamente.")
             return r;
         } catch (error) {
-            loading.value = true
-            console.log("Error al buscar el ingreso:", error.response.data);
+            console.error("Error al buscar ingreso:", error.response.data);
             return error
         } finally {
             loading.value = false
         }
     };
+
+    const getIngresosFechas = async (fechainicio, fechafin) => {
+		try {
+			loading.value = true
+			const r = await axios.get(`${url}/api/ingresos/fechas/${fechainicio}/${fechafin}`, {
+				headers: {
+					token: useUsuario.token,
+				},
+			});
+			notifySuccessRequest("Ingresos listadas por fechas exitosamente.");
+			return r
+		} catch (error) {
+			console.error("Error al listar ingresos por fechas:", error);
+			return error;
+		} finally {
+			loading.value = false
+		}
+	};
 
     const postIngresos = async (datos) => {
         try {
@@ -58,12 +74,10 @@ export const useStoreIngresos = defineStore("Ingreso", () => {
                 }
             });
             notifySuccessRequest("Ingreso agregado exitosamente.");
-            console.log("d", datos);
             return r;
         } catch (error) {
-            loading.value = true
             notifyErrorRequest(error.response.data.errors[0].msg);
-            console.log("Error al agregar el ingreso:", error.response.data.errors[0].msg);
+            console.error("Error al agregar ingreso:", error.response.data.errors[0].msg);
             return error
         } finally {
             loading.value = false
@@ -81,9 +95,8 @@ export const useStoreIngresos = defineStore("Ingreso", () => {
             notifySuccessRequest("Ingreso editado exitosamente.");
             return r;
         } catch (error) {
-            loading.value = true
             notifyErrorRequest(error.response.data.errors[0].msg);
-            console.log("Error al editar el ingreso:", error.response.data.errors[0].msg);
+            console.error("Error al editar ingreso:", error.response.data.errors[0].msg);
             return error
         } finally {
             loading.value = false
@@ -93,6 +106,7 @@ export const useStoreIngresos = defineStore("Ingreso", () => {
     return {
         getIngresos,
         getIngresosID,
+        getIngresosFechas,
         postIngresos,
         putIngresos,
         loading

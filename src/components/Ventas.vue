@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
+import { notifyErrorRequest, notifySuccessRequest } from "../routes/routes.js";
 import { useStoreVentas } from "../stores/Ventas.js";
 import { useStoreProductos } from "../stores/Productos.js";
 import { format } from "date-fns";
@@ -11,6 +12,9 @@ function formatoNumerico(numero) {
 
 // Loading
 const visible = ref(true);
+const listarCodigo = ref("")
+const listarFechasOne = ref("")
+const listarFechasTwo = ref("")
 
 // Variables parra mostrar formularios
 const mostrarFormularioEditarVenta = ref(false);
@@ -28,13 +32,11 @@ const valorUnitario = ref("");
 const cantidad = ref("");
 const valorTotal = ref("");
 
-const selectedOption = ref("Listar Ventas"); // Establecer 'Listar Ventas' como valor por defecto
+const selectedOption = ref("Listar Ventas");
 const options = [
   { label: "Listar Ventas", value: "Listar Ventas" },
-  {
-    label: "Listar Ventas por Código del Producto",
-    value: "Listar Ventas por Código del Producto",
-  }
+  { label: "Listar Ventas por Producto", value: "Listar Ventas por Producto" },
+  { label: "Listar Ventas por fechas", value: "Listar Ventas por fechas" }
 ];
 
 let rows = ref([]);
@@ -72,7 +74,6 @@ const columns = ref([
   { name: "opciones", label: "Opciones", field: "opciones", align: "center" },
 ]);
 
-// Array de modelo
 const productos = ref([])
 
 async function listarProductos() {
@@ -80,7 +81,7 @@ async function listarProductos() {
     const r = await useProducto.getProductos();
     if (r.data && r.data.productos) {
       productos.value = r.data.productos;
-      console.log("productos listados:", productos.value);
+      console.log("Productos:", productos.value);
     } else {
       console.error("La respuesta no contiene la propiedad 'productos'.", r.data);
     }
@@ -90,34 +91,49 @@ async function listarProductos() {
 }
 
 const productoOptions = computed(() => {
-  return productos.value.map((producto) => ({
-    label: producto.descripcion,
-    id: producto._id,
-    valor: producto.valor
-  }));
+  return productos.value
+    .filter(plan => plan.estado != 0)
+    .map((producto) => ({
+      label: producto.descripcion,
+      id: producto._id,
+      valor: producto.valor
+    }));
 });
 
 async function listarVentas() {
   const ventasResponse = await useVenta.getVentas();
   const ventas = ventasResponse.data.ventas;
-  console.log("ventas", ventas);
+  console.log("Ventas", ventas);
 
   rows.value = ventas;
   visible.value = false;
 }
 
-const listarVentasPorCodigoProducto = computed(() => {
-  if (
-    selectedOption.value === "Listar Ventas por Código del Producto" &&
-    codigoProducto.value
-  ) {
-    const codigoInput = codigoProducto.value; // Obtener el código ingresado por el usuario
-    return rows.value.filter((row) =>
-      row.codigoProducto.toString().includes(codigoInput)
+const filtrarFilas = computed(() => {
+  let ventasFiltradas = rows.value;
+
+  if (selectedOption.value === "Listar Ventas por Producto" && listarCodigo.value) {
+    ventasFiltradas = ventasFiltradas.filter(row =>
+      row.codigoProducto.descripcion.toLowerCase().includes(listarCodigo.value.toLowerCase())
     );
-  } else {
-    return rows.value;
+    // notifySuccessRequest('Ventas listadas por producto exitosamente.');
   }
+
+  if (listarFechasOne.value && listarFechasTwo.value) {
+    const startDate = new Date(listarFechasOne.value);
+    const endDate = new Date(listarFechasTwo.value);
+
+    if (startDate <= endDate) {
+      ventasFiltradas = ventasFiltradas.filter(venta =>
+        new Date(venta.fecha) >= startDate && new Date(venta.fecha) <= endDate
+      );
+      // notifySuccessRequest('Ventas listadas por fechas exitosamente.');
+    } else {
+      // notifyErrorRequest('Fechas inválidas o inconsistentes.');
+    }
+  }
+
+  return ventasFiltradas;
 });
 
 function limpiarCampos() {
@@ -129,123 +145,89 @@ function limpiarCampos() {
   valorTotal.value = "";
 }
 
-const cancelarEdicion = () => {
-  mostrarFormularioEditarVenta.value = false;
-  mostrarFormularioAgregarVenta.value = false;
+async function validarDatosVenta(venta) {
+  const { codigoProducto } = venta;
 
-  limpiarCampos();
-};
+  if (codigoProducto == undefined) {
+    notifyErrorRequest('El Producto es requerido.');
+    return false;
+  }
+
+  return true;
+}
 
 async function agregarVenta() {
-
-  let idCodigoProducto = codigoProducto.value.id
-  let valor = codigoProducto.value.valor;
-
-  // console.log("idCodigoProducto:", idCodigoProducto)
-  // console.log("Valor:", valor);
-
   const nuevaVenta = {
     fecha: fecha.value,
-    codigoProducto: idCodigoProducto,
-    valorUnitario: valor,
+    codigoProducto: codigoProducto.value.id,
+    valorUnitario: codigoProducto.value.valor,
     cantidad: cantidad.value,
-    valorTotal: (valor * cantidad.value)
+    valorTotal: (valorUnitario * cantidad.value)
   };
 
-  console.log(nuevaVenta);
-
-  try {
-    const response = await useVenta.postVentas(nuevaVenta);
-    if (response.status === 200) {
-      limpiarCampos()
+  if (await validarDatosVenta(nuevaVenta)) {
+    const r = await useVenta.postVentas(nuevaVenta);
+    if (r.status == 200) {
+      mostrarFormularioAgregarVenta.value = false
       listarVentas();
-    } else {
-      console.error("Error al agregar la venta:", response);
+      console.log("Venta agregada exitosamente", nuevaVenta)
     }
-
-  } catch (error) {
-    console.error("Error al agregar la venta:", error);
   }
-  mostrarFormularioAgregarVenta.value = false
 }
 
 function cargarVentaParaEdicion(venta) {
   idVentaSeleccionada.value = venta._id;
-  fecha.value = venta.fecha.split("T")[0],
+  fecha.value = venta.fecha.split("T")[0];
   codigoProducto.value = venta.codigoProducto.descripcion;
   valorUnitario.value = venta.valorUnitario;
   cantidad.value = venta.cantidad;
   valorTotal.value = venta.valorUnitario * venta.cantidad;
 
   mostrarFormularioEditarVenta.value = true;
-  mostrarFormularioAgregarVenta.value = false;
-
-  console.log("Cargar", {
-    id: idVentaSeleccionada.value,
-    fecha: fecha.value,
-    codigoProducto: codigoProducto.value,
-    valorUnitario: valorUnitario.value,
-    cantidad: cantidad.value,
-    valorTotal: valorUnitario.value * cantidad.value,
-  });
+  console.log("Datos de la venta a editar", venta);
 }
 
 async function editarVenta() {
-  console.log("c", codigoProducto.value);
-  let idCodigoProducto;
-  let valor;
+  let idCodigoProducto = codigoProducto.value.id
 
+  // Por si no cambio el producto tomar el valor del id del producto
   for (let producto of productos.value) {
     if (producto.descripcion === codigoProducto.value) {
       idCodigoProducto = producto._id
-      valor = producto.valor;
-      break;
-    } else if (producto._id === codigoProducto.value.id) {
-      idCodigoProducto = producto._id
-      valor = producto.valor;
       break;
     }
   }
-
   const ventaEditada = {
-    id: idVentaSeleccionada.value,
+    _id: idVentaSeleccionada.value,
     fecha: fecha.value,
     codigoProducto: idCodigoProducto,
-    valorUnitario: valor,
+    valorUnitario: valorUnitario.value,
     cantidad: cantidad.value,
-    valorTotal: (valor * cantidad.value),
+    valorTotal: valorTotal.value,
   };
-
-  console.log("idCodigoProducto", idCodigoProducto);
-  console.log("Valor", valor);
-  console.log("Editar", ventaEditada);
-
-  try {
-    const response = await useVenta.putVentas(
-      idVentaSeleccionada.value,
-      ventaEditada
-    );
-    if (response.status === 200) {
+  if (await validarDatosVenta(ventaEditada)) {
+    const r = await useVenta.putVentas(idVentaSeleccionada.value, ventaEditada);
+    if (r.status == 200) {
+      mostrarFormularioEditarVenta.value = false;
       listarVentas();
-      limpiarCampos();
-      idVentaSeleccionada.value = "";
-
-    } else {
-      console.error("Error al editar la venta:", response);
+      console.log("Venta editada exitosamente", ventaEditada)
     }
-  } catch (error) {
-    console.error("Error al editar la venta:", error);
   }
 }
 
+const isLoading = computed(() => visible.value);
+
 onMounted(() => {
-  listarVentas(),
-    listarProductos();
+  listarVentas();
+  listarProductos();
 });
 
 watch(selectedOption, () => {
   listarVentas();
+  filtrarFilas
+  isLoading
 });
+
 </script>
 
 <template>
@@ -260,8 +242,19 @@ watch(selectedOption, () => {
         <q-select background-color="green" class="q-my-md" id="q-select" v-model="selectedOption" outlined dense
           options-dense emit-value :options="options" />
 
-        <input v-if="selectedOption === 'Listar Ventas por Código del Producto'" v-model="codigoProducto"
-          class="q-my-md" type="text" name="search" id="search" placeholder="Ingrese el código del producto" />
+        <input v-if="selectedOption === 'Listar Ventas por Producto'" v-model="listarCodigo" class="q-my-md" type="text"
+          name="search" id="search" placeholder="Ingrese el producto" />
+
+        <div v-if="selectedOption === 'Listar Ventas por fechas'"
+          style="display: flex; flex-direction: row; text-align: center; flex-wrap: wrap; position: absolute; top: 150px; left: 240px;">
+          <label for="listarFechasOne" style="height: 100%; line-height: 88px; margin-left: 40px;">De:</label>
+          <q-input v-model="listarFechasOne" class="q-my-md" type="date" name="search" id="listarFechasOne"
+            placeholder="Ingrese la fecha" />
+
+          <label for="listarFechasTwo" style="height: 100%; line-height: 88px; margin-left: 40px;">A:</label>
+          <q-input v-model="listarFechasTwo" class="q-my-md" type="date" name="search" id="listarFechasTwo"
+            placeholder="Ingrese la fecha" />
+        </div>
       </div>
 
       <div>
@@ -282,7 +275,7 @@ watch(selectedOption, () => {
             </q-card-section>
             <q-card-section>
               <q-form @submit.prevent="agregarVenta">
-                <q-input v-model="fecha" label="Fecha de Venta" type="date" filled outlined class="q-mb-md" required/>
+                <q-input v-model="fecha" label="Fecha de Venta" type="date" filled outlined class="q-mb-md" required />
                 <q-select v-model="codigoProducto" label="Producto" filled outlined :options="productoOptions"
                   class="q-mb-md" required>
                   <template v-slot:no-option>
@@ -295,19 +288,21 @@ watch(selectedOption, () => {
                 </q-select>
                 <q-input v-model="valorUnitario" label="Valor Unitario" type="number" outlined style="display: none;" />
                 <q-input v-model="valorTotal" label="Valor Total" type="number" outlined style="display: none;" />
-                <q-input v-model="cantidad" label="Cantidad" type="number" filled outlined class="q-mb-md" required/>
-                <q-btn label="Cancelar" color="negative" class="q-ma-sm" @click="cancelarEdicion">
+                <q-input v-model="cantidad" label="Cantidad" type="number" filled outlined class="q-mb-md" min="0"
+                  required />
+                <q-btn label="Cancelar" color="negative" class="q-ma-sm" @click="mostrarFormularioAgregarVenta = false">
                   <q-tooltip>
                     Cancelar
                   </q-tooltip>
                 </q-btn>
-                <q-btn :loading="useProducto.loading" type="submit" label="Guardar Producto" color="primary" class="q-ma-sm">
+                <q-btn :loading="useProducto.loading" type="submit" label="Guardar Producto" color="primary"
+                  class="q-ma-sm">
                   <q-tooltip>
                     Guardar Producto
                   </q-tooltip>
                   <template v-slot:loading>
-                      <q-spinner color="primary" size="1em" />
-                    </template>
+                    <q-spinner color="white" size="1em" />
+                  </template>
                 </q-btn>
               </q-form>
             </q-card-section>
@@ -322,7 +317,7 @@ watch(selectedOption, () => {
             </q-card-section>
             <q-card-section>
               <q-form @submit.prevent="editarVenta">
-                <q-input v-model="fecha" label="Fecha de Venta" type="date" filled outlined class="q-mb-md" required/>
+                <q-input v-model="fecha" label="Fecha de Venta" type="date" filled outlined class="q-mb-md" required />
                 <q-select v-model="codigoProducto" label="Producto" filled outlined :options="productoOptions"
                   class="q-mb-md" required>
                   <template v-slot:no-option>
@@ -335,19 +330,21 @@ watch(selectedOption, () => {
                 </q-select>
                 <q-input v-model="valorUnitario" label="Valor Unitario" type="number" outlined style="display: none;" />
                 <q-input v-model="valorTotal" label="Valor Total" type="number" outlined style="display: none;" />
-                <q-input v-model="cantidad" label="Cantidad" type="number" filled outlined class="q-mb-md" required/>
-                <q-btn label="Cancelar" color="negative" class="q-ma-sm" @click="cancelarEdicion">
+                <q-input v-model="cantidad" label="Cantidad" type="number" filled outlined class="q-mb-md" min="0"
+                  required />
+                <q-btn label="Cancelar" color="negative" class="q-ma-sm" @click="mostrarFormularioEditarVenta = false">
                   <q-tooltip>
                     Cancelar
                   </q-tooltip>
                 </q-btn>
-                <q-btn :loading="useProducto.loading" type="submit" label="Guardar Cambios" color="primary" class="q-ma-sm">
+                <q-btn :loading="useProducto.loading" type="submit" label="Guardar Cambios" color="primary"
+                  class="q-ma-sm">
                   <q-tooltip>
                     Guardar Cambios
                   </q-tooltip>
                   <template v-slot:loading>
-                      <q-spinner color="primary" size="1em" />
-                    </template>
+                    <q-spinner color="white" size="1em" />
+                  </template>
                 </q-btn>
               </q-form>
             </q-card-section>
@@ -355,8 +352,8 @@ watch(selectedOption, () => {
         </q-dialog>
       </div>
 
-      <q-table flat bordered title="Ventas" title-class="text-green text-weight-bolder text-h5"
-        :rows="listarVentasPorCodigoProducto" :columns="columns" row-key="id">
+      <q-table flat bordered title="Ventas" title-class="text-green text-weight-bolder text-h5" :rows="filtrarFilas"
+        :columns="columns" row-key="id">
         <template v-slot:body-cell-opciones="props">
           <q-td :props="props">
             <q-btn @click="cargarVentaParaEdicion(props.row)">
@@ -370,7 +367,7 @@ watch(selectedOption, () => {
       </q-table>
     </div>
   </div>
-  <q-inner-loading :showing="visible" label="Por favor espere..." label-class="text-teal"
+  <q-inner-loading :showing="isLoading" label="Por favor espere..." label-class="text-teal"
     label-style="font-size: 1.1em" />
 </template>
 

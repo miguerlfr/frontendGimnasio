@@ -1,9 +1,9 @@
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
+import { notifyErrorRequest } from "../routes/routes.js";
 import { useStoreClientes } from "../stores/Clientes.js";
 import { useStoreIngresos } from "../stores/Ingresos.js";
 import { useStoreSedes } from "../stores/Sedes.js";
-import { notifyErrorRequest } from "../routes/routes.js";
 import { format } from "date-fns";
 
 const useCliente = useStoreClientes();
@@ -16,6 +16,9 @@ const mostrarFormularioAgregarIngreso = ref(false);
 const mostrarFormularioEditarIngreso = ref(false);
 
 const nombreClienteIngreso = ref("");
+const fecha1 = ref("");
+const fecha2 = ref("")
+
 const idIngresoSeleccionado = ref(null);
 const fecha = ref("");
 const sede = ref("")
@@ -53,10 +56,8 @@ const sedeOptions = computed(() => {
 const selectedOption = ref("Listar Ingresos"); // Establecer 'Listar Ingresos' como valor por defecto
 const options = [
   { label: "Listar Ingresos", value: "Listar Ingresos" },
-  {
-    label: "Listar Ingreso del Cliente por su Nombre",
-    value: "Listar Ingreso del Cliente por su Nombre",
-  }
+  { label: "Listar Ingreso del Cliente por su Nombre", value: "Listar Ingreso del Cliente por su Nombre" },
+  { label: "Listar Ingresos por Fechas", value: "Listar Ingresos por Fechas" }
 ];
 
 let rows = ref([]);
@@ -86,39 +87,33 @@ let columns = ref([
   { name: "opciones", label: "Opciones", field: "opciones", align: "center" },
 ]);
 
-const filteredRows = computed(() => {
-  switch (selectedOption.value) {
-    case "Listar Ingreso del Cliente por su Nombre":
-      return listarIngresoPorNombreCliente.value;
-    default:
-      return rows.value;
-  }
-});
-
 async function listarIngresos() {
-  try {
-    const ingresos = await useIngreso.getIngresos()
-    console.log("Ingresos", ingresos.data.ingresos);
-
-    rows.value = ingresos.data.ingresos;
-    visible.value = false
-  } catch (error) {
-    console.error("Error al listar ingresos:", error);
-  }
+  const ingresos = await useIngreso.getIngresos()
+  rows.value = ingresos.data.ingresos;
+  visible.value = false
+  console.log("Ingresos", ingresos.data.ingresos);
 }
 
-const listarIngresoPorNombreCliente = computed(() => {
-  if (
-    selectedOption.value === "Listar Ingreso del Cliente por su Nombre" &&
-    nombreClienteIngreso.value
-  ) {
-    const nombreCliente = nombreClienteIngreso.value.toLowerCase(); // Convertir a minúsculas para comparación sin distinción entre mayúsculas y minúsculas
-    return rows.value.filter((row) =>
-      row.cliente.toLowerCase().includes(nombreCliente)
-    );
-  } else {
-    return rows.value;
-  }
+const filtrarFilas = computed(() => {
+  const nombreCliente = nombreClienteIngreso.value || '';
+  const fecha1Value = fecha1.value ? new Date(fecha1.value) : null;
+  const fecha2Value = fecha2.value ? new Date(fecha2.value) : null;
+
+  return rows.value.filter(row => {
+    // Filtrar por nombre del cliente
+    if (selectedOption.value === "Listar Ingreso del Cliente por su Nombre") {
+      return row.cliente && row.cliente.nombre.includes(nombreCliente);
+    }
+
+    // Filtrar por fechas
+    if (selectedOption.value === "Listar Ingresos por Fechas" && fecha1Value && fecha2Value) {
+      const fechaIngreso = new Date(row.fecha);
+      return fechaIngreso >= fecha1Value && fechaIngreso <= fecha2Value;
+    }
+
+    // Si no se selecciona ninguna opción, retorna todas las filas
+    return true;
+  });
 });
 
 const listarClientes = async () => {
@@ -149,23 +144,14 @@ const cargarIngresoParaEdicion = (ingreso) => {
   idIngresoSeleccionado.value = ingreso._id;
   fecha.value = ingreso.fecha.split("T")[0];
   sede.value = ingreso.sede.nombre;
-
   clientes.value.forEach(cliente => {
     if (cliente.nombre === ingreso.cliente.nombre) {
       nombreCliente.value = `${cliente.nombre} - ${cliente.documento}`;
       return nombreCliente.value;
     }
   });
-
-  console.log("Datos a cargar:", {
-    idIngresoSeleccionado: idIngresoSeleccionado.value,
-    fecha: fecha.value,
-    sede: sede.value,
-    nombreCliente: nombreCliente.value
-  });
-
-  mostrarFormularioAgregarIngreso.value = false;
   mostrarFormularioEditarIngreso.value = true;
+  console.log("Datos del ingreso a editar:", ingreso);
 };
 
 
@@ -180,133 +166,69 @@ const filterFn = (val, update, abort) => {
 };
 
 async function validarDatosIngreso(ingreso) {
-  const { fecha, sede, cliente } = ingreso;
+  const { sede } = ingreso;
 
-  console.log('Validando datos de ingreso...');
-  console.log('Fecha:', fecha);
-  console.log('Sede:', sede);
-  console.log('Cliente:', cliente);
-
-  // if (fecha.toISOString().split('T')[0] < new Date().toISOString().split('T')[0]) {
-  //   notifyErrorRequest('La fecha del ingreso del cliente no puede ser anterior a la fecha de hoy.');
-  //   return false;
-  // }
-
-  // Validar sede
-  if (!sede) {
+  if (sede === undefined) {
     notifyErrorRequest('La sede es requerida.');
     return false;
   }
-
   return true;
 }
 
 const agregarIngreso = async () => {
-
-  console.log("fecha", fecha.value);
-  console.log("cliente:", nombreCliente.value);
-  console.log("sede", sede.value);
-
-  const fechaActual = new Date(new Date(fecha.value).setDate(new Date(fecha.value).getDate() + 1));
-  let idCliente;
-  const idSede = sede.value.id
-
-  for (let cliente of clientes.value) {
-    if (cliente.nombre === nombreCliente.value) {
-      idCliente = cliente._id;
-      break;
-    } else if (cliente._id === nombreCliente.value.id) {
-      idCliente = cliente._id
-      break;
+  const nuevoIngreso = {
+    fecha: fecha.value,
+    sede: sede.value.id,
+    cliente: nombreCliente.value.id,
+  };
+  if (await validarDatosIngreso(nuevoIngreso)) {
+    const r = await useIngreso.postIngresos(nuevoIngreso);
+    if (r.status == 200) {
+      mostrarFormularioAgregarIngreso.value = false
+      listarIngresos();
+      console.log("Ingreso agregado exitosamente", nuevoIngreso);
     }
   }
-
-  // Crear un nuevo ingreso
-  const nuevoIngreso = {
-    fecha: fechaActual,
-    sede: idSede,
-    cliente: idCliente,
-  };
-  console.log(idSede);
-
-  // Validar datos del cliente antes de continuar
-  const datosValidos = await validarDatosIngreso(nuevoIngreso);
-  if (!datosValidos) {
-    // Detener la ejecución de la función si los datos son inválidos
-    return;
-  }
-  // Utilizar useIngreso.postIngresos para agregar el nuevo ingreso
-  const response = await useIngreso.postIngresos(nuevoIngreso);
-  mostrarFormularioAgregarIngreso.value = false
-  limpiarCamposIngreso();
-  listarIngresos();
-  console.error("Ingreso Agregado:", response.data);
-
 };
 
 const editarIngreso = async () => {
-
-  let idCliente;
+  let idCliente = nombreCliente.value.id
+  let idSede = sede.value.id;
 
   for (let cliente of clientes.value) {
-    if (cliente.nombre === nombreCliente.value) {
+    if (`${cliente.nombre} - ${cliente.documento}` === nombreCliente.value) {
       idCliente = cliente._id;
-      break;
-    } else if (cliente._id === nombreCliente.value.id) {
-      idCliente = cliente._id
       break;
     }
   }
-
-  // Buscar la máquina seleccionada por su descripción
-  const select = sede.value
-  const nombre = select.nombre
-
-  // Verificar si se encontró la máquina seleccionada
-  if (!select) {
-    console.log("Máquina seleccionada:", nombre);
-    console.error("Máquina seleccionada no encontrada");
-    return;
+  for (let sedee of sedes.value) {
+    if (sedee.nombre == sede.value) {
+      idSede = sedee._id
+    }
   }
-
-  const idSede = select.id;
-
   const ingresoEditado = {
     fecha: fecha.value,
     sede: idSede,
     cliente: idCliente,
   };
 
-  try {
-    const response = await useIngreso.putIngresos(
-      idIngresoSeleccionado.value,
-      ingresoEditado
-    );
-    if (response.status === 200) {
+  if (await validarDatosIngreso(ingresoEditado)) {
+    const r = await useIngreso.putIngresos(idIngresoSeleccionado.value, ingresoEditado);
+    if (r.status == 200) {
       mostrarFormularioEditarIngreso.value = false;
       listarIngresos();
-      limpiarCamposIngreso();
-      idIngresoSeleccionado.value = null;
-    } else {
-      console.error("Error al editar el ingreso:", response);
+      console.log("ingreso editado exitoamente", ingresoEditado);
     }
-  } catch (error) {
-    console.error("Error al editar el ingreso:", error);
   }
-};
+}
 
-const limpiarCamposIngreso = () => {
-  idIngresoSeleccionado.value = null;
+const limpiarCampos = () => {
   fecha.value = "";
   sede.value = "";
   nombreCliente.value = "";
 };
 
-const cancelarIngreso = () => {
-  mostrarFormularioAgregarIngreso.value = false;
-  mostrarFormularioEditarIngreso.value = false;
-  limpiarCamposIngreso();
-};
+const isLoading = computed(() => visible.value);
 
 onMounted(() => {
   listarIngresos();
@@ -316,6 +238,7 @@ onMounted(() => {
 
 watch(selectedOption, () => {
   listarIngresos();
+  isLoading
 });
 </script>
 
@@ -333,7 +256,16 @@ watch(selectedOption, () => {
 
         <input v-if="selectedOption === 'Listar Ingreso del Cliente por su Nombre'" v-model="nombreClienteIngreso"
           class="q-my-md" type="text" name="search" id="search" @dblclick="selectAllText"
-          placeholder="Nombre del Cliente del Ingreso a buscar" />
+          placeholder="Nombre del Cliente" />
+
+        <div v-if="selectedOption === 'Listar Ingresos por Fechas'"
+          style="display: flex; flex-direction: row; text-align: center; flex-wrap: wrap; position: absolute; top: 147px; left: 295px;">
+          <label for="fecha1" style="height: 100%; line-height: 88px; margin-left: 40px;">De:</label>
+          <q-input v-model="fecha1" class="q-my-md" type="date" name="search" id="fecha1" />
+
+          <label for="fecha2" style="height: 100%; line-height: 88px; margin-left: 40px;">A:</label>
+          <q-input v-model="fecha2" class="q-my-md" type="date" name="search" id="fecha2" />
+        </div>
       </div>
 
       <div>
@@ -347,7 +279,7 @@ watch(selectedOption, () => {
         </div>
 
         <!-- Dialogo para agregar ingreso -->
-        <q-dialog v-model="mostrarFormularioAgregarIngreso" v-bind="mostrarFormularioAgregarIngreso && limpiarCamposIngreso()">
+        <q-dialog v-model="mostrarFormularioAgregarIngreso" v-bind="mostrarFormularioAgregarIngreso && limpiarCampos()">
           <q-card>
             <q-card-section>
               <div class="text-h6">Agregar Ingreso</div>
@@ -378,7 +310,8 @@ watch(selectedOption, () => {
                   </template>
                 </q-select>
                 <div class="q-mt-md">
-                  <q-btn @click="cancelarIngreso" label="Cancelar" color="negative" class="q-ma-sm">
+                  <q-btn @click="mostrarFormularioAgregarIngreso = false" label="Cancelar" color="negative"
+                    class="q-ma-sm">
                     <q-tooltip>
                       Cancelar
                     </q-tooltip>
@@ -389,7 +322,7 @@ watch(selectedOption, () => {
                       Guardar Ingreso
                     </q-tooltip>
                     <template v-slot:loading>
-                      <q-spinner color="primary" size="1em" />
+                      <q-spinner color="white" size="1em" />
                     </template>
                   </q-btn>
                 </div>
@@ -407,7 +340,7 @@ watch(selectedOption, () => {
 
             <q-card-section>
               <q-form @submit.prevent="editarIngreso">
-                <q-input v-model="fecha" label="Fecha" type="date" filled outlined class="q-mb-md" required/>
+                <q-input v-model="fecha" label="Fecha" type="date" filled outlined class="q-mb-md" required />
                 <q-select v-model="sede" label="Sede" filled outlined :options="sedeOptions" class="q-mb-md"
                   style="max-width: 100%;">
                   <template v-slot:no-option>
@@ -430,7 +363,8 @@ watch(selectedOption, () => {
                   </template>
                 </q-select>
                 <div class="q-mt-md">
-                  <q-btn @click="cancelarIngreso" label="Cancelar" color="negative" class="q-ma-sm">
+                  <q-btn @click="mostrarFormularioEditarIngreso = false" label="Cancelar" color="negative"
+                    class="q-ma-sm">
                     <q-tooltip>
                       Cancelar
                     </q-tooltip>
@@ -441,7 +375,7 @@ watch(selectedOption, () => {
                       Guardar Cambios
                     </q-tooltip>
                     <template v-slot:loading>
-                      <q-spinner color="primary" size="1em" />
+                      <q-spinner color="white" size="1em" />
                     </template>
                   </q-btn>
                 </div>
@@ -451,7 +385,7 @@ watch(selectedOption, () => {
         </q-dialog>
       </div>
 
-      <q-table flat bordered title="Ingresos" title-class="text-green text-weight-bolder text-h5" :rows="filteredRows"
+      <q-table flat bordered title="Ingresos" title-class="text-green text-weight-bolder text-h5" :rows="filtrarFilas"
         :columns="columns" row-key="id">
         <template v-slot:body-cell-opciones="props">
           <q-td :props="props">
@@ -466,7 +400,7 @@ watch(selectedOption, () => {
       </q-table>
     </div>
   </div>
-  <q-inner-loading :showing="visible" label="Por favor espere..." label-class="text-teal"
+  <q-inner-loading :showing="isLoading" label="Por favor espere..." label-class="text-teal"
     label-style="font-size: 1.1em" />
 </template>
 

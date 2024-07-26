@@ -62,45 +62,24 @@ const columns = ref([
 ]);
 
 const filteredRows = computed(() => {
-  switch (selectedOption.value) {
-    case "Listar Sede por Código":
-      return listarSedeCodigo.value;
-    default:
-      return rows.value;
-  }
+  const codigoInput = selectedOption.value === "Listar Sede por Código" && codigoSede.value.trim();
+
+  // Filtra por código si se ha especificado un código y se ha seleccionado la opción correspondiente
+  return codigoInput
+    ? rows.value.filter(sede => sede.codigo.toString().includes(codigoInput))
+    : rows.value;
 });
 
-async function listarSedes() {
-  const r = await useSede.getSedes();
-  console.log("Sedes", r.data.sedes);
-  rows.value = r.data.sedes;
+async function actualizarListadoSedes() {
+  const sedePromise = selectedOption.value === "Listar Sedes Activas"
+  ? useSede.getSedesActivas()
+  : selectedOption.value === "Listar Sedes Inactivas"
+  ? useSede.getSedesInactivas()
+  : useSede.getSedes();
+  
+  rows.value = (await sedePromise).data.sedes;
   visible.value = false;
-}
-
-const listarSedeCodigo = computed(() => {
-  if (
-    selectedOption.value === "Listar Sede por Código" &&
-    codigoSede.value.trim() !== ""
-  ) {
-    const codigoInput = codigoSede.value.trim();
-    return rows.value.filter((sede) =>
-      sede.codigo.toString().includes(codigoInput)
-    );
-  } else {
-    return rows.value; // Devuelve todas las sedes si no hay un código especificado
-  }
-});
-
-async function listarSedesActivos(id) {
-  const r = await useSede.getSedesActivas();
-  // console.log(r);
-  rows.value = r.data.sedesAc;
-}
-
-async function listarSedesInactivos(id) {
-  const r = await useSede.getSedesInactivas();
-  // console.log(r);
-  rows.value = r.data.sedesIn;
+  console.log("Sedes", rows.value);
 }
 
 async function inactivarSede(id) {
@@ -115,21 +94,7 @@ async function activarSede(id) {
   actualizarListadoSedes();
 }
 
-const actualizarListadoSedes = () => {
-  switch (selectedOption.value) {
-    case "Listar Sedes Activas":
-      listarSedesActivos();
-      break;
-    case "Listar Sedes Inactivas":
-      listarSedesInactivos();
-      break;
-    default:
-      listarSedes();
-      break;
-  }
-};
-
-const limpiarCamposSede = () => {
+const limpiarCampos = () => {
   nombre.value = "";
   direccion.value = ""
   codigo.value = "";
@@ -137,61 +102,47 @@ const limpiarCamposSede = () => {
   ciudad.value = "";
   telefono.value = "";
 };
+
 const agregarSede = async () => {
-  try {
-    const datosSede = {
-      nombre: nombre.value,
-      direccion: direccion.value,
-      codigo: codigo.value,
-      horario: horario.value,
-      ciudad: ciudad.value,
-      telefono: telefono.value,
-      estado: estadoOptions.find(option => option.label === estado.value).value,
-    };
+  const datosSede = {
+    nombre: nombre.value,
+    direccion: direccion.value,
+    codigo: codigo.value,
+    horario: horario.value,
+    ciudad: ciudad.value,
+    telefono: telefono.value,
+    estado: estado.value === "Activo" ? 1 : 0,
+  };
 
-    const response = await useSede.postSedes(datosSede);
-    if (response.status === 200) {
-      listarSedes();
-      estado.value = "Activo";
-      limpiarCamposSede();
-    } else {
-      console.error('Error al agregar el sede:', response.data);
-    }
-  } catch (error) {
-    console.error('Error al agregar el sede:', error);
+  const r = await useSede.postSedes(datosSede);
+  if (r.status == 200) {
+    mostrarFormularioAgregarSedes.value = false
+    actualizarListadoSedes();
+    estado.value = "Activo";
+    console.log("Sede agregada exitosamente", datosSede);
   }
 };
+
 const editarSede = async () => {
-  try {
-    const datosSede = {
-      nombre: nombre.value,
-      direccion: direccion.value,
-      codigo: codigo.value,
-      horario: horario.value,
-      ciudad: ciudad.value,
-      telefono: telefono.value,
-    };
+  const datosSede = {
+    nombre: nombre.value,
+    direccion: direccion.value,
+    codigo: codigo.value,
+    horario: horario.value,
+    ciudad: ciudad.value,
+    telefono: telefono.value,
+  };
 
-    const response = await useSede.putSedes(selectedSedeId.value, datosSede);
-    if (response.status === 200) {
-      listarSedes();
-      nombre.value = "";
-      direccion.value = ""
-      codigo.value = "";
-      horario.value = "";
-      ciudad.value = "";
-      telefono.value = "";
-      mostrarFormularioEditarSedes.value = false;
-    } else {
-      console.error('Error al editar el sede:', response.data);
-    }
-  } catch (error) {
-    console.error('Error al editar el sede:', error);
+  const r = await useSede.putSedes(selectedSedeId.value, datosSede);
+  if (r.status == 200) {
+    mostrarFormularioEditarSedes.value = false;
+    actualizarListadoSedes();
+    console.log("Sede editada exitosamente", datosSede);
   }
 };
+
 const mostrarDatosParaEditar = (sedes) => {
-  console.log("Sede a editar:", sedes);  // Añadido para depuración
-  selectedSedeId.value = sedes._id;  // Corregido
+  selectedSedeId.value = sedes._id;
   nombre.value = sedes.nombre;
   direccion.value = sedes.direccion;
   codigo.value = sedes.codigo;
@@ -199,28 +150,19 @@ const mostrarDatosParaEditar = (sedes) => {
   ciudad.value = sedes.ciudad;
   telefono.value = sedes.telefono;
 
-  mostrarFormularioAgregarSedes.value = false;
+  console.log("Datos de la sede a editar:", sedes);
   mostrarFormularioEditarSedes.value = true;
 };
-const cancelarSede = () => {
-  limpiarCamposSede();
-  mostrarFormularioAgregarSedes.value = false;
-  mostrarFormularioEditarSedes.value = false;
-};;
+
+const isLoading = computed(() => visible.value);
 
 onMounted(() => {
-  listarSedes();
+  actualizarListadoSedes();
 });
+
 watch(selectedOption, (newValue) => {
   actualizarListadoSedes();
-  if (newValue === "Agregar Sede") {
-    mostrarFormularioAgregarSedes.value = true;
-    mostrarFormularioEditarSedes.value = false;
-    limpiarCamposSede()
-  } else {
-    mostrarFormularioEditarSedes.value = false;
-    mostrarFormularioAgregarSedes.value = false;
-  }
+  isLoading
 });
 </script>
 
@@ -237,7 +179,7 @@ watch(selectedOption, (newValue) => {
           emit-value :options="options" />
 
         <input v-if="selectedOption === 'Listar Sede por Código'" v-model="codigoSede" class="q-my-md" type="text"
-          name="codigoSede" id="codigoSede" placeholder="Ingrese el código de la sede" />
+          name="codigoSede" id="codigoSede" placeholder="Código de la sede" />
       </div>
 
       <div>
@@ -252,7 +194,7 @@ watch(selectedOption, (newValue) => {
 
         </div>
         <!-- Dialogo para agregar sede -->
-        <q-dialog v-model="mostrarFormularioAgregarSedes" v-bind="mostrarFormularioAgregarSedes && limpiarCamposSede()">
+        <q-dialog v-model="mostrarFormularioAgregarSedes" v-bind="mostrarFormularioAgregarSedes && limpiarCampos()">
           <q-card>
             <q-card-section>
               <div class="text-h6">Agregar Sede</div>
@@ -265,11 +207,11 @@ watch(selectedOption, (newValue) => {
                 <q-input v-model="codigo" label="Código" type="number" filled required class="q-mb-md" />
                 <q-input v-model.trim="horario" label="Horario" filled required class="q-mb-md" />
                 <q-input v-model.trim="ciudad" label="Ciudad" filled required class="q-mb-md" />
-                <q-input v-model="telefono" label="Teléfono" type="number" filled required class="q-mb-md" />
+                <q-input v-model="telefono" label="Teléfono" type="number" filled required class="q-mb-md" min="0" />
                 <q-select v-model="estado" label="Estado" filled required :options="estadoOptions" class="q-mb-md"
                   style="max-width: 100%;" />
                 <div class="q-mt-md">
-                  <q-btn @click="cancelarSede" label="Cancelar" class="q-mr-sm">
+                  <q-btn @click="mostrarFormularioAgregarSedes = false" label="Cancelar" class="q-mr-sm">
                     <q-tooltip>
                       Cancelar
                     </q-tooltip>
@@ -279,7 +221,7 @@ watch(selectedOption, (newValue) => {
                       Guardar Sede
                     </q-tooltip>
                     <template v-slot:loading>
-                      <q-spinner color="primary" size="1em" />
+                      <q-spinner color="white" size="1em" />
                     </template>
                   </q-btn>
                 </div>
@@ -302,19 +244,20 @@ watch(selectedOption, (newValue) => {
                 <q-input v-model="codigo" label="Código" type="number" filled required class="q-mb-md" />
                 <q-input v-model.trim="horario" label="Horario" filled required class="q-mb-md" />
                 <q-input v-model.trim="ciudad" label="Ciudad" filled required class="q-mb-md" />
-                <q-input v-model="telefono" label="Teléfono" type="number" filled required class="q-mb-md" />
+                <q-input v-model="telefono" label="Teléfono" type="number" filled required class="q-mb-md" min="0" />
                 <div class="q-mt-md">
-                  <q-btn @click="cancelarSede" label="Cancelar" class="q-mr-sm">
+                  <q-btn @click="mostrarFormularioEditarSedes = false" label="Cancelar" class="q-mr-sm">
                     <q-tooltip>
                       Cancelar
                     </q-tooltip>
                   </q-btn>
-                  <q-btn :loading="useSede.loading" type="submit" label="Guardar cambios" color="primary" class="q-ma-sm">
+                  <q-btn :loading="useSede.loading" type="submit" label="Guardar cambios" color="primary"
+                    class="q-ma-sm">
                     <q-tooltip>
                       Guardar cambios
                     </q-tooltip>
                     <template v-slot:loading>
-                      <q-spinner color="primary" size="1em" />
+                      <q-spinner color="white" size="1em" />
                     </template>
                   </q-btn>
                 </div>
@@ -362,7 +305,7 @@ watch(selectedOption, (newValue) => {
       </q-table>
     </div>
   </div>
-  <q-inner-loading :showing="visible" label="Por favor espere..." label-class="text-teal"
+  <q-inner-loading :showing="isLoading" label="Por favor espere..." label-class="text-teal"
     label-style="font-size: 1.1em" />
 </template>
 

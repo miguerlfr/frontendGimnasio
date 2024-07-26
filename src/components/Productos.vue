@@ -10,7 +10,13 @@ function formatoNumerico(numero) {
 // Llamado de modelo
 const useProducto = useStoreProductos();
 
-const visible = ref(true);
+// variables para mostrar el div que aparece al pasarle el mouse a la descripción
+const tooltipText = ref('');
+const tooltipVisible = ref(false);
+const tooltipPosition = ref({ top: 0, left: 0 });
+
+const visible = ref(true)
+const loadingg = ref(true)
 const listarCodigo = ref("")
 
 const mostrarFormularioAgregarProducto = ref(false);
@@ -30,6 +36,12 @@ const options = [
   { label: "Listar Producto por Código", value: "Listar Producto por Código" }
 ];
 
+const estadoOptions = [
+  { label: "Activo" },
+  { label: "Inactivo" },
+];
+const estadoProducto = ref("Activo");
+
 let rows = ref([]);
 const columns = ref([
   { name: "codigo", label: "Código", field: "codigo", align: "center" },
@@ -45,51 +57,54 @@ const columns = ref([
   { name: "opciones", label: "Opciones", field: "opciones", align: "center" }
 ]);
 
-const filteredRows = computed(() => {
-  switch (selectedOption.value) {
-    case "Listar Producto por Código":
-      return listarProductoCodigo.value;
-    default:
-      return rows.value;
-  }
-});
-
-async function listarProductos() {
+const actualizarListadoProductos = async () => {
+  loadingg.value = true; // Inicia el estado de carga
   try {
-    const r = await useProducto.getProductos();
-    console.log('Datos de productos recibidos:', r.data.productos);
-    rows.value = r.data.productos;
-    visible.value = false;
+    const productosPromise = selectedOption.value === "Listar Productos Activos"
+      ? useProducto.getProductosActivos()
+      : selectedOption.value === "Listar Productos Inactivos"
+        ? useProducto.getProductosInactivos()
+        : useProducto.getProductos();
+
+    rows.value = (await productosPromise).data.productos;
   } catch (error) {
-    console.error('Error al obtener los productos:', error);
+    console.error("Error al listar productos", error);
+  } finally {
+    loadingg.value = false;
+    visible.value = false;
   }
-}
+};
 
-async function listarProductosActivos() {
-  const r = await useProducto.getProductosActivos();
-  // console.log(r);
-  rows.value = r.data.productosAc;
-}
-
-async function listarProductosInactivos() {
-  const r = await useProducto.getProductosInactivos();
-  // console.log(r.data);
-  rows.value = r.data.productosIn;
-}
-
-const listarProductoCodigo = computed(() => {
-  if (
-    selectedOption.value === "Listar Producto por Código" &&
-    listarCodigo.value
-  ) {
-    const codigoInput = listarCodigo.value;
-    return rows.value.filter((producto) =>
-      producto.codigo.toString().includes(codigoInput)
-    );
-  } else {
-    return rows.value;
+const filteredRows = computed(() => {
+  if (loadingg.value) {
+    return []; // Retorna una lista vacía mientras se está cargando
   }
+
+  const codigoInput = selectedOption.value.includes("Código")
+    ? listarCodigo.value
+    : "";
+
+  return codigoInput
+    ? rows.value.filter(item => item.codigo.toString().includes(codigoInput))
+    : rows.value;
 });
+
+// const filteredRows = computed(() => {
+//   if (selectedOption.value.includes("Código")) {
+    
+//     loadingg.value = true;
+//     const codigoInput = listarCodigo.value;
+
+//     const result = codigoInput
+//       ? rows.value.filter(item => item.codigo.toString().includes(codigoInput))
+//       : rows.value;
+
+//     loadingg.value = false;
+//     return result;
+//   } else {
+//     return rows.value;
+//   }
+// });
 
 async function agregarProducto() {
   const nuevoProducto = {
@@ -97,14 +112,15 @@ async function agregarProducto() {
     descripcion: descripcionProducto.value,
     valor: valorProducto.value,
     cantidad: cantidadProducto.value,
+    estado: estadoProducto.value === "Activo" ? 1 : 0,
   };
 
-  const response = await useProducto.postProductos(nuevoProducto);
-  if (response.status === 200) {
-    listarProductos();
-    limpiarCampos();
-  } else {
-    console.error("Error al agregar el producto");
+  const r = await useProducto.postProductos(nuevoProducto);
+  if (r.status == 200) {
+    mostrarFormularioAgregarProducto.value = false
+    actualizarListadoProductos();
+    estadoProducto.value = "Activo";
+    console.log("Producto agregado exitosamente", nuevoProducto);
   }
 }
 
@@ -115,54 +131,25 @@ function cargarProductoParaEdicion(producto) {
   valorProducto.value = producto.valor;
   cantidadProducto.value = producto.cantidad;
 
-  console.log("datos", {
-    idProductoSeleccionado: idProductoSeleccionado.value,
-    codigoProducto: codigoProducto.value,
-    descripcionProducto: descripcionProducto.value,
-    valorProducto: valorProducto.value,
-    cantidadProducto: cantidadProducto.value
-  });
-
-  cambiarFormulario(false);
+  mostrarFormularioEditarProducto.value = true
+  console.log("Datos del producto a editar", producto);
 }
 
 async function editarProducto() {
-  console.log('Editando producto con ID:', idProductoSeleccionado.value);
-  if (idProductoSeleccionado.value) {
-    const productoEditado = {
-      codigo: codigoProducto.value,
-      descripcion: descripcionProducto.value,
-      valor: valorProducto.value,
-      cantidad: cantidadProducto.value,
-    };
+  const productoEditado = {
+    codigo: codigoProducto.value,
+    descripcion: descripcionProducto.value,
+    valor: valorProducto.value,
+    cantidad: cantidadProducto.value,
+  };
 
-    console.log("editacion", productoEditado);
-    const response = await useProducto.putProductos(idProductoSeleccionado.value, productoEditado);
-    if (response.status === 200) {
-      listarProductos()
-      limpiarCampos();
-      idProductoSeleccionado.value = null;
-    } else {
-      console.error('Error al editar el producto:', response);
-    }
-  } else {
-    console.error('El ID del producto seleccionado no es válido.');
+  const r = await useProducto.putProductos(idProductoSeleccionado.value, productoEditado);
+  if (r.status == 200) {
+    mostrarFormularioEditarProducto.value = false;
+    actualizarListadoProductos()
+    console.log("Producto editado exitosamente", productoEditado);
   }
 }
-
-const actualizarListadoProductos = () => {
-  switch (selectedOption.value) {
-    case "Listar Productos Activos":
-      listarProductosActivos();
-      break;
-    case "Listar Productos Inactivos":
-      listarProductosInactivos();
-      break;
-    default:
-      listarProductos();
-      break;
-  }
-};
 
 async function inactivarProducto(id) {
   const r = await useProducto.putProductosInactivar(id);
@@ -176,12 +163,6 @@ async function activarProducto(id) {
   actualizarListadoProductos();
 }
 
-const cancelarProducto = () => {
-  mostrarFormularioAgregarProducto.value = false;
-  mostrarFormularioEditarProducto.value = false;
-  limpiarCampos();
-};
-
 function limpiarCampos() {
   codigoProducto.value = "";
   descripcionProducto.value = "";
@@ -189,18 +170,36 @@ function limpiarCampos() {
   cantidadProducto.value = "";
 }
 
-const cambiarFormulario = (agregar) => {
-  mostrarFormularioAgregarProducto.value = agregar;
-  mostrarFormularioEditarProducto.value = !agregar;
-};
+// Funciones auxiliares
+function showTooltip(event, text) {
+  tooltipText.value = text;
+  tooltipVisible.value = true;
+  tooltipPosition.value = { top: event.clientY, left: event.clientX };
+}
+function hideTooltip() {
+  tooltipVisible.value = false;
+}
+function truncateText(text, maxLength) {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+}
+function checkAndShowTooltip(event, text, maxLength) {
+  if (text.length > maxLength) {
+    showTooltip(event, text);
+  }
+}
 
-onMounted(() => {
-  actualizarListadoProductos();
-});
+const isLoading = computed(() => visible.value);
 
-watch(selectedOption, () => {
-  actualizarListadoProductos()
-});
+// Montaje
+onMounted(() => actualizarListadoProductos());
+
+watch(selectedOption, () =>
+  actualizarListadoProductos(),
+  isLoading,
+  loadingg
+);
 </script>
 
 <template>
@@ -216,7 +215,7 @@ watch(selectedOption, () => {
           emit-value :options="options" />
 
         <input v-if="selectedOption === 'Listar Producto por Código'" v-model="listarCodigo" class="q-my-md" type="text"
-          name="listarCodigo" id="listarCodigo" placeholder="Ingrese el código del producto" />
+          name="listarCodigo" id="listarCodigo" placeholder="Código del producto" />
       </div>
 
       <div>
@@ -230,7 +229,8 @@ watch(selectedOption, () => {
         </div>
 
         <!-- Diálogo para agregar producto -->
-        <q-dialog v-model="mostrarFormularioAgregarProducto" v-bind="mostrarFormularioAgregarProducto && limpiarCampos()">
+        <q-dialog v-model="mostrarFormularioAgregarProducto"
+          v-bind="mostrarFormularioAgregarProducto && limpiarCampos()">
           <q-card>
             <q-card-section>
               <div class="text-h5" style="padding: 10px 0 0 25px;">Agregar Producto</div>
@@ -242,13 +242,16 @@ watch(selectedOption, () => {
                 <q-input v-model.trim="descripcionProducto" type="textarea" label="Descripción del producto" filled
                   required class="q-mb-md" />
                 <q-input v-model="valorProducto" label="Valor del producto" type="number" filled required
-                  class="q-mb-md" />
+                  class="q-mb-md" min="0" />
                 <q-input v-model="cantidadProducto" label="Cantidad del producto" type="number" filled required
-                  class="q-mb-md" />
+                  class="q-mb-md" min="0" />
+                <q-select v-model="estadoProducto" label="Estado" filled outlined :options="estadoOptions" required
+                  class="q-mb-md" style="max-width: 100%;" />
 
                 <!-- Botones de acción -->
                 <div class="q-mt-md">
-                  <q-btn @click="cancelarProducto" label="Cancelar" color="negative" class="q-mr-sm">
+                  <q-btn @click="mostrarFormularioAgregarProducto = false" label="Cancelar" color="negative"
+                    class="q-mr-sm">
                     <q-tooltip>
                       Cancelar
                     </q-tooltip>
@@ -258,7 +261,7 @@ watch(selectedOption, () => {
                       Guardar Producto
                     </q-tooltip>
                     <template v-slot:loading>
-                      <q-spinner color="primary" size="1em" />
+                      <q-spinner color="white" size="1em" />
                     </template>
                   </q-btn>
                 </div>
@@ -280,13 +283,14 @@ watch(selectedOption, () => {
                 <q-input v-model.trim="descripcionProducto" type="textarea" label="Descripción del producto" filled
                   required class="q-mb-md" />
                 <q-input v-model="valorProducto" label="Valor del producto" type="number" filled required
-                  class="q-mb-md" />
+                  class="q-mb-md" min="0" />
                 <q-input v-model="cantidadProducto" label="Cantidad del producto" type="number" filled required
-                  class="q-mb-md" />
+                  class="q-mb-md" min="0" />
                 <!-- style="padding: 10px 0 0 25px;" -->
                 <!-- Botones de acción -->
                 <div class="q-mt-md">
-                  <q-btn @click="cancelarProducto" label="Cancelar" color="negative" class="q-mr-sm">
+                  <q-btn @click="mostrarFormularioEditarProducto = false" label="Cancelar" color="negative"
+                    class="q-mr-sm">
                     <q-tooltip>
                       Cancelar
                     </q-tooltip>
@@ -296,7 +300,7 @@ watch(selectedOption, () => {
                       Guardar Cambios
                     </q-tooltip>
                     <template v-slot:loading>
-                      <q-spinner color="primary" size="1em" />
+                      <q-spinner color="white" size="1em" />
                     </template>
                   </q-btn>
                 </div>
@@ -305,9 +309,9 @@ watch(selectedOption, () => {
           </q-card>
         </q-dialog>
       </div>
-
       <q-table flat bordered title="Productos" title-class="text-green text-weight-bolder text-h5" :rows="filteredRows"
-        :columns="columns" row-key="id">
+        :columns="columns" row-key="id" :loading="loadingg">
+
         <template v-slot:body-cell-opciones="props">
           <q-td :props="props">
             <q-btn @click="cargarProductoParaEdicion(props.row)">
@@ -342,10 +346,26 @@ watch(selectedOption, () => {
           </q-td>
         </template>
 
+        <!-- Descripcion Column -->
+        <template v-slot:body-cell-descripcion="props">
+          <q-td :props="props" class="relative">
+            <div class="truncated-text" @mouseover="checkAndShowTooltip($event, props.row.descripcion, 20)"
+              @mouseleave="hideTooltip">
+              {{ truncateText(props.row.descripcion, 20) }}
+            </div>
+          </q-td>
+        </template>
+
+        <template v-slot:loading>
+          <q-inner-loading :showing="loadingg" label="Por favor espere..." label-class="text-teal"
+            label-style="font-size: 1.1em">
+          </q-inner-loading>
+        </template>
+
       </q-table>
     </div>
   </div>
-  <q-inner-loading :showing="visible" label="Por favor espere..." label-class="text-teal"
+  <q-inner-loading :showing="isLoading" label="Por favor espere..." label-class="text-teal"
     label-style="font-size: 1.1em" />
 </template>
 
@@ -358,7 +378,6 @@ watch(selectedOption, () => {
 
 .q-select {
   max-width: 200px;
-  /* Puedes ajustar el ancho según tu preferencia */
 }
 
 .q-my-md {

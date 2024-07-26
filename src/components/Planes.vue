@@ -7,6 +7,11 @@ function formatoNumerico(numero) {
   return typeof numero === 'number' ? numero.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : undefined;
 }
 
+// variables para mostrar el div que aparece al pasarle el mouse a la descripción
+const tooltipText = ref('');
+const tooltipVisible = ref(false);
+const tooltipPosition = ref({ top: 0, left: 0 });
+
 const mostrarFormularioAgregarPlan = ref(false);
 const mostrarFormularioEditarPlan = ref(false);
 
@@ -20,9 +25,7 @@ const estadoOptions = [
   { label: "Activo" },
   { label: "Inactivo" },
 ];
-
-// estado predeterminado
-const estado = ref(estadoOptions.find(option => option.label === "Activo").label);
+const estado = ref("Activo");
 
 // Llamado de modelo
 const usePlan = useStorePlanes();
@@ -53,62 +56,27 @@ const columns = ref([
   { name: "opciones", label: "Opciones", field: "opciones", align: "center" },
 ]);
 
-const filteredRows = computed(() => {
-  switch (selectedOption.value) {
-    case "Listar Plan por Código":
-      return listarPlanCodigo.value;
-    default:
-      return rows.value;
-  }
-});
-
-async function listarPlanes() {
-  const r = await usePlan.getPlanes();
-  console.log(r.data);
-  rows.value = r.data.planes;
+async function actualizarListadoPlanes() {
+  const planPromise = selectedOption.value === "Listar Planes Activos"
+  ? usePlan.getPlanesActivos()
+  : selectedOption.value === "Listar Planes Inactivos"
+  ? usePlan.getPlanesInactivos()
+  : usePlan.getPlanes();
+  
+  rows.value = (await planPromise).data.planes;
   visible.value = false;
 }
 
-const listarPlanCodigo = computed(() => {
-  if (
-    selectedOption.value === "Listar Plan por Código" &&
-    codigoPlan.value
-  ) {
+const filteredRows = computed(() => {
+  if (selectedOption.value === "Listar Plan por Código" && codigoPlan.value) {
     const codigoInput = codigoPlan.value; // Obtener el código ingresado por el usuario
     return rows.value.filter((plan) =>
       plan.codigo.toString().includes(codigoInput)
     );
   } else {
-    return rows.value
-    // Devuelve todos los planes si no hay un código especificado
+    return rows.value;
   }
 });
-
-async function listarPlanesActivos(id) {
-  const r = await usePlan.getPlanesActivos();
-  // console.log(r);
-  rows.value = r.data.planesAc;
-}
-
-async function listarPlanesInactivos(id) {
-  const r = await usePlan.getPlanesInactivos();
-  // console.log(r);
-  rows.value = r.data.planesIn;
-}
-
-const actualizarListadoPlanes = () => {
-  switch (selectedOption.value) {
-    case "Listar Planes Activos":
-      listarPlanesActivos();
-      break;
-    case "Listar Planes Inactivos":
-      listarPlanesInactivos();
-      break;
-    default:
-      listarPlanes();
-      break;
-  }
-};
 
 async function inactivarPlan(id) {
   const r = await usePlan.putPlanesInactivar(id);
@@ -122,7 +90,7 @@ async function activarPlan(id) {
   actualizarListadoPlanes();
 }
 
-const limpiarCamposPlan = () => {
+const limpiarCampos = () => {
   codigo.value = "";
   descripcion.value = "";
   valor.value = "";
@@ -130,25 +98,20 @@ const limpiarCamposPlan = () => {
 };
 
 const agregarPlan = async () => {
-  try {
-    const datosPlan = {
-      codigo: codigo.value,
-      descripcion: descripcion.value,
-      valor: valor.value,
-      dias: dias.value,
-      estado: estadoOptions.find(option => option.label === estado.value).value,
-    };
+  const datosPlan = {
+    codigo: codigo.value,
+    descripcion: descripcion.value,
+    valor: valor.value,
+    dias: dias.value,
+    estado: estado.value === "Activo" ? 1 : 0
+  };
 
-    const response = await usePlan.postPlanes(datosPlan);
-    if (response.status === 200) {
-      listarPlanes();
-      estado.value = "Activo";
-      limpiarCamposPlan();
-    } else {
-      console.error('Error al agregar el plan:', response.data);
-    }
-  } catch (error) {
-    console.error('Error al agregar el plan:', error);
+  const r = await usePlan.postPlanes(datosPlan);
+  if (r.status == 200) {
+    mostrarFormularioAgregarPlan.value = false
+    actualizarListadoPlanes();
+    estado.value = "Activo";
+    console.log("Plan agregado exitosamente", datosPlan);
   }
 };
 
@@ -158,57 +121,57 @@ const setPlanToEdit = (plan) => {
   descripcion.value = plan.descripcion;
   valor.value = plan.valor;
   dias.value = plan.dias;
-  mostrarFormularioAgregarPlan.value = false;
+
   mostrarFormularioEditarPlan.value = true;
+  console.log("Datos del plan a editar:", plan);
 };
 
 const editarPlan = async () => {
-  try {
-    const datosPlan = {
-      _id: selectedPlanId.value,
-      codigo: codigo.value,
-      descripcion: descripcion.value,
-      valor: valor.value,
-      dias: dias.value,
-    };
+  const datosPlan = {
+    _id: selectedPlanId.value,
+    codigo: codigo.value,
+    descripcion: descripcion.value,
+    valor: valor.value,
+    dias: dias.value,
+  };
 
-    console.log("Datos", datosPlan);
-
-    const response = await usePlan.putPlanes(selectedPlanId.value, datosPlan);
-    console.log("response", response);
-    if (response.status === 200) {
-      listarPlanes();
-      limpiarCamposPlan();
-      mostrarFormularioEditarPlan.value = false;
-    } else {
-      console.error('Error al editar el plan:', response.data);
-    }
-  } catch (error) {
-    console.error('Error al editar el plan:', error);
+  const r = await usePlan.putPlanes(selectedPlanId.value, datosPlan);
+  if (r.status == 200) {
+    mostrarFormularioEditarPlan.value = false;
+    actualizarListadoPlanes();
+    console.log("Plan editado exitosamente", datosPlan);
   }
 };
 
-const cancelarPlan = () => {
-  limpiarCamposPlan();
-  mostrarFormularioAgregarPlan.value = false;
-  mostrarFormularioEditarPlan.value = false;
-};;
+// Funciones auxiliares
+function showTooltip(event, text) {
+  tooltipText.value = text;
+  tooltipVisible.value = true;
+  tooltipPosition.value = { top: event.clientY, left: event.clientX };
+}
+function hideTooltip() {
+  tooltipVisible.value = false;
+}
+function truncateText(text, maxLength) {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+}
+function checkAndShowTooltip(event, text, maxLength) {
+  if (text.length > maxLength) {
+    showTooltip(event, text);
+  }
+}
+
+const isLoading = computed(() => visible.value);
 
 onMounted(() => {
-  listarPlanes();
+  actualizarListadoPlanes();
 });
 
 watch(selectedOption, (newValue) => {
   actualizarListadoPlanes();
-  if (newValue === "Agregar Plan") {
-    mostrarFormularioAgregarPlan.value = true;
-    mostrarFormularioEditarPlan.value = false;
-    limpiarCamposPlan()
-  } else {
-    mostrarFormularioEditarPlan.value = false;
-    mostrarFormularioAgregarPlan.value = false;
-    limpiarCamposPlan()
-  }
+  isLoading
 });
 </script>
 
@@ -239,7 +202,7 @@ watch(selectedOption, (newValue) => {
         </div>
 
         <!-- Dialogo para agregar plan -->
-        <q-dialog v-model="mostrarFormularioAgregarPlan" v-bind="mostrarFormularioAgregarPlan && limpiarCamposPlan()">
+        <q-dialog v-model="mostrarFormularioAgregarPlan" v-bind="mostrarFormularioAgregarPlan && limpiarCampos()">
           <q-card>
             <q-card-section>
               <div class="text-h5" style="padding: 10px 0 0 25px;">Agregar Plan</div>
@@ -249,17 +212,19 @@ watch(selectedOption, (newValue) => {
               <div class="q-pa-md">
                 <q-form @submit.prevent="agregarPlan">
                   <!-- Campos del formulario de agregar plan -->
-                  <q-input v-model.trim="codigo" label="Código" filled outlined class="q-mb-md" />
+                  <q-input v-model.trim="codigo" label="Código" filled outlined class="q-mb-md" required />
                   <q-input v-model.trim="descripcion" label="Descripción" type="textarea" filled outlined
-                    class="q-mb-md" />
-                  <q-input v-model="valor" label="Valor" type="number" filled outlined class="q-mb-md" />
-                  <q-input v-model="dias" label="Días" type="number" filled outlined class="q-mb-md" />
+                    class="q-mb-md" required />
+                  <q-input v-model="valor" label="Valor" type="number" filled outlined class="q-mb-md" min="0"
+                    required />
+                  <q-input v-model="dias" label="Días" type="number" filled outlined class="q-mb-md" min="0" required />
                   <q-select v-model="estado" label="Estado" filled outlined :options="estadoOptions" class="q-mb-md"
                     style="max-width: 100%;" />
 
                   <!-- Botones de acción -->
                   <div class="q-mt-md">
-                    <q-btn @click="cancelarPlan" label="Cancelar" color="negative" class="q-mr-sm">
+                    <q-btn @click="mostrarFormularioAgregarPlan = false" label="Cancelar" color="negative"
+                      class="q-mr-sm">
                       <q-tooltip>
                         Cancelar
                       </q-tooltip>
@@ -269,7 +234,7 @@ watch(selectedOption, (newValue) => {
                         Guardar plan
                       </q-tooltip>
                       <template v-slot:loading>
-                        <q-spinner color="primary" size="1em" />
+                        <q-spinner color="white" size="1em" />
                       </template>
                     </q-btn>
                   </div>
@@ -290,15 +255,17 @@ watch(selectedOption, (newValue) => {
               <div class="q-pa-md">
                 <q-form @submit.prevent="editarPlan">
                   <!-- Campos del formulario de editar plan -->
-                  <q-input v-model.trim="codigo" label="Código" filled outlined class="q-mb-md" />
+                  <q-input v-model.trim="codigo" label="Código" filled outlined class="q-mb-md" required />
                   <q-input v-model.trim="descripcion" label="Descripción" type="textarea" filled outlined
-                    class="q-mb-md" />
-                  <q-input v-model="valor" label="Valor" type="number" filled outlined class="q-mb-md" />
-                  <q-input v-model="dias" label="Días" type="number" filled outlined class="q-mb-md" />
+                    class="q-mb-md" required />
+                  <q-input v-model="valor" label="Valor" type="number" filled outlined class="q-mb-md" min="0"
+                    required />
+                  <q-input v-model="dias" label="Días" type="number" filled outlined class="q-mb-md" min="0" required />
 
                   <!-- Botones de acción -->
                   <div class="q-mt-md">
-                    <q-btn @click="cancelarPlan" label="Cancelar" color="negative" class="q-mr-sm">
+                    <q-btn @click="mostrarFormularioEditarPlan = false" label="Cancelar" color="negative"
+                      class="q-mr-sm">
                       <q-tooltip>
                         Cancelar
                       </q-tooltip>
@@ -308,7 +275,7 @@ watch(selectedOption, (newValue) => {
                         Guardar cambios
                       </q-tooltip>
                       <template v-slot:loading>
-                        <q-spinner color="primary" size="1em" />
+                        <q-spinner color="white" size="1em" />
                       </template>
                     </q-btn>
                   </div>
@@ -354,10 +321,20 @@ watch(selectedOption, (newValue) => {
             </p>
           </q-td>
         </template>
+
+        <!-- Descripcion Column -->
+        <template v-slot:body-cell-descripcion="props">
+          <q-td :props="props" class="relative">
+            <div class="truncated-text" @mouseover="checkAndShowTooltip($event, props.row.descripcion, 20)"
+              @mouseleave="hideTooltip">
+              {{ truncateText(props.row.descripcion, 20) }}
+            </div>
+          </q-td>
+        </template>
       </q-table>
     </div>
   </div>
-  <q-inner-loading :showing="visible" label="Por favor espere..." label-class="text-teal"
+  <q-inner-loading :showing="isLoading" label="Por favor espere..." label-class="text-teal"
     label-style="font-size: 1.1em" />
 </template>
 

@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
+import { notifyErrorRequest } from "../routes/routes.js";
 import { useStoreMaquinas } from "../stores/Maquinas.js";
 import { useStoreSedes } from "../stores/Sedes.js";
 import { format } from "date-fns";
@@ -9,6 +10,11 @@ const useSede = useStoreSedes();
 
 const visible = ref(true);
 const codigoMaquina = ref("");
+
+// variables para mostrar el div que aparece al pasarle el mouse a la descripción
+const tooltipText = ref('');
+const tooltipVisible = ref(false);
+const tooltipPosition = ref({ top: 0, left: 0 });
 
 const mostrarFormularioEditarMaquina = ref(false);
 const mostrarFormularioAgregarMaquina = ref(false);
@@ -49,8 +55,7 @@ const estadoOptions = [
   { label: "Activo" },
   { label: "Inactivo" },
 ];
-
-const estadoM = ref(estadoOptions.find(option => option.label === "Activo").label);
+const estadoM = ref("Activo");
 
 const selectedOption = ref("Listar Máquinas"); // Establecer 'Listar Máquinas' como valor por defecto
 const options = [
@@ -97,67 +102,30 @@ const columns = ref([
   { name: "opciones", label: "Opciones", field: "opciones", align: "center" },
 ]);
 
-const filteredRows = computed(() => {
-  switch (selectedOption.value) {
-    case "Listar Máquina por Código":
-      return listarmaquinaCodigo.value;
-    default:
-      return rows.value;
-  }
+async function actualizarListadoMaquinas() {
+  const maquinasPromise = selectedOption.value === "Listar Maquinas Activos"
+  ? useMaquina.getMaquinasActivos()
+  : selectedOption.value === "Listar Maquinas Inactivos"
+  ? useMaquina.getMaquinasInactivos()
+  : useMaquina.getMaquinas();
+  
+  rows.value = (await maquinasPromise).data.maquinas;
+  visible.value = false;
+  console.log("Maquinas", rows.value);
+}
+
+const filtrarFilas = computed(() => {
+  const codigoInput = codigoMaquina.value ? codigoMaquina.value.toString() : '';
+
+  return rows.value.filter(row => {
+    switch (selectedOption.value) {
+      case "Listar Máquina por Código":
+        return row.codigo.toString().includes(codigoInput);
+      default:
+        return true;
+    }
+  });
 });
-
-async function listarMaquinas() {
-  try {
-    const maquinasR = await useMaquina.getMaquinas()
-    const maquinas = maquinasR.data.maquinas;
-    console.log("Maquinas:", maquinas);
-    rows.value = maquinas;
-    visible.value = false;
-
-  } catch (error) {
-    console.error("Error al listar las máquinas:", error);
-  }
-}
-
-async function listarMaquinasActivas() {
-  const r = await useMaquina.getMaquinasActivas();
-  // console.log(r);
-  rows.value = r.data.maquinasAc;
-}
-
-async function listarMaquinasInactivas() {
-  const r = await useMaquina.getMaquinasInactivas();
-  // console.log(r);
-  rows.value = r.data.maquinasIn;
-}
-
-const listarmaquinaCodigo = computed(() => {
-  if (
-    selectedOption.value === "Listar Máquina por Código" &&
-    codigoMaquina.value
-  ) {
-    const codigoInput = codigoMaquina.value;
-    return rows.value.filter((row) =>
-      row.codigo.toString().includes(codigoInput)
-    );
-  } else {
-    return rows.value;
-  }
-});
-
-const actualizarListadoMaquinas = () => {
-  switch (selectedOption.value) {
-    case "Listar Máquinas Activas":
-      listarMaquinasActivas();
-      break;
-    case "Listar Máquinas Inactivas":
-      listarMaquinasInactivas();
-      break;
-    default:
-      listarMaquinas();
-      break;
-  }
-};
 
 async function inactivarMaquina(id) {
   const r = await useMaquina.putMaquinasInactivar(id);
@@ -179,52 +147,33 @@ const limpiarCampos = () => {
   fechaUltMan.value = "";
 };
 
+async function validarDatosMaquina(maquina) {
+  const { sede } = maquina;
+  if (sede == '') {
+    notifyErrorRequest('La Sede es requerida.');
+    return false;
+  }
+  return true;
+}
+
 async function agregarMaquina() {
-  const select = sede.value
-  const label = select.label
-
-  // Verificar si se encontró la máquina seleccionada
-  if (!select) {
-    console.log("Máquina seleccionada:", label);
-    console.error("Máquina seleccionada no encontrada", select);
-    return;
-  }
-
-  const idSede = select.id;
-
-  let eA = "";
-  if (estadoM.value === "Activo") {
-    eA = 1;
-  } else {
-    eA = 0;
-  }
-
   const nuevaMaquina = {
     codigo: codigo.value,
-    sede: idSede,
+    sede: sede.value.id,
     descripcion: descripcion.value,
     fechaIngreso: fechaIngreso.value,
     fechaUltMan: fechaUltMan.value,
-    estado: eA,
+    estado: estadoM.value === "Activo" ? 1 : 0
   };
 
-  console.log("Datos editados agregados", nuevaMaquina);
-
-  try {
-    // Realizar una solicitud POST al servidor para agregar la nueva máquina
-    const response = await useMaquina.postMaquinas(nuevaMaquina);
-
-    if (response.status === 200) {
-      // Limpiar los campos del formulario después de agregar la máquina exitosamente
-      estadoM.value = estadoOptions.find(option => option.label === "Activo").label; // Estado predeterminado
-      limpiarCampos();
-      // Actualizar la lista de máquinas para reflejar los cambios
+  if (await validarDatosMaquina(nuevaMaquina)) {
+    const r = await useMaquina.postMaquinas(nuevaMaquina);
+    if (r.status == 200) {
+      mostrarFormularioAgregarMaquina.value = false
       actualizarListadoMaquinas();
-    } else {
-      console.error('Error al agregar la máquina:', response);
+      estadoM.value = "Activo";
+      console.log("Maquina agregada exitosamente", nuevaMaquina);
     }
-  } catch (error) {
-    console.error('Error al agregar la máquina:', error);
   }
 }
 
@@ -236,36 +185,19 @@ const cargarMaquinaParaEdicion = (maquina) => {
   fechaIngreso.value = maquina.fechaIngreso.split("T")[0];
   fechaUltMan.value = maquina.fechaUltMan.split("T")[0];
 
-  console.log("Datos cargados para edición:", {
-    id: idMaquinaParaEditar.value,
-    codigo: codigo.value,
-    sede: sede.value,
-    descripcion: descripcion.value,
-    fechaIngreso: fechaIngreso.value,
-    fechaUltMan: fechaUltMan.value,
-  });
-
-  // Mostrar el formulario de edición y ocultar el formulario de agregar
   mostrarFormularioEditarMaquina.value = true;
-  mostrarFormularioAgregarMaquina.value = false;
+  console.log("Datos de la máquina a editar:", maquina);
 };
 
 const editarMaquina = async () => {
-  // console.log(sede.value);
-  const select = sede.value
-  const label = select.label
-
-  // Verificar si se encontró la máquina seleccionada
-  if (!select) {
-    return;
+  let idSede = sede.value.id;
+  for (let sedee of sedes.value) {
+    if (sedee.nombre == sede.value) {
+      idSede = sedee._id
+      break;
+    }
   }
-  console.error("Máquina seleccionada no encontrada", select);
-  console.log("sede seleccionada:", label);
-
-  const idSede = select.id;
-
   const maquinaEditada = {
-    id: idMaquinaParaEditar.value,
     codigo: codigo.value,
     sede: idSede,
     descripcion: descripcion.value,
@@ -273,43 +205,48 @@ const editarMaquina = async () => {
     fechaUltMan: fechaUltMan.value,
   };
 
-  console.log("maquina Edit", maquinaEditada);
-
-  try {
-    const response = await useMaquina.putMaquinas(idMaquinaParaEditar.value, maquinaEditada);
-    if (response.status === 200) {
-      listarMaquinas();
-      idMaquinaParaEditar.value = null;
+  if (await validarDatosMaquina(maquinaEditada)) {
+    const r = await useMaquina.putMaquinas(idMaquinaParaEditar.value, maquinaEditada);
+    if (r.status == 200) {
       mostrarFormularioEditarMaquina.value = false;
-      mostrarFormularioAgregarMaquina.value = false;
-      limpiarCampos();
-    } else {
-      console.error("Error al editar la maquina:", response);
+      actualizarListadoMaquinas();
+      console.log("Maquina editada exitosamente", maquinaEditada);
     }
-  } catch (error) {
-    console.error("Error al editar la maquina:", error);
   }
 };
 
-const cancelarEdicion = () => {
-  limpiarCampos();
-  mostrarFormularioEditarMaquina.value = false;
-};
+// Funciones auxiliares
+function showTooltip(event, text) {
+  tooltipText.value = text;
+  tooltipVisible.value = true;
+  tooltipPosition.value = { top: event.clientY, left: event.clientX };
+}
+function hideTooltip() {
+  tooltipVisible.value = false;
+}
+function truncateText(text, maxLength) {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+}
+function checkAndShowTooltip(event, text, maxLength) {
+  if (text.length > maxLength) {
+    showTooltip(event, text);
+  }
+}
 
-const cancelarMaquina = () => {
-  mostrarFormularioAgregarMaquina.value = false;
-  limpiarCampos();
-};
+const isLoading = computed(() => visible.value);
 
+// Montaje
 onMounted(() => {
-  listarMaquinas();
+  actualizarListadoMaquinas();
   listarSedes();
 });
 
-watch(selectedOption, () => {
-  actualizarListadoMaquinas();
-});
-
+watch(selectedOption, () =>
+  actualizarListadoMaquinas(),
+  isLoading
+);
 </script>
 
 <template>
@@ -325,7 +262,7 @@ watch(selectedOption, () => {
           emit-value :options="options" />
 
         <input v-if="selectedOption === 'Listar Máquina por Código'" v-model="codigoMaquina" class="q-my-md" type="text"
-          name="search" id="codigoMaquina" placeholder="Ingrese el código del cliente" />
+          name="search" id="codigoMaquina" placeholder="Código de la máquina" />
       </div>
 
       <div>
@@ -348,7 +285,7 @@ watch(selectedOption, () => {
               <div class="q-pa-md">
                 <q-form @submit.prevent="agregarMaquina">
                   <!-- Campos del formulario de agregar máquina -->
-                  <q-input v-model.trim="codigo" label="Código" filled outlined class="q-mb-md" />
+                  <q-input v-model.trim="codigo" label="Código" filled outlined class="q-mb-md" required />
                   <q-select v-model="sede" label="Sede" filled outlined :options="sedeOptions" class="q-mb-md"
                     style="max-width: 100%;">
                     <template v-slot:no-option>
@@ -360,17 +297,18 @@ watch(selectedOption, () => {
                     </template>
                   </q-select>
                   <q-input v-model.trim="descripcion" label="Descripción" type="textarea" filled outlined
-                    class="q-mb-md" />
-                  <q-input v-model="fechaIngreso" label="Fecha de Ingreso" filled type="date" outlined
-                    class="q-mb-md" />
+                    class="q-mb-md" required />
+                  <q-input v-model="fechaIngreso" label="Fecha de Ingreso" filled type="date" outlined class="q-mb-md"
+                    required />
                   <q-input v-model="fechaUltMan" label="Fecha de Último Mantenimiento" filled type="date" outlined
-                    class="q-mb-md" />
+                    class="q-mb-md" required />
                   <q-select v-model="estadoM" label="Estado" outlined :options="estadoOptions" filled class="q-mb-md"
                     style="max-width: 100%;" />
 
                   <!-- Botones de acción -->
                   <div class="q-mt-md">
-                    <q-btn @click="cancelarMaquina" label="Cancelar" color="negative" class="q-ma-sm">
+                    <q-btn @click="mostrarFormularioAgregarMaquina = false" label="Cancelar" color="negative"
+                      class="q-ma-sm">
                       <q-tooltip>
                         Cancelar
                       </q-tooltip>
@@ -381,7 +319,7 @@ watch(selectedOption, () => {
                         Guardar Máquina
                       </q-tooltip>
                       <template v-slot:loading>
-                        <q-spinner color="primary" size="1em" />
+                        <q-spinner color="white" size="1em" />
                       </template>
                     </q-btn>
                   </div>
@@ -402,7 +340,7 @@ watch(selectedOption, () => {
               <div class="q-pa-md">
                 <q-form @submit.prevent="editarMaquina">
                   <!-- Campos del formulario de editar máquina -->
-                  <q-input v-model.trim="codigo" label="Código" filled outlined :disabled="true" class="q-mb-md" />
+                  <q-input v-model.trim="codigo" label="Código" filled outlined class="q-mb-md" required />
                   <q-select v-model="sede" label="Sede" filled outlined :options="sedeOptions" class="q-mb-md"
                     style="max-width: 100%;">
                     <template v-slot:no-option>
@@ -414,14 +352,15 @@ watch(selectedOption, () => {
                     </template>
                   </q-select>
                   <q-input v-model.trim="descripcion" label="Descripción" type="textarea" filled outlined
-                    class="q-mb-md" />
-                  <q-input v-model="fechaIngreso" label="Fecha de Ingreso" filled type="date" outlined
-                    class="q-mb-md" />
+                    class="q-mb-md" required />
+                  <q-input v-model="fechaIngreso" label="Fecha de Ingreso" filled type="date" outlined class="q-mb-md"
+                    required />
                   <q-input v-model="fechaUltMan" label="Fecha de Último Mantenimiento" filled type="date" outlined
-                    class="q-mb-md" />
+                    class="q-mb-md" required />
                   <!-- Botones de acción -->
                   <div class="q-mt-md">
-                    <q-btn @click="cancelarEdicion" label="Cancelar" color="negative" class="q-ma-sm">
+                    <q-btn @click="mostrarFormularioEditarMaquina = false" label="Cancelar" color="negative"
+                      class="q-ma-sm">
                       <q-tooltip>
                         Cancelar
                       </q-tooltip>
@@ -432,7 +371,7 @@ watch(selectedOption, () => {
                         Guardar Cambios
                       </q-tooltip>
                       <template v-slot:loading>
-                        <q-spinner color="primary" size="1em" />
+                        <q-spinner color="white" size="1em" />
                       </template>
                     </q-btn>
                   </div>
@@ -443,7 +382,7 @@ watch(selectedOption, () => {
         </q-dialog>
       </div>
 
-      <q-table flat bordered title="Maquinas" title-class="text-green text-weight-bolder text-h5" :rows="filteredRows"
+      <q-table flat bordered title="Maquinas" title-class="text-green text-weight-bolder text-h5" :rows="filtrarFilas"
         :columns="columns" row-key="id">
         <template v-slot:body-cell-opciones="props">
           <q-td :props="props">
@@ -478,10 +417,20 @@ watch(selectedOption, () => {
             </p>
           </q-td>
         </template>
+
+        <!-- Descripcion Column -->
+        <template v-slot:body-cell-descripcion="props">
+          <q-td :props="props" class="relative">
+            <div class="truncated-text" @mouseover="checkAndShowTooltip($event, props.row.descripcion, 20)"
+              @mouseleave="hideTooltip">
+              {{ truncateText(props.row.descripcion, 20) }}
+            </div>
+          </q-td>
+        </template>
       </q-table>
     </div>
   </div>
-  <q-inner-loading :showing="visible" label="Por favor espere..." label-class="text-teal"
+  <q-inner-loading :showing="isLoading" label="Por favor espere..." label-class="text-teal"
     label-style="font-size: 1.1em" />
 </template>
 

@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
+import { notifyErrorRequest } from "../routes/routes.js";
 import { useStoreUsuarios } from "../stores/Usuarios.js";
 import { useStoreSedes } from "../stores/Sedes.js";
 
@@ -9,10 +10,6 @@ const visible = ref(true);
 // Variables parra mostrar formularios
 const mostrarFormularioAgregarUsuarios = ref(false);
 const mostrarFormularioEditarUsuarios = ref(false);
-
-// Llamado de modelos
-const useUsuario = useStoreUsuarios();
-const useSede = useStoreSedes();
 
 // Variables del input para peticiones get
 const emailUsuario = ref("");
@@ -26,39 +23,6 @@ const telefono = ref("");
 const password = ref("")
 const rol = ref("");
 
-// Array de modelo de sedes
-const sedes = ref([])
-
-async function listarSedes() {
-  try {
-    const r = await useSede.getSedes();
-    if (r.data && r.data.sedes) {
-      sedes.value = r.data.sedes;
-      visible.value = false;
-      // console.log("Sedes listadas:", sedes.value);
-    } else {
-      console.error("La respuesta no contiene la propiedad 'sedes'.", r.data);
-    }
-  } catch (error) {
-    console.error("Error al listar las sedes:", error);
-  }
-}
-
-const sedeOptions = computed(() => {
-  return sedes.value
-    .filter(sede => sede.estado !== 0)
-    .map(sede => ({
-      label: sede.nombre,
-      id: sede._id,
-    }));
-});
-
-const rolOptions = [
-  { label: "Administrador" },
-  { label: "Recepcionista" },
-  { label: "Instructor" }
-];
-
 const estadoOptions = [
   { label: "Activo", value: 1 },
   { label: "Inactivo", value: 0 },
@@ -66,17 +30,7 @@ const estadoOptions = [
 
 const estado = ref(estadoOptions.find(option => option.label === "Activo").label);
 
-
-const selectedOption = ref("Listar Usuarios"); // Establecer 'Listar Usuarios' como valor por defecto
-const options = [
-  { label: "Listar Usuarios", value: "Listar Usuarios" },
-  {
-    label: "Listar Usuario por su Email",
-    value: "Listar Usuario por su Email",
-  },
-  { label: "Listar Usuarios Activos", value: "Listar Usuarios Activos" },
-  { label: "Listar Usuarios Inactivos", value: "Listar Usuarios Inactivos" }
-];
+const selectedOption = ref("Listar Usuarios");
 
 let rows = ref([]);
 const columns = ref([
@@ -89,53 +43,44 @@ const columns = ref([
   { name: "opciones", label: "Opciones", field: "opciones", align: "center" },
 ]);
 
-// Función computada para manejar la lógica de qué datos mostrar
-const filteredRows = computed(() => {
-  switch (selectedOption.value) {
-    case "Listar Usuario por su Email":
-      return listarClienteEmail.value;
-    default:
-      return rows.value;
-  }
-});
+// Array de modelo de sedes
+const sedes = ref([])
 
-async function listarUsuarios() {
-  try {
-    const usuariosR = await useUsuario.getUsuarios()
-    const usuarios = usuariosR.data.usuarios;
-    console.log("usuarios:", usuarios);
-    rows.value = usuarios;
+const rolOptions = [
+  { label: "Administrador" },
+  { label: "Recepcionista" },
+  { label: "Instructor" }
+];
 
-  } catch (error) {
-    console.error("Error al listar los usuarios:", error);
-  }
+// Opciones de filtro
+const options = [
+  { label: "Listar Usuarios", value: "Listar Usuarios" },
+  { label: "Listar Usuario por su Email", value: "Listar Usuario por su Email" },
+  { label: "Listar Usuarios Activos", value: "Listar Usuarios Activos" },
+  { label: "Listar Usuarios Inactivos", value: "Listar Usuarios Inactivos" }
+];
+
+// Llamado de modelos
+const useUsuario = useStoreUsuarios();
+const useSede = useStoreSedes();
+
+// Funciones async
+async function listarSedes() {
+  const r = await useSede.getSedes();
+  sedes.value = r.data.sedes;
+  // console.log("Sedes:", sedes.value);
 }
 
-// Función computada para filtrar los usuarios por email
-const listarClienteEmail = computed(() => {
-  if (
-    selectedOption.value === "Listar Usuario por su Email" &&
-    emailUsuario.value
-  ) {
-    const searchTerm = emailUsuario.value.toLowerCase();
-    return rows.value.filter((usuario) =>
-      usuario.email.toLowerCase().includes(searchTerm)
-    );
-  } else {
-    return rows.value;
-  }
-});
-
-async function listarUsuariosActivos(id) {
-  const r = await useUsuario.getUsuariosActivos();
-  // console.log(r);
-  rows.value = r.data.usuariosAc;
-}
-
-async function listarUsuariosInactivos(id) {
-  const r = await useUsuario.getUsuariosInactivos();
-  // console.log(r);
-  rows.value = r.data.usuariosIn;
+async function actualizarListadoUsuarios() {
+  const usuariosPromise = selectedOption.value === "Listar Usuarios Activos"
+  ? useUsuario.getUsuariosActivos()
+  : selectedOption.value === "Listar Usuarios Inactivos"
+  ? useUsuario.getUsuariosInactivos()
+  : useUsuario.getUsuarios();
+  
+  rows.value = (await usuariosPromise).data.usuarios
+  visible.value = false;
+  console.log("Usuarios", rows.value);
 }
 
 async function inactivarUsuario(id) {
@@ -150,175 +95,138 @@ async function activarUsuario(id) {
   actualizarListadoUsuarios();
 }
 
-const limpiarCamposUsuario = () => {
-  sede.value = ""
+const agregarUsuario = async () => {
+  const datosUsuario = {
+    sede: sede.value.id,
+    nombre: nombre.value,
+    email: email.value,
+    telefono: telefono.value,
+    password: password.value,
+    rol: rol.value.label,
+    estado: estado.value === "Activo" ? 1 : 0
+  };
+
+  if (await validarDatosUsuario(datosUsuario)) {
+    const r = await useUsuario.postUsuarios(datosUsuario);
+    if (r.status == 200) {
+      mostrarFormularioAgregarUsuarios.value = false;
+      actualizarListadoUsuarios();
+      estado.value = "Activo";
+      console.log("Usuario agregado exitosamente", datosUsuario);
+    }
+  }
+};
+
+const editarUsuario = async () => {
+  let idSede = sede.value.id
+
+  // Por si no cambio de sede tomar el valor del id de la sede
+  for (let sedee of sedes.value) {
+    if (sedee.nombre === sede.value) {
+      idSede = sedee._id;
+      break;
+    }
+  }
+  const datosUsuario = {
+    sede: idSede,
+    nombre: nombre.value,
+    email: email.value,
+    telefono: telefono.value,
+    // password: password.value,
+    rol: rol.value ? (rol.value.label ? rol.value.label : rol.value) : '',
+  };
+
+  if (await validarDatosUsuario(datosUsuario)) {
+    const r = await useUsuario.putUsuarios(selectedUsuarioId.value, datosUsuario);
+    if (r.status == 200) {
+      mostrarFormularioEditarUsuarios.value = false;
+      actualizarListadoUsuarios();
+      console.log("Usuario editado exitosamente", datosUsuario);
+    }
+  }
+};
+
+// Funciones auxiliares
+const limpiarCampos = () => {
+  sede.value = "";
   nombre.value = "";
   email.value = "";
   telefono.value = "";
-  password.value = "",
-    rol.value = "";
-};
-
-const agregarUsuario = async () => {
-  try {
-
-    // Buscar la máquina seleccionada por su descripción
-    const select = sede.value
-    const label = select.label
-
-    // Verificar si se encontró la máquina seleccionada
-    if (!select) {
-      console.error("Máquina seleccionada no encontrada", select);
-      console.log("Máquina seleccionada:", label);
-      return;
-    }
-
-    const idSede = select.id;
-
-    console.log("sede seleccionada:", rol.value);
-    const sele = rol.value
-    const labe = sele.label
-    console.log("sede seleccionada:", sele);
-
-    // Verificar si se encontró la máquina seleccionada
-    if (!sele) {
-      console.error("Máquina seleccionada no encontrada", sele);
-      return;
-    }
-    const datosUsuario = {
-      sede: idSede,
-      nombre: nombre.value,
-      email: email.value,
-      telefono: telefono.value,
-      password: password.value,
-      rol: labe,
-      estado: estadoOptions.find(option => option.label === estado.value).value,
-    };
-
-    console.log("Datos a agregar", datosUsuario);
-
-    const response = await useUsuario.postUsuarios(datosUsuario);
-    if (response.status === 200) {
-      listarUsuarios();
-      estado.value = "Activo";
-      limpiarCamposUsuario();
-    } else {
-      console.error('Error al agregar el usuario:', response.data);
-    }
-  } catch (error) {
-    console.error('Error al agregar el usuario:', error);
-  }
+  // password.value = "";
+  rol.value = "";
 };
 
 const mostrarDatosParaEditar = (usuarios) => {
   console.log("usuario a editar:", usuarios);
+
   selectedUsuarioId.value = usuarios._id;
   sede.value = usuarios.sede.nombre;
   nombre.value = usuarios.nombre;
   email.value = usuarios.email;
   telefono.value = usuarios.telefono;
-  password.value = "",
-    rol.value = usuarios.rol;
+  // password.value = "";
+  rol.value = usuarios.rol;
 
   mostrarFormularioAgregarUsuarios.value = false;
   mostrarFormularioEditarUsuarios.value = true;
 };
 
-const editarUsuario = async () => {
-  try {
-    const select = sede.value
-    const label = select.label
+async function validarDatosUsuario(usuario) {
+  const { sede, rol } = usuario;
 
-    // Verificar si se encontró la máquina seleccionada
-    if (!select) {
-      console.error("Máquina seleccionada no encontrada", select);
-      console.log("Máquina seleccionada:", label);
-      return;
-    }
-
-    const idSede = select.id;
-
-    console.log("sede seleccionada:", rol.value);
-    const sele = rol.value
-    const labe = sele.label
-    console.log("sede seleccionada:", sele);
-
-    // Verificar si se encontró la máquina seleccionada
-    if (!sele) {
-      console.error("Máquina seleccionada no encontrada", sele);
-      return;
-    }
-
-    const datosUsuario = {
-      sede: idSede,
-      nombre: nombre.value,
-      email: email.value,
-      telefono: telefono.value,
-      password: password.value,
-      rol: labe,
-    };
-
-    const response = await useUsuario.putUsuarios(selectedUsuarioId.value, datosUsuario);
-    if (response.status === 200) {
-      listarUsuarios();
-      limpiarCamposUsuario();
-      mostrarFormularioEditarUsuarios.value = false;
-    } else {
-      console.error('Error al editar el usuario:', response.data);
-    }
-  } catch (error) {
-    console.error('Error al editar el usuario:', error);
+  if (sede == undefined) {
+    notifyErrorRequest('La sede es requerida.');
+    return false;
   }
-};
-
-const cancelarUsuario = () => {
-  mostrarFormularioAgregarUsuarios.value = false;
-  mostrarFormularioEditarUsuarios.value = false;
-};
-
-const actualizarListadoUsuarios = async () => {
-  switch (selectedOption.value) {
-    case "Listar Usuarios Activos":
-      await listarUsuariosActivos();
-      break;
-    case "Listar Usuarios Inactivos":
-      await listarUsuariosInactivos();
-      break;
-    default:
-      await listarUsuarios();
-      break;
+  if (rol == undefined) {
+    notifyErrorRequest('El rol es requerido.');
+    return false;
   }
-};
+  return true;
+}
 
-onMounted(() => {
-  listarUsuarios(),
-    listarSedes()
+// Funciones computadas
+const filtrarFilas = computed(() => {
+  if (selectedOption.value === "Listar Usuario por su Email" && emailUsuario.value) {
+    const searchTerm = emailUsuario.value;
+    return rows.value.filter(usuario =>
+      usuario.email.includes(searchTerm)
+    );
+  }
+  return rows.value;
 });
 
-watch(selectedOption, (newValue) => {
-  actualizarListadoUsuarios();
-  if (newValue === "Agregar Usuario") {
-    mostrarFormularioAgregarUsuarios.value = true;
-    mostrarFormularioEditarUsuarios.value = false;
-    limpiarCamposUsuario();
-  } else {
-    mostrarFormularioEditarUsuarios.value = false;
-    mostrarFormularioAgregarUsuarios.value = false;
-  }
+const sedeOptions = computed(() => {
+  return sedes.value
+    .filter(sede => sede.estado !== 0)
+    .map(sede => ({
+      label: sede.nombre,
+      id: sede._id,
+    }));
 });
 
+const isLoading = computed(() => visible.value);
 
-// Variable reactiva para controlar la visibilidad de la contraseña
-const showPassword = ref(false);
-
-const togglePasswordVisibility = () => {
-  showPassword.value = !showPassword.value;
+// Funciones auxiliares
+const mostrarContraseña = ref(false);
+const alternarVisibilidadContraseña = () => {
+  mostrarContraseña.value = !mostrarContraseña.value;
 };
-
-const selectAllText = (event) => {
+const seleccionarTodoElTexto = (event) => {
   const input = event.target;
   input.select();
 };
+
+// Montaje
+onMounted(() => {
+  actualizarListadoUsuarios();
+  listarSedes()
+});
+
+watch(selectedOption, () =>
+  actualizarListadoUsuarios(),
+  isLoading
+);
 </script>
 
 <template>
@@ -334,7 +242,7 @@ const selectAllText = (event) => {
           emit-value :options="options" />
 
         <input v-if="selectedOption === 'Listar Usuario por su Email'" v-model="emailUsuario" class="q-my-md"
-          type="email" name="emailUsuario" id="emailUsuario" placeholder="Ingrese el email del usuario" />
+          type="email" name="emailUsuario" id="emailUsuario" placeholder="Email del usuario" />
       </div>
 
       <div>
@@ -349,7 +257,7 @@ const selectAllText = (event) => {
 
         <!-- Formulario para agregar usuario -->
         <q-dialog v-model="mostrarFormularioAgregarUsuarios"
-          v-bind="mostrarFormularioAgregarUsuarios && limpiarCamposUsuario()">
+          v-bind="mostrarFormularioAgregarUsuarios && limpiarCampos()">
           <q-card>
             <q-card-section>
               <div class="text-h6">Agregar Usuario</div>
@@ -367,15 +275,16 @@ const selectAllText = (event) => {
                   </template>
                 </q-select>
                 <q-input v-model.trim="nombre" label="Nombre" filled outlined autocomplete="username"
-                  @dblclick="selectAllText" class="q-mb-md" />
+                  @dblclick="seleccionarTodoElTexto" class="q-mb-md" required />
                 <q-input v-model.trim="email" label="Email" filled type="email" outlined autocomplete="email"
-                  class="q-mb-md" />
+                  class="q-mb-md" required />
                 <q-input v-model="telefono" label="Telefono" type="number" filled outlined autocomplete="tel"
-                  @dblclick="selectAllText" class="q-mb-md" />
-                <q-input v-model="password" filled :type="showPassword ? 'text' : 'password'" placeholder="Password"
-                  autocomplete="current-password" @dblclick="selectAllText" class="q-mb-md">
+                  @dblclick="seleccionarTodoElTexto" class="q-mb-md" min="0" required />
+                <q-input v-model="password" filled :type="mostrarContraseña ? 'text' : 'password'"
+                  placeholder="Password" autocomplete="current-password" @dblclick="seleccionarTodoElTexto"
+                  class="q-mb-md" required>
                   <template v-slot:append>
-                    <div class="eye-wrapper" @click="togglePasswordVisibility">
+                    <div class="eye-wrapper" @click="alternarVisibilidadContraseña">
                       <div style="display: flex; flex-direction: column;">
                         <svg class="eye-icon" width="24" height="24" viewBox="0 0 24 24" style="margin-bottom: -13px;">
                           <!-- Inserta aquí el SVG del ojo abierto -->
@@ -393,21 +302,22 @@ const selectAllText = (event) => {
                   </template>
                 </q-input>
                 <q-select v-model="rol" label="Rol" filled outlined :options="rolOptions" class="q-mb-md"
-                  @dblclick="selectAllText" style="max-width: 100%;" />
+                  @dblclick="seleccionarTodoElTexto" style="max-width: 100%;" />
                 <q-select v-model="estado" label="Estado" filled outlined :options="estadoOptions" class="q-mb-md"
                   style="max-width: 100%;" />
-                <q-btn @click="cancelarUsuario" label="Cancelar" class="q-ma-sm">
+                <q-btn @click="mostrarFormularioAgregarUsuarios = false" label="Cancelar" class="q-ma-sm">
                   <q-tooltip>
                     Cancelar
                   </q-tooltip>
                 </q-btn>
-                <q-btn :loading="useUsuario.loading" type="submit" label="Guardar Usuario" color="primary" class="q-ma-sm">
+                <q-btn :loading="useUsuario.loading" type="submit" label="Guardar Usuario" color="primary"
+                  class="q-ma-sm">
                   <q-tooltip>
                     Guardar Usuario
                   </q-tooltip>
                   <template v-slot:loading>
-                      <q-spinner color="primary" size="1em" />
-                    </template>
+                    <q-spinner color="white" size="1em" />
+                  </template>
                 </q-btn>
               </q-form>
             </q-card-section>
@@ -433,34 +343,33 @@ const selectAllText = (event) => {
                   </template>
                 </q-select>
                 <q-input v-model.trim="nombre" label="Nombre" filled outlined autocomplete="username"
-                  @dblclick="selectAllText" class="q-mb-md" />
+                  @dblclick="seleccionarTodoElTexto" class="q-mb-md" required />
                 <q-input v-model.trim="email" label="Email" type="email" filled outlined autocomplete="email"
-                  class="q-mb-md" />
+                  class="q-mb-md" required />
                 <q-input v-model="telefono" label="Telefono" type="number" filled outlined autocomplete="tel"
-                  @dblclick="selectAllText" class="q-mb-md" />
-                <q-input v-model="password" filled :type="showPassword ? 'text' : 'password'" placeholder="Password"
-                  autocomplete="current-password" @dblclick="selectAllText" class="q-mb-md">
+                  @dblclick="seleccionarTodoElTexto" class="q-mb-md" min="0" required />
+                <!-- <q-input v-model="password" filled :type="mostrarContraseña ? 'text' : 'password'"
+                  placeholder="Password" autocomplete="current-password" @dblclick="seleccionarTodoElTexto"
+                  class="q-mb-md">
                   <template v-slot:append>
-                    <div class="eye-wrapper" @click="togglePasswordVisibility">
+                    <div class="eye-wrapper" @click="alternarVisibilidadContraseña">
                       <div style="display: flex; flex-direction: column;">
                         <svg class="eye-icon" width="24" height="24" viewBox="0 0 24 24" style="margin-bottom: -13px;">
-                          <!-- Inserta aquí el SVG del ojo abierto -->
                           <path fill="currentColor"
                             d="M11.999 4.5c-3.598 0-6.59 2.399-7.633 5.662a.75.75 0 1 0 1.395.548c.808-2.387 3.083-4.21 6.238-4.21 3.17 0 5.45 1.83 6.262 4.236a.75.75 0 1 0 1.387-.556C18.605 6.919 15.614 4.5 11.999 4.5zm0 2.25c1.875 0 3.463 1.299 4.256 3.001a.75.75 0 0 0 1.418-.49C16.729 9.42 14.253 8.25 11.999 8.25s-4.732 1.169-5.674 2.511a.75.75 0 1 0 1.414.487c.776-1.62 2.701-2.748 5.259-2.748zm0 3.375a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5z" />
                         </svg>
                         <svg class="eye-icon" width="24" height="24" viewBox="0 0 24 24"
                           style="transform: rotate(180deg); margin-top: -13px; animation: flip 1s;">
-                          <!-- SVG del ojo al revés -->
                           <path fill="currentColor"
                             d="M11.999 4.5c-3.598 0-6.59 2.399-7.633 5.662a.75.75 0 1 0 1.395.548c.808-2.387 3.083-4.21 6.238-4.21 3.17 0 5.45 1.83 6.262 4.236a.75.75 0 1 0 1.387-.556C18.605 6.919 15.614 4.5 11.999 4.5zm0 2.25c1.875 0 3.463 1.299 4.256 3.001a.75.75 0 0 0 1.418-.49C16.729 9.42 14.253 8.25 11.999 8.25s-4.732 1.169-5.674 2.511a.75.75 0 1 0 1.414.487c.776-1.62 2.701-2.748 5.259-2.748zm0 3.375a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5z" />
                         </svg>
                       </div>
                     </div>
                   </template>
-                </q-input>
+                </q-input> -->
                 <q-select v-model="rol" label="Rol" filled outlined :options="rolOptions" class="q-mb-md"
-                  @dblclick="selectAllText" style="max-width: 100%;" />
-                <q-btn @click="cancelarUsuario" label="Cancelar" class="q-ma-sm">
+                  @dblclick="seleccionarTodoElTexto" style="max-width: 100%;" />
+                <q-btn @click="mostrarFormularioEditarUsuarios = false" label="Cancelar" class="q-ma-sm">
                   <q-tooltip>
                     Cancelar
                   </q-tooltip>
@@ -471,7 +380,7 @@ const selectAllText = (event) => {
                     Guardar cambios
                   </q-tooltip>
                   <template v-slot:loading>
-                    <q-spinner color="primary" size="1em" />
+                    <q-spinner color="white" size="1em" />
                   </template>
                 </q-btn>
               </q-form>
@@ -480,7 +389,7 @@ const selectAllText = (event) => {
         </q-dialog>
       </div>
 
-      <q-table flat bordered title="Usuarios" title-class="text-green text-weight-bolder text-h5" :rows="filteredRows"
+      <q-table flat bordered title="Usuarios" title-class="text-green text-weight-bolder text-h5" :rows="filtrarFilas"
         :columns="columns" row-key="id">
         <q-select background-color="green" class="q-my-md" v-model="selectedOption" outlined dense options-dense
           emit-value :options="options" />
@@ -520,7 +429,7 @@ const selectAllText = (event) => {
       </q-table>
     </div>
   </div>
-  <q-inner-loading :showing="visible" label="Por favor espere..." label-class="text-teal"
+  <q-inner-loading :showing="isLoading" label="Por favor espere..." label-class="text-teal"
     label-style="font-size: 1.1em" />
 </template>
 
@@ -534,17 +443,14 @@ const selectAllText = (event) => {
 .eye-wrapper {
   display: flex;
   align-items: center;
-  /* Centra verticalmente el ícono */
 }
 
 .eye-icon {
   font-size: 24px;
-  /* Tamaño base del ícono */
 }
 
 .q-select {
   max-width: 200px;
-  /* Puedes ajustar el ancho según tu preferencia */
 }
 
 .q-my-md {
