@@ -184,6 +184,34 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
         }
     };
 
+    const recuperarContrasena = async (email) => {
+        try {
+            loading.value = true;
+            const r = await axios.put(`http://localhost:4505/api/usuarios/restablecer/contrasena`, {email});
+            console.log("Respuesta del servidor:", r.data.msg); // Añadir esta línea
+            return r;
+        } catch (error) {
+            console.error("Error al restablecer contraseña", error);
+            return error;
+        } finally {
+            loading.value = false;
+        }
+    };
+
+    const putUsuariosPassword = async (data) => {
+        try {
+            loading.value = true;
+            const r = await axios.put(`http://localhost:4505/api/usuarios/cambiar/contrasena`, data);
+            console.log("Respuesta del servidor:", r.data.msg); // Añadir esta línea
+            return r;
+        } catch (error) {
+            console.error("Error al restablecer contraseña", error);
+            return error;
+        } finally {
+            loading.value = false;
+        }
+    };
+
     return {
         getUsuarios,
         getUsuariosActivos,
@@ -194,6 +222,8 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
         putUsuarios,
         putUsuariosActivar,
         putUsuariosInactivar,
+        recuperarContrasena,
+        putUsuariosPassword,
         token,
         user,
         logout,

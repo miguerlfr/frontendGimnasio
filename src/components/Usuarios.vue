@@ -14,6 +14,8 @@ const mostrarFormularioEditarUsuarios = ref(false);
 // Variables del input para peticiones get
 const emailUsuario = ref("");
 
+const isPwd = ref(true);
+
 // Variables de los inputs de agregar y editar
 const selectedUsuarioId = ref(null);
 const sede = ref("");
@@ -73,11 +75,11 @@ async function listarSedes() {
 
 async function actualizarListadoUsuarios() {
   const usuariosPromise = selectedOption.value === "Listar Usuarios Activos"
-  ? useUsuario.getUsuariosActivos()
-  : selectedOption.value === "Listar Usuarios Inactivos"
-  ? useUsuario.getUsuariosInactivos()
-  : useUsuario.getUsuarios();
-  
+    ? useUsuario.getUsuariosActivos()
+    : selectedOption.value === "Listar Usuarios Inactivos"
+      ? useUsuario.getUsuariosInactivos()
+      : useUsuario.getUsuarios();
+
   rows.value = (await usuariosPromise).data.usuarios
   visible.value = false;
   console.log("Usuarios", rows.value);
@@ -152,7 +154,7 @@ const limpiarCampos = () => {
   nombre.value = "";
   email.value = "";
   telefono.value = "";
-  // password.value = "";
+  password.value = "";
   rol.value = "";
 };
 
@@ -208,10 +210,10 @@ const sedeOptions = computed(() => {
 const isLoading = computed(() => visible.value);
 
 // Funciones auxiliares
-const mostrarContraseña = ref(false);
-const alternarVisibilidadContraseña = () => {
-  mostrarContraseña.value = !mostrarContraseña.value;
-};
+// const mostrarContraseña = ref(false);
+// const alternarVisibilidadContraseña = () => {
+//   mostrarContraseña.value = !mostrarContraseña.value;
+// };
 const seleccionarTodoElTexto = (event) => {
   const input = event.target;
   input.select();
@@ -280,27 +282,15 @@ watch(selectedOption, () =>
                   class="q-mb-md" required />
                 <q-input v-model="telefono" label="Telefono" type="number" filled outlined autocomplete="tel"
                   @dblclick="seleccionarTodoElTexto" class="q-mb-md" min="0" required />
-                <q-input v-model="password" filled :type="mostrarContraseña ? 'text' : 'password'"
-                  placeholder="Password" autocomplete="current-password" @dblclick="seleccionarTodoElTexto"
-                  class="q-mb-md" required>
+
+                <q-input v-model="password" filled :type="isPwd ? 'password' : 'text'" placeholder="Password"
+                  class="q-mb-md">
                   <template v-slot:append>
-                    <div class="eye-wrapper" @click="alternarVisibilidadContraseña">
-                      <div style="display: flex; flex-direction: column;">
-                        <svg class="eye-icon" width="24" height="24" viewBox="0 0 24 24" style="margin-bottom: -13px;">
-                          <!-- Inserta aquí el SVG del ojo abierto -->
-                          <path fill="currentColor"
-                            d="M11.999 4.5c-3.598 0-6.59 2.399-7.633 5.662a.75.75 0 1 0 1.395.548c.808-2.387 3.083-4.21 6.238-4.21 3.17 0 5.45 1.83 6.262 4.236a.75.75 0 1 0 1.387-.556C18.605 6.919 15.614 4.5 11.999 4.5zm0 2.25c1.875 0 3.463 1.299 4.256 3.001a.75.75 0 0 0 1.418-.49C16.729 9.42 14.253 8.25 11.999 8.25s-4.732 1.169-5.674 2.511a.75.75 0 1 0 1.414.487c.776-1.62 2.701-2.748 5.259-2.748zm0 3.375a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5z" />
-                        </svg>
-                        <svg class="eye-icon" width="24" height="24" viewBox="0 0 24 24"
-                          style="transform: rotate(180deg); margin-top: -13px; animation: flip 1s;">
-                          <!-- SVG del ojo al revés -->
-                          <path fill="currentColor"
-                            d="M11.999 4.5c-3.598 0-6.59 2.399-7.633 5.662a.75.75 0 1 0 1.395.548c.808-2.387 3.083-4.21 6.238-4.21 3.17 0 5.45 1.83 6.262 4.236a.75.75 0 1 0 1.387-.556C18.605 6.919 15.614 4.5 11.999 4.5zm0 2.25c1.875 0 3.463 1.299 4.256 3.001a.75.75 0 0 0 1.418-.49C16.729 9.42 14.253 8.25 11.999 8.25s-4.732 1.169-5.674 2.511a.75.75 0 1 0 1.414.487c.776-1.62 2.701-2.748 5.259-2.748zm0 3.375a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5z" />
-                        </svg>
-                      </div>
-                    </div>
+                    <q-icon :name="isPwd ? 'visibility_off' : 'visibility'" class="cursor-pointer"
+                      @click="isPwd = !isPwd" />
                   </template>
                 </q-input>
+
                 <q-select v-model="rol" label="Rol" filled outlined :options="rolOptions" class="q-mb-md"
                   @dblclick="seleccionarTodoElTexto" style="max-width: 100%;" />
                 <q-select v-model="estado" label="Estado" filled outlined :options="estadoOptions" class="q-mb-md"
@@ -348,25 +338,15 @@ watch(selectedOption, () =>
                   class="q-mb-md" required />
                 <q-input v-model="telefono" label="Telefono" type="number" filled outlined autocomplete="tel"
                   @dblclick="seleccionarTodoElTexto" class="q-mb-md" min="0" required />
-                <!-- <q-input v-model="password" filled :type="mostrarContraseña ? 'text' : 'password'"
-                  placeholder="Password" autocomplete="current-password" @dblclick="seleccionarTodoElTexto"
-                  class="q-mb-md">
+
+                <!-- <q-input v-model="password" filled :type="isPwd ? 'password' : 'text'" placeholder="Password"
+                  class="q-m|b-md">
                   <template v-slot:append>
-                    <div class="eye-wrapper" @click="alternarVisibilidadContraseña">
-                      <div style="display: flex; flex-direction: column;">
-                        <svg class="eye-icon" width="24" height="24" viewBox="0 0 24 24" style="margin-bottom: -13px;">
-                          <path fill="currentColor"
-                            d="M11.999 4.5c-3.598 0-6.59 2.399-7.633 5.662a.75.75 0 1 0 1.395.548c.808-2.387 3.083-4.21 6.238-4.21 3.17 0 5.45 1.83 6.262 4.236a.75.75 0 1 0 1.387-.556C18.605 6.919 15.614 4.5 11.999 4.5zm0 2.25c1.875 0 3.463 1.299 4.256 3.001a.75.75 0 0 0 1.418-.49C16.729 9.42 14.253 8.25 11.999 8.25s-4.732 1.169-5.674 2.511a.75.75 0 1 0 1.414.487c.776-1.62 2.701-2.748 5.259-2.748zm0 3.375a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5z" />
-                        </svg>
-                        <svg class="eye-icon" width="24" height="24" viewBox="0 0 24 24"
-                          style="transform: rotate(180deg); margin-top: -13px; animation: flip 1s;">
-                          <path fill="currentColor"
-                            d="M11.999 4.5c-3.598 0-6.59 2.399-7.633 5.662a.75.75 0 1 0 1.395.548c.808-2.387 3.083-4.21 6.238-4.21 3.17 0 5.45 1.83 6.262 4.236a.75.75 0 1 0 1.387-.556C18.605 6.919 15.614 4.5 11.999 4.5zm0 2.25c1.875 0 3.463 1.299 4.256 3.001a.75.75 0 0 0 1.418-.49C16.729 9.42 14.253 8.25 11.999 8.25s-4.732 1.169-5.674 2.511a.75.75 0 1 0 1.414.487c.776-1.62 2.701-2.748 5.259-2.748zm0 3.375a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5z" />
-                        </svg>
-                      </div>
-                    </div>
+                    <q-icon :name="isPwd ? 'visibility_off' : 'visibility'" class="cursor-pointer"
+                      @click="isPwd = !isPwd" />
                   </template>
                 </q-input> -->
+
                 <q-select v-model="rol" label="Rol" filled outlined :options="rolOptions" class="q-mb-md"
                   @dblclick="seleccionarTodoElTexto" style="max-width: 100%;" />
                 <q-btn @click="mostrarFormularioEditarUsuarios = false" label="Cancelar" class="q-ma-sm">
@@ -440,14 +420,14 @@ watch(selectedOption, () =>
   gap: 20px;
 }
 
-.eye-wrapper {
+/* .eye-wrapper {
   display: flex;
   align-items: center;
 }
 
 .eye-icon {
   font-size: 24px;
-}
+} */
 
 .q-select {
   max-width: 200px;

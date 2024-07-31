@@ -251,7 +251,7 @@ watch(selectedOption, () => {
       </div>
 
       <div class="contSelect" style="margin-left: 5%; text-align: end; margin-right: 5%">
-        <q-select background-color="green" class="q-my-md" v-model="selectedOption" outlined dense options-dense
+        <q-select background-color="rgb(45, 134, 236)" class="q-my-md" v-model="selectedOption" outlined dense options-dense
           emit-value :options="options" />
 
         <input v-if="selectedOption === 'Listar Ingreso del Cliente por su Nombre'" v-model="nombreClienteIngreso"

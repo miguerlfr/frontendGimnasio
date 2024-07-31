@@ -4,23 +4,26 @@
 
         <div class="login-container">
             <h3>Login</h3>
-
+            
             <form @submit.prevent="">
-
                 <div>
                     <div class="input-container">
-                        <input class="input" type="email" placeholder=" " v-model="email" autocomplete="username" />
-                        <label>Email</label>
+                        <input class="input" type="email" placeholder="Email" v-model="email" autocomplete="username"/>
                     </div>
-                    <div class="input-container">
-                        <input class="input" type="password" placeholder=" " v-model="password"
-                            autocomplete="current-password" />
-                        <label>Password</label>
+                    <div class="pass">
+
+                    <q-input v-model="password" :type="isPwd ? 'password' : 'text'" placeholder="Password"
+                        class="q-mb-md">
+                        <template v-slot:append>
+                            <q-icon :name="isPwd ? 'visibility_off' : 'visibility'" class="cursor-pointer"
+                                @click="isPwd = !isPwd" />
+                        </template>
+                    </q-input>
                     </div>
                 </div>
-                <p style="font-size: 12px;margin: -10px; padding: 0; border: 0;"><a href="#">¿Olvidaste tu
-                        contraseña?</a></p>
 
+                <p style="font-size: 12px;margin: -10px; padding: 0; border: 0;"><a href="/#/password">¿Olvidaste tu
+                        contraseña?</a></p>
                 <q-btn style="margin-top: 40px; margin-bottom: 15px;" type="submit" :loading="useUsuario.loading"
                     @click="login">
                     Sign In
@@ -56,6 +59,7 @@ const useUsuario = useStoreUsuarios();
 const router = useRouter();
 const email = ref("");
 const password = ref("");
+const isPwd = ref(true);
 
 async function login() {
     const isValid = await validateCredentials();
@@ -99,6 +103,7 @@ async function validateCredentials() {
 // function twitterLogin() {
 //     // Twitter login logic here
 // }
+
 </script>
 
 <style scoped>
@@ -123,17 +128,19 @@ async function validateCredentials() {
     text-align: center;
     width: 300px;
     background: linear-gradient(to bottom, rgba(255, 255, 255, 0.842), rgb(255, 255, 255), rgb(255, 255, 255), rgb(255, 255, 255), rgba(255, 255, 255, 0.918));
-    padding: 50px;
+    padding: 44px;
     border: 2px solid #ddd;
     border-radius: 10px;
     box-shadow: rgba(0, 0, 0, 0.17) 0px -23px 25px 0px inset,
         rgba(0, 0, 0, 0.15) 0px -36px 30px 0px inset,
-        rgba(0, 0, 0, 0.1) 0px -79px 40px 0px inset,
-        rgba(0, 0, 0, 0.06) 0px 2px 1px,
+        rgba(255, 1, 1, 0.1) 0px -79px 40px 0px inset,
+        rgba(0, 0, 0, 0.38) 0px 2px 1px,
         rgba(0, 0, 0, 0.09) 0px 4px 2px,
-        rgba(0, 0, 0, 0.09) 0px 8px 4px,
-        rgba(0, 0, 0, 0.09) 0px 16px 8px,
-        rgba(0, 0, 0, 0.09) 0px 32px 16px;
+        rgba(61, 58, 80, 0.482) -1px 10px 8px 13px,
+        rgb(149, 107, 107) 60px 15676px 8px,
+        rgb(0, 0, 0) 0px 32px 16px;
+    /* padding-bottom: 10px;
+    padding-top: 2px; */
 }
 
 .input:hover {
@@ -156,36 +163,53 @@ form {
 .input-container {
     position: relative;
     margin-bottom: 20px;
+    width: 100%;
+    display: block;
+    background: transparent;
+    font-size: 15px;
+    background-color: transparent;
+    outline: none;
+    box-shadow: none;
 }
 
-.input-container input {
-    width: 100%;
-    padding: 10px 2px 10px 5px;
-    display: block;
-    border: none;
-    border-bottom: 1px solid #757575;
-    background: transparent;
-    font-size: 16px;
-    /* height: 40px;
-    margin-bottom: 20px;
-    padding: 10px;*/
-    /* border: 1px solid #ccc;  */
+.pass {
+    margin-right: 20px;
+}
+
+.input-container input[type="email"] {
+    background: transparent; /* Hace el fondo del input transparente */
+    border-left: none; /* Elimina el borde izquierdo */
+    border-right: none; /* Elimina el borde derecho */
+    border-top: none; /* Elimina el borde superior */
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 14px;
+    width: 163px;
+}
+
+
+.cursor-pointer {
+    font-size: 20px;
 }
 
 .input-container input:focus {
-    outline: none;
-    /* background-color: inherit; */
+    background: transparent; /* Asegura que el fondo sea transparente al enfocarlo */
+    outline: none; /* Elimina el borde de enfoque predeterminado */
+    box-shadow: none; /* Elimina la sombra del cuadro de enfoque predeterminado */
+}
+
+.q-mb-md {
+    padding: 0px 2px 10px 23px;
 }
 
 .input-container input:focus~label,
 .input-container input:not(:placeholder-shown)~label {
     top: -15px;
     font-size: 12px;
-    color: #5264AE;
+    color: #72ae52;
 }
 
 .input-container label {
-    color: #999;
+    color: #999999;
     /* font-size: 16px; */
     font-weight: normal;
     position: absolute;
@@ -197,17 +221,26 @@ form {
 
 .input-container input:focus~label {
     background: transparent;
-    color: #5264AE;
+    color: #aaaa1c;
 }
 
 button[type="submit"] {
-    width: 82%;
+    width: 100%;
     height: 40px;
-    background-color: #ff69b4;
-    color: white;
+    background-color: #cfbdc3a8;
+    /* color: white; */
     border: none;
     border-radius: 10px;
     cursor: pointer;
+    font-weight: bold;
+    box-shadow: rgba(0, 0, 0, 0.17) 0px -23px 25px 0px inset,
+        rgba(0, 0, 0, 0.366) 0px -36px 30px 0px inset,
+        rgb(255, 255, 255) 0px -79px 40px 0px inset,
+        rgba(0, 0, 0, 0.06) 0px 2px 1px,
+        rgba(0, 0, 0, 0.09) 0px 4px 2px,
+        rgba(0, 0, 0, 0.09) 0px 8px 4px,
+        rgba(0, 0, 0, 0.09) 0px 16px 8px,
+        rgba(0, 0, 0, 0.09) 0px 32px 16px;
 }
 
 p {
@@ -217,8 +250,11 @@ p {
 }
 
 a {
-    text-decoration: none;
-    color: #337ab7;
+    /* text-decoration: none; */
+    color: #8400ff;
+    position: relative;
+    top: -6px;
+    font-size: 11px;
 }
 
 a:hover {

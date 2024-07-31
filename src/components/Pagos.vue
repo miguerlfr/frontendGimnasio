@@ -285,6 +285,8 @@ async function editarPago() {
       idPlan = plan._id;
       valorNuevo = plan.valor;
       break;
+    } else {
+      valorNuevo = plan.valor;
     }
   }
   // console.log("idCliente:", idCliente);

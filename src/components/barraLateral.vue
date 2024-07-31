@@ -22,7 +22,7 @@
       <q-toolbar>
         <q-btn dense flat round icon="menu" @click="toggleLeftDrawer" />
         <q-toolbar-title>
-          <em style="font-weight: bold; font-family: cursive;">Gym</em>
+          <em style="font-weight: bold; font-family: cursive;">Gym Monsters</em>
         </q-toolbar-title>
         <div class="tooltip-container" @click="handleLogout">
             <svg class="cerrar" height="24" viewBox="0 0 24 24" width="24" focusable="false" >
@@ -123,6 +123,7 @@
 
 <script setup>
 import { ref, computed } from 'vue';
+import { notifySuccessRequest } from "../routes/routes.js";
 import { useStoreUsuarios } from '../stores/Usuarios.js';
 import { useRouter } from "vue-router";
 
@@ -146,6 +147,7 @@ const hasAccess = (allowedRoles) => {
 const handleLogout = () => {
   useUsuario.logout();
   router.push("/");
+  notifySuccessRequest("Sesión cerrada con éxito");
 };
 </script>
 
@@ -216,7 +218,7 @@ const handleLogout = () => {
   width: 33px;
   height: 50px;
   margin-right: 13px;
-  filter: invert(1);
+  /* filter: invert(1); */
 }
 
 .tooltip-container {
@@ -227,8 +229,11 @@ const handleLogout = () => {
 }
 
 .bg-primary {
-  background-color: #4d6aaf !important;
+  /* background-color: transparent !important; */
+  color: black !important;
+  background-color: #ffffff29 !important;
   padding-bottom: 5px;
+  border-bottom: 1px solid rgb(18, 17, 16);
 }
 
 body {

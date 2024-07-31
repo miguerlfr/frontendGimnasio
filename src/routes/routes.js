@@ -13,6 +13,8 @@ import Productos from "../components/Productos.vue";
 import Sedes from "../components/Sedes.vue";
 import Usuarios from "../components/Usuarios.vue";
 import Ventas from "../components/Ventas.vue";
+import ForgotPassword from "../components/forgot-password.vue";
+import RestablecerContrasena from "../components/Restablecer-contrasena.vue";
 
 import { createRouter, createWebHashHistory } from "vue-router";
 
@@ -115,7 +117,10 @@ const routes = [
 			{ path: "Ventas", component: Ventas, beforeEnter: auth, meta: { rol: ["Administrador", "Recepcionista"] } },
 		]
 	},
+	{ path: "/password", component: ForgotPassword, name: "forgot-password" },
+	{ path: "/restablecer-contrasena", component: RestablecerContrasena, name: "restablecer-contrasena" }
 ];
+
 
 export const router = createRouter({
 	history: createWebHashHistory(),

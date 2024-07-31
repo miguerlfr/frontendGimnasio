@@ -47,7 +47,7 @@ const nombreCliente = ref(""),
 // Función para agregar un seguimiento
 const addSeguimiento = () => {
   seguimientoCliente.value.push({
-    fecha: '',
+    fecha: new Date(),
     peso: '',
     imc: '',
     estadoIMC: '',
@@ -204,11 +204,11 @@ async function listarPlanes() {
 
 async function actualizarListadoClientes() {
   const clientesPromise = selectedOption.value === "Listar Clientes Activos"
-  ? useCliente.getClientesActivos()
-  : selectedOption.value === "Listar Clientes Inactivos"
-  ? useCliente.getClientesInactivos()
-  : useCliente.getClientes();
-  
+    ? useCliente.getClientesActivos()
+    : selectedOption.value === "Listar Clientes Inactivos"
+      ? useCliente.getClientesInactivos()
+      : useCliente.getClientes();
+
   rows.value = (await clientesPromise).data.clientes;
   visible.value = false;
   console.log("Clientes", rows.value);
@@ -344,10 +344,9 @@ async function validarDatosCliente(cliente) {
   //   notifyErrorRequest('La fecha de ingreso no puede ser anterior a la fecha de hoy.');
   //   return false;
   // }
-  if (fechaNacimiento && new Date(fechaNacimiento) < new Date().setFullYear(new Date().getFullYear() - 100)) {
-    notifyErrorRequest(`La fecha de nacimiento no es válida.`);
-    return false;
-  }
+  if (fechaNacimiento && (new Date(fechaNacimiento) > new Date().setFullYear(new Date().getFullYear() - 16))) return notifyErrorRequest('Edad mínima (16 años).'), false;
+  if (fechaNacimiento && (new Date(fechaNacimiento) < new Date().setFullYear(new Date().getFullYear() - 84))) return notifyErrorRequest('Edad máxima (100 años).'), false;
+
   if (documentoLength < 6) {
     notifyErrorRequest(`El Documento debe tener al menos 6 dígitos.`);
     return false;
