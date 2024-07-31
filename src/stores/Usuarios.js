@@ -149,7 +149,7 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
     const putUsuariosActivar = async (id) => {
         try {
             loading.value = true
-            const r = await axios.put(`${url}/api/usuarios/activar/${id}`, {
+            const r = await axios.put(`${url}/api/usuarios/activar/${id}`, {}, {
                 headers: {
                     token: token.value
                 }
@@ -168,7 +168,7 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
     const putUsuariosInactivar = async (id) => {
         try {
             loading.value = true
-            const r = await axios.put(`${url}/api/usuarios/inactivar/${id}`, {
+            const r = await axios.put(`${url}/api/usuarios/inactivar/${id}`, {}, {
                 headers: {
                     token: token.value
                 }

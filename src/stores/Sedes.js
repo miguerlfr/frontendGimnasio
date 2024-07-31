@@ -124,7 +124,7 @@ export const useStoreSedes = defineStore("Sede", () => {
     const putSedesActivar = async (id) => {
         try {
             loading.value = true
-            const r = await axios.put(`${url}/api/sedes/activar/${id}`, {
+            const r = await axios.put(`${url}/api/sedes/activar/${id}`, {}, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -143,7 +143,7 @@ export const useStoreSedes = defineStore("Sede", () => {
     const putSedesInactivar = async (id) => {
         try {
             loading.value = true
-            const r = await axios.put(`${url}/api/sedes/inactivar/${id}`, {
+            const r = await axios.put(`${url}/api/sedes/inactivar/${id}`, {}, {
                 headers: {
                     token: useUsuario.token
                 }

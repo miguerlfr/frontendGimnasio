@@ -178,7 +178,7 @@ export const useStorePagos = defineStore("Pago", () => {
     const putPagosActivar = async (id) => {
         try {
             loading.value = true
-            const r = await axios.put(`${url}/api/pagos/activar/${id}`, {
+            const r = await axios.put(`${url}/api/pagos/activar/${id}`, {}, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -197,7 +197,7 @@ export const useStorePagos = defineStore("Pago", () => {
     const putPagosInactivar = async (id) => {
         try {
             loading.value = true
-            const r = await axios.put(`${url}/api/pagos/inactivar/${id}`, {
+            const r = await axios.put(`${url}/api/pagos/inactivar/${id}`, {}, {
                 headers: {
                     token: useUsuario.token
                 }

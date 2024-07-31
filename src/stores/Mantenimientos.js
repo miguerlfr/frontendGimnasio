@@ -143,7 +143,7 @@ export const useStoreMantenimientos = defineStore("Mantenimiento", () => {
     const putMantenimientosActivar = async (id) => {
         try {
             loading.value = true
-            const r = await axios.put(`${url}/api/mantenimientos/activar/${id}`, {
+            const r = await axios.put(`${url}/api/mantenimientos/activar/${id}`, {}, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -162,7 +162,7 @@ export const useStoreMantenimientos = defineStore("Mantenimiento", () => {
     const putMantenimientosInactivar = async (id) => {
         try {
             loading.value = true
-            const r = await axios.put(`${url}/api/mantenimientos/inactivar/${id}`, {
+            const r = await axios.put(`${url}/api/mantenimientos/inactivar/${id}`, {}, {
                 headers: {
                     token: useUsuario.token
                 }

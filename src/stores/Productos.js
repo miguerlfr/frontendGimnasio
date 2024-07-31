@@ -142,7 +142,7 @@ export const useStoreProductos = defineStore("Producto", () => {
     const putProductosActivar = async (id) => {
         try {
             loading.value = true
-            const r = await axios.put(`${url}/api/productos/activar/${id}`, {
+            const r = await axios.put(`${url}/api/productos/activar/${id}`, {}, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -161,7 +161,7 @@ export const useStoreProductos = defineStore("Producto", () => {
     const putProductosInactivar = async (id) => {
         try {
             loading.value = true
-            const r = await axios.put(`${url}/api/productos/inactivar/${id}`, {
+            const r = await axios.put(`${url}/api/productos/inactivar/${id}`, {}, {
                 headers: {
                     token: useUsuario.token
                 }

@@ -124,7 +124,7 @@ export const useStoreMaquinas = defineStore("Maquina", () => {
     const putMaquinasActivar = async (id) => {
         try {
             loading.value = true
-            const r = await axios.put(`${url}/api/maquinas/activar/${id}`, {
+            const r = await axios.put(`${url}/api/maquinas/activar/${id}`, {}, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -143,7 +143,7 @@ export const useStoreMaquinas = defineStore("Maquina", () => {
     const putMaquinasInactivar = async (id) => {
         try {
             loading.value = true
-            const r = await axios.put(`${url}/api/maquinas/inactivar/${id}`, {
+            const r = await axios.put(`${url}/api/maquinas/inactivar/${id}`, {}, {
                 headers: {
                     token: useUsuario.token
                 }

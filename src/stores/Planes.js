@@ -124,7 +124,7 @@ export const useStorePlanes = defineStore("Plane", () => {
     const putPlanesActivar = async (id) => {
         try {
             loading.value = true
-            const r = await axios.put(`${url}/api/planes/activar/${id}`, {
+            const r = await axios.put(`${url}/api/planes/activar/${id}`, {}, {
                 headers: {
                     token: useUsuario.token
                 }
@@ -143,7 +143,7 @@ export const useStorePlanes = defineStore("Plane", () => {
     const putPlanesInactivar = async (id) => {
         try {
             loading.value = true
-            const r = await axios.put(`${url}/api/planes/inactivar/${id}`, {
+            const r = await axios.put(`${url}/api/planes/inactivar/${id}`, {}, {
                 headers: {
                     token: useUsuario.token
                 }
