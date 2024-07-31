@@ -463,6 +463,10 @@ function checkAndShowTooltip(event, text, maxLength) {
 
 const isLoading = computed(() => visible.value);
 
+function s() {
+  mostrarFormularioAgregarCliente.value = true;
+}
+
 // Montaje
 onMounted(() => {
   actualizarListadoClientes();
@@ -505,9 +509,8 @@ watch(selectedOption, () =>
 
       <div>
         <!-- Botones para abrir diálogos -->
-        <div v-if="!isInstructor" style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-my-md">
-          <q-btn :label="isInstructor ? 'Agregar Seguimiento' : 'Agregar Cliente'"
-            @click="mostrarFormularioAgregarCliente = true">
+        <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-my-md">
+          <q-btn :label="isInstructor ? 'Agregar Seguimiento' : 'Agregar Cliente'" @click="s()">
             <q-tooltip>
               {{ isInstructor ? 'Agregar Seguimiento' : 'Agregar Cliente' }}
             </q-tooltip>
@@ -515,8 +518,7 @@ watch(selectedOption, () =>
         </div>
 
         <!-- Dialogo para agregar cliente -->
-        <q-dialog v-if="!isInstructor" v-model="mostrarFormularioAgregarCliente"
-          v-bind="mostrarFormularioAgregarCliente && limpiarCampos()">
+        <q-dialog v-model="mostrarFormularioAgregarCliente" v-bind="mostrarFormularioAgregarCliente && limpiarCampos()">
           <q-card style="width: 377px;">
             <q-card-section>
               <div class="text-h5" style="padding-left: 18px; font-weight: bold;">{{ isInstructor ? `Agregar
@@ -526,37 +528,39 @@ watch(selectedOption, () =>
             <q-card-section>
               <q-form @submit.prevent="agregarCliente">
                 <div style="padding-inline: 18px;">
-                  <!-- Datos del Cliente -->
-                  <q-input v-model.trim="nombreCliente" label="Nombre" filled required class="q-mb-md" />
-                  <q-input v-model="fechaIngresoCliente" label="Fecha de Ingreso" type="date" filled required
-                    class="q-mb-md" />
-                  <q-input v-model="documentoCliente" label="Documento" type="number" filled required class="q-mb-md"
-                    min="0" />
-                  <q-input v-model="fechaNacimientoCliente" label="Fecha de Nacimiento" type="date" filled required
-                    class="q-mb-md" />
-                  <q-input v-model="edadCliente" label="Edad" type="number" filled class="q-mb-md"
-                    style="display: none" />
-                  <q-input v-model.trim="direccionCliente" label="Dirección" filled required class="q-mb-md" />
-                  <q-input v-model="telefonoCliente" label="Teléfono" type="number" filled required class="q-mb-md"
-                    min="0" />
-                  <q-input v-model.trim="objetivoCliente" label="Objetivo" type="textarea" filled required
-                    class="q-mb-md" />
-                  <q-input v-model.trim="observacionesCliente" label="Observaciones" type="textarea" filled required
-                    class="q-mb-md" style="max-width: 100%;" />
-                  <q-select v-model="estadoCliente" label="Estado" filled outlined :options="estadoOptions" required
-                    class="q-mb-md" style="max-width: 100%;" />
-                  <q-select v-model="planCliente" label="Plan" filled outlined :options="planOptions" class="q-mb-md"
-                    style="max-width: 100%;">
-                    <template v-slot:no-option>
-                      <q-item>
-                        <q-item-section>
-                          No results
-                        </q-item-section>
-                      </q-item>
-                    </template>
-                  </q-select>
-                  <q-input v-model="fechaVencimientoCliente" label="Fecha de Vencimiento" type="date" filled
-                    class="q-mb-md" style="display: none" />
+                  <div v-if="!isInstructor">
+                    <!-- Datos del Cliente -->
+                    <q-input v-model.trim="nombreCliente" label="Nombre" filled required class="q-mb-md" />
+                    <q-input v-model="fechaIngresoCliente" label="Fecha de Ingreso" type="date" filled required
+                      class="q-mb-md" />
+                    <q-input v-model="documentoCliente" label="Documento" type="number" filled required class="q-mb-md"
+                      min="0" />
+                    <q-input v-model="fechaNacimientoCliente" label="Fecha de Nacimiento" type="date" filled required
+                      class="q-mb-md" />
+                    <q-input v-model="edadCliente" label="Edad" type="number" filled class="q-mb-md"
+                      style="display: none" />
+                    <q-input v-model.trim="direccionCliente" label="Dirección" filled required class="q-mb-md" />
+                    <q-input v-model="telefonoCliente" label="Teléfono" type="number" filled required class="q-mb-md"
+                      min="0" />
+                    <q-input v-model.trim="objetivoCliente" label="Objetivo" type="textarea" filled required
+                      class="q-mb-md" />
+                    <q-input v-model.trim="observacionesCliente" label="Observaciones" type="textarea" filled required
+                      class="q-mb-md" style="max-width: 100%;" />
+                    <q-select v-model="estadoCliente" label="Estado" filled outlined :options="estadoOptions" required
+                      class="q-mb-md" style="max-width: 100%;" />
+                    <q-select v-model="planCliente" label="Plan" filled outlined :options="planOptions" class="q-mb-md"
+                      style="max-width: 100%;">
+                      <template v-slot:no-option>
+                        <q-item>
+                          <q-item-section>
+                            No results
+                          </q-item-section>
+                        </q-item>
+                      </template>
+                    </q-select>
+                    <q-input v-model="fechaVencimientoCliente" label="Fecha de Vencimiento" type="date" filled
+                      class="q-mb-md" style="display: none" />
+                  </div>
                 </div>
 
                 <!-- Contenedor principal para el formulario y seguimientos -->
@@ -633,35 +637,37 @@ watch(selectedOption, () =>
             <q-card-section>
               <q-form @submit.prevent="editarCliente">
                 <!-- Datos del Cliente -->
-                <div style="padding-inline: 18px;">
-                  <q-input v-model.trim="nombreCliente" label="Nombre" filled required class="q-mb-md" />
-                  <q-input v-model="fechaIngresoCliente" label="Fecha de Ingreso" type="date" filled class="q-mb-md"
-                    required />
-                  <q-input v-model="documentoCliente" label="Documento" type="number" filled required class="q-mb-md"
-                    min="0" />
-                  <q-input v-model="fechaNacimientoCliente" label="Fecha de Nacimiento" type="date" filled
-                    class="q-mb-md" required />
-                  <q-input v-model="edadCliente" label="Edad" type="number" filled class="q-mb-md"
-                    style="display: none" />
-                  <q-input v-model.trim="direccionCliente" label="Dirección" filled class="q-mb-md" required />
-                  <q-input v-model="telefonoCliente" label="Teléfono" type="number" filled required class="q-mb-md"
-                    min="0" />
-                  <q-input v-model.trim="objetivoCliente" label="Objetivo" type="textarea" filled required
-                    class="q-mb-md" />
-                  <q-input v-model.trim="observacionesCliente" label="Observaciones" type="textarea" filled
-                    class="q-mb-md" required />
-                  <q-select v-model="planCliente" label="Plan" filled outlined :options="planOptions" class="q-mb-md"
-                    style="max-width: 100%;" required>
-                    <template v-slot:no-option>
-                      <q-item>
-                        <q-item-section>
-                          No results
-                        </q-item-section>
-                      </q-item>
-                    </template>
-                  </q-select>
-                  <q-input v-model="fechaVencimientoCliente" label="Fecha de Vencimiento" type="date" filled
-                    class="q-mb-md" style="display: none" />
+                <div v-if="!isInstructor">
+                  <div style="padding-inline: 18px;">
+                    <q-input v-model.trim="nombreCliente" label="Nombre" filled required class="q-mb-md" />
+                    <q-input v-model="fechaIngresoCliente" label="Fecha de Ingreso" type="date" filled class="q-mb-md"
+                      required />
+                    <q-input v-model="documentoCliente" label="Documento" type="number" filled required class="q-mb-md"
+                      min="0" />
+                    <q-input v-model="fechaNacimientoCliente" label="Fecha de Nacimiento" type="date" filled
+                      class="q-mb-md" required />
+                    <q-input v-model="edadCliente" label="Edad" type="number" filled class="q-mb-md"
+                      style="display: none" />
+                    <q-input v-model.trim="direccionCliente" label="Dirección" filled class="q-mb-md" required />
+                    <q-input v-model="telefonoCliente" label="Teléfono" type="number" filled required class="q-mb-md"
+                      min="0" />
+                    <q-input v-model.trim="objetivoCliente" label="Objetivo" type="textarea" filled required
+                      class="q-mb-md" />
+                    <q-input v-model.trim="observacionesCliente" label="Observaciones" type="textarea" filled
+                      class="q-mb-md" required />
+                    <q-select v-model="planCliente" label="Plan" filled outlined :options="planOptions" class="q-mb-md"
+                      style="max-width: 100%;" required>
+                      <template v-slot:no-option>
+                        <q-item>
+                          <q-item-section>
+                            No results
+                          </q-item-section>
+                        </q-item>
+                      </template>
+                    </q-select>
+                    <q-input v-model="fechaVencimientoCliente" label="Fecha de Vencimiento" type="date" filled
+                      class="q-mb-md" style="display: none" />
+                  </div>
                 </div>
 
                 <!-- Contenedor principal para el formulario y seguimientos -->
