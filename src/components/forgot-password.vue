@@ -8,24 +8,28 @@ const useUsuario = useStoreUsuarios();
 const router = useRouter();
 
 let email = ref('');
+let loadingEnviarCodigo = ref(false); // Estado de carga para el botón "Enviar Código"
 
 async function solicitarRestablecimiento() {
 	try {
 		if (email.value === '') {
-			notifyErrorRequest("El correo no puede estar vacío")
+			notifyErrorRequest("El correo no puede estar vacío");
 			return;
 		}
+		loadingEnviarCodigo.value = true; // Activar el spinner
 		const res = await useUsuario.recuperarContrasena(email.value);
 
 		if (res.status === 200) {
-			notifyErrorRequest("Correo de restablecimiento enviado")
+			notifyErrorRequest("Correo de restablecimiento enviado");
 			router.push('/');
 		} else {
-			notifyErrorRequest("Error de red")
+			notifyErrorRequest("Error de red");
 		}
 	} catch (error) {
-		notifyErrorRequest("Error de red")
+		notifyErrorRequest("Error de red");
 		console.log(error);
+	} finally {
+		loadingEnviarCodigo.value = false; // Desactivar el spinner
 	}
 }
 
@@ -63,13 +67,10 @@ function regresar() {
 					</div>
 
 					<div class="div_button">
-						<q-btn type="submit" :loading="useUsuario.loading" @click="regresar()">
+						<q-btn @click="regresar()">
 							Regresar
-							<template v-slot:loading>
-								<q-spinner color="secondary" size="1em" />
-							</template>
 						</q-btn>
-						<q-btn type="button" :loading="useUsuario.loading" @click="solicitarRestablecimiento()">
+						<q-btn :loading="loadingEnviarCodigo" @click="solicitarRestablecimiento()">
 							Enviar Código
 							<template v-slot:loading>
 								<q-spinner color="secondary" size="1em" />
@@ -81,7 +82,6 @@ function regresar() {
 		</div>
 	</div>
 </template>
-
 
 <style scoped>
 .title {
@@ -95,7 +95,6 @@ function regresar() {
 }
 
 .bg-primary {
-	/* background-color: transparent !important; */
 	color: black !important;
 	background-color: white !important;
 	padding-bottom: 5px;
@@ -144,7 +143,7 @@ function regresar() {
 	width: 100%;
 	height: 45px;
 	padding: 10px;
-	border: none;
+	border: 1px solid #ccc;
 	border-radius: 10px;
 	font-size: 16px;
 	color: #333;
@@ -156,7 +155,7 @@ function regresar() {
 	gap: 10px;
 }
 
-.div_button button {
+.div_button q-btn {
 	background-color: rgba(230, 201, 201, 0.446);
 	width: 100%;
 	height: 45px;
@@ -165,12 +164,3 @@ function regresar() {
 	color: black;
 }
 </style>
-
-<!-- <template>
-    <div>
-        forgot
-    </div>
-</template>
-
-<script setup>
-</script> -->
