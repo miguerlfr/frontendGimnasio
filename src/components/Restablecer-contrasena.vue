@@ -27,7 +27,10 @@ const restablecerContrasenia = async () => {
 			notifyErrorRequest('Las contraseñas no coinciden');
 			return;
 		}
-		const r = await useUsuario.putUsuariosPassword(id.value, nuevaContrasenia.value);
+        const datos = {
+            nuevaContrasenia: nuevaContrasenia.value,
+        };
+        const response = await useUsuario.putUsuariosPassword(id.value, datos);
 
 	} catch (error) {
 		notifyErrorRequest('Error en el servidor.');
