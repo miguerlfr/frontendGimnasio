@@ -10,7 +10,7 @@ const router = useRouter();
 const route = useRoute();
 const useUsuario = useStoreUsuarios();
 
-const _id = ref(route.params.id);
+const id = ref(route.params.id);
 const passwordFieldType = ref('password');
 
 function togglePasswordVisibility() {
@@ -27,7 +27,7 @@ const restablecerContrasenia = async () => {
 			notifyErrorRequest('Las contraseñas no coinciden');
 			return;
 		}
-		const r = await useUsuario.putUsuariosPassword(_id.value, nuevaContrasenia.value);
+		const r = await useUsuario.putUsuariosPassword(id.value, nuevaContrasenia.value);
 
 	} catch (error) {
 		notifyErrorRequest('Error en el servidor.');
