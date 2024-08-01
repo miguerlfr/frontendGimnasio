@@ -201,7 +201,7 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
     const putUsuariosPassword = async (data) => {
         try {
             loading.value = true;
-            const r = await axios.put(`${url}/api/usuarios/cambiar/contrasena`, data);
+            const r = await axios.put(`${url}/api/usuarios/cambiar/contrasena`, {data});
             console.log("Respuesta del servidor:", r.data.msg); // Añadir esta línea
             return r;
         } catch (error) {
