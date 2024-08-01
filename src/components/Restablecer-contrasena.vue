@@ -1,8 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { notifyErrorRequest } from "../routes/routes.js";
-import { notifySuccessRequest } from "../routes/routes.js";
+import { notifyErrorRequest, notifySuccessRequest } from "../routes/routes.js";
 import { useStoreUsuarios } from '../stores/Usuarios.js';
 
 let nuevaContrasenia = ref('');
@@ -10,9 +9,6 @@ let confirmarContrasenia = ref('');
 const router = useRouter();
 const route = useRoute();
 const useUsuario = useStoreUsuarios();
-
-console.log('Route:', route);
-console.log('Route params:', route.params);
 
 const _id = ref(route.params.id);
 const passwordFieldType = ref('password');
