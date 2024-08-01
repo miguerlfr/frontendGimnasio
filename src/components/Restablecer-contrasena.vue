@@ -10,7 +10,7 @@ const router = useRouter();
 const route = useRoute();
 const useUsuario = useStoreUsuarios();
 
-const id = ref(route.params.id);
+const id = ref(route.body.id);
 const passwordFieldType = ref('password');
 
 function togglePasswordVisibility() {
