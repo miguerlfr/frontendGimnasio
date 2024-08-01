@@ -28,10 +28,9 @@ const restablecerContrasenia = async () => {
 			return;
 		}
 		const datos = {
-			_id: _id.value,
 			nuevaContrasenia: nuevaContrasenia.value,
 		};
-		const response = await useUsuario.putUsuariosPassword(datos);
+		const response = await useUsuario.putUsuariosPassword(_id.value, datos);
 
 		if (response.status === 200) {
 			notifySuccessRequest('Contraseña restablecida exitosamente');
@@ -82,8 +81,7 @@ function regresar() {
 					</button>
 				</div>
 				<div class="div_button">
-					<q-btn style="color: black;" class="submit black"
-						type="submit" :loading="useUsuario.loading">
+					<q-btn style="color: black;" class="submit black" type="submit" :loading="useUsuario.loading">
 						Restablecer
 						<template v-slot:loading>
 							<q-spinner color="secondary" size="1em" />
