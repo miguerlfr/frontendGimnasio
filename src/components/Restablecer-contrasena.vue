@@ -10,7 +10,7 @@ const router = useRouter();
 const route = useRoute();
 const useUsuario = useStoreUsuarios();
 
-const id = ref(route.params.id);
+const _id = ref(route.params.id);
 const passwordFieldType = ref('password');
 
 function togglePasswordVisibility() {
@@ -28,10 +28,10 @@ const restablecerContrasenia = async () => {
 			return;
 		}
 		const datos = {
-			_id: id.value,
+			_id: _id.value,
 			nuevaContrasenia: nuevaContrasenia.value,
 		};
-		const response = await useUsuario.putUsuariosPassword(datos);
+		const response = await useUsuario.putUsuariosPassword(datos._id, datos.nuevaContrasenia);
 
 		if (response.status === 200) {
 			notifySuccessRequest('Contraseña restablecida exitosamente');
