@@ -31,7 +31,7 @@ const restablecerContrasenia = async () => {
 			_id: _id.value,
 			nuevaContrasenia: nuevaContrasenia.value,
 		};
-		const response = await useUsuario.putUsuariosPassword(datos._id, datos.nuevaContrasenia);
+		const response = await useUsuario.putUsuariosPassword(datos);
 
 		if (response.status === 200) {
 			notifySuccessRequest('Contraseña restablecida exitosamente');
