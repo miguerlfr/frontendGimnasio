@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue';
-import { notifyErrorRequest } from "../routes/routes.js";
+import { notifyErrorRequest, notifySuccessRequest } from "../routes/routes.js";
 import { useStoreUsuarios } from '../stores/Usuarios.js';
 import { useRouter } from 'vue-router';
 
@@ -8,29 +8,20 @@ const useUsuario = useStoreUsuarios();
 const router = useRouter();
 
 let email = ref('');
-let loadingEnviarCodigo = ref(false); // Estado de carga para el botón "Enviar Código"
+let loading = ref(false);
 
 async function solicitarRestablecimiento() {
-	try {
-		if (email.value === '') {
-			notifyErrorRequest("El correo no puede estar vacío");
-			return;
-		}
-		loadingEnviarCodigo.value = true; // Activar el spinner
-		const res = await useUsuario.recuperarContrasena(email.value);
-
-		if (res.status === 200) {
-			notifyErrorRequest("Correo de restablecimiento enviado");
-			router.push('/');
-		} else {
-			notifyErrorRequest("Error de red");
-		}
-	} catch (error) {
-		notifyErrorRequest("Error de red");
-		console.log(error);
-	} finally {
-		loadingEnviarCodigo.value = false; // Desactivar el spinner
+	if (email.value === '') {
+		notifyErrorRequest("El correo no puede estar vacío");
+		return;
 	}
+	loading.value = true;
+	const res = await useUsuario.recuperarContrasena(email.value);
+	if (res.status === 200) {
+		notifySuccessRequest("Correo de restablecimiento enviado");
+		router.push('/');
+	}
+	loading.value = false;
 }
 
 function regresar() {
@@ -70,7 +61,7 @@ function regresar() {
 						<q-btn @click="regresar()">
 							Regresar
 						</q-btn>
-						<q-btn :loading="loadingEnviarCodigo" @click="solicitarRestablecimiento()">
+						<q-btn :loading="loading" @click="solicitarRestablecimiento()">
 							Enviar Código
 							<template v-slot:loading>
 								<q-spinner color="secondary" size="1em" />
@@ -84,6 +75,11 @@ function regresar() {
 </template>
 
 <style scoped>
+* {
+  font-family: cursive;
+  font-style: italic;
+}
+
 .title {
 	font-family: cursive;
 	font-style: italic;

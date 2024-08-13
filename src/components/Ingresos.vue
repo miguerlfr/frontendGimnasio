@@ -197,15 +197,27 @@ const editarIngreso = async () => {
 
   for (let cliente of clientes.value) {
     if (`${cliente.nombre} - ${cliente.documento}` === nombreCliente.value) {
-      idCliente = cliente._id;
-      break;
+      if (cliente.estado == 1) {
+        idCliente = cliente._id;
+        break;
+      } else {
+        notifyErrorRequest("Cliente seleccionado inactivo")
+        return;
+      }
     }
   }
   for (let sedee of sedes.value) {
     if (sedee.nombre == sede.value) {
-      idSede = sedee._id
+      if (sedee.estado == 1) {
+        idSede = sedee._id
+        break;
+      } else {
+        notifyErrorRequest("Sede seleccionada inactiva")
+        return;
+      }
     }
   }
+
   const ingresoEditado = {
     fecha: fecha.value,
     sede: idSede,
@@ -243,168 +255,171 @@ watch(selectedOption, () => {
 </script>
 
 <template>
-  <div>
-    <div class="q-pa-md" v-if="!visible">
-      <div>
-        <h3 style="text-align: center; margin: 10px">Ingresos</h3>
-        <hr style="width: 70%; height: 5px; background-color: green" />
+  <div class="q-pa-md" v-if="!visible">
+    <div>
+      <h3 style="text-align: center; margin: 10px">Ingresos</h3>
+      <hr style="width: 70%; height: 5px; background-color: green" />
+    </div>
+
+    <div class="contSelect" style="margin-left: 5%; text-align: end; margin-right: 5%">
+      <q-select background-color="rgb(45, 134, 236)" class="q-my-md" v-model="selectedOption" outlined dense
+        options-dense emit-value :options="options" />
+
+      <input v-if="selectedOption === 'Listar Ingreso del Cliente por su Nombre'" v-model="nombreClienteIngreso"
+        class="q-my-md" type="text" name="search" id="search" @dblclick="selectAllText"
+        placeholder="Nombre del Cliente" />
+
+      <div v-if="selectedOption === 'Listar Ingresos por Fechas'"
+        style="display: flex; flex-direction: row; text-align: center; flex-wrap: wrap; position: absolute; top: 147px; left: 295px;">
+        <label for="fecha1" style="height: 100%; line-height: 88px; margin-left: 40px;">De:</label>
+        <q-input v-model="fecha1" class="q-my-md" type="date" name="search" id="fecha1" />
+
+        <label for="fecha2" style="height: 100%; line-height: 88px; margin-left: 40px;">A:</label>
+        <q-input v-model="fecha2" class="q-my-md" type="date" name="search" id="fecha2" />
+      </div>
+    </div>
+
+    <div>
+      <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
+        <q-btn label="Agregar Ingreso" @click="mostrarFormularioAgregarIngreso = true">
+          <!-- <q-btn label="Editar Ingreso" @click="mostrarFormularioEditarIngreso = true" /> -->
+          <q-tooltip>
+            Agregar Ingreso
+          </q-tooltip>
+        </q-btn>
       </div>
 
-      <div class="contSelect" style="margin-left: 5%; text-align: end; margin-right: 5%">
-        <q-select background-color="rgb(45, 134, 236)" class="q-my-md" v-model="selectedOption" outlined dense options-dense
-          emit-value :options="options" />
+      <!-- Dialogo para agregar ingreso -->
+      <q-dialog v-model="mostrarFormularioAgregarIngreso" v-bind="mostrarFormularioAgregarIngreso && limpiarCampos()">
+        <q-card>
+          <q-card-section>
+            <div class="text-h6">Agregar Ingreso</div>
+          </q-card-section>
 
-        <input v-if="selectedOption === 'Listar Ingreso del Cliente por su Nombre'" v-model="nombreClienteIngreso"
-          class="q-my-md" type="text" name="search" id="search" @dblclick="selectAllText"
-          placeholder="Nombre del Cliente" />
+          <q-card-section>
+            <q-form @submit.prevent="agregarIngreso">
+              <q-input v-model="fecha" label="Fecha" type="date" filled outlined class="q-mb-md" required />
+              <q-select v-model="sede" label="Sede" filled outlined :options="sedeOptions" class="q-mb-md"
+                style="max-width: 100%;">
+                <template v-slot:no-option>
+                  <q-item>
+                    <q-item-section>
+                      No results
+                    </q-item-section>
+                  </q-item>
+                </template>
+              </q-select>
+              <q-select filled outlined v-model="nombreCliente" use-input hide-selected fill-input input-debounce="0"
+                :options="clientesOptions" label="Cliente" emit-value map-options @filter="filterFn"
+                @input-value="setModel" class="q-mb-md" style="min-width: 100%;" required>
+                <template v-slot:no-option>
+                  <q-item>
+                    <q-item-section>
+                      No results
+                    </q-item-section>
+                  </q-item>
+                </template>
+              </q-select>
+              <div class="q-mt-md">
+                <q-btn @click="mostrarFormularioAgregarIngreso = false" label="Cancelar" color="negative"
+                  class="q-ma-sm">
+                  <q-tooltip>
+                    Cancelar
+                  </q-tooltip>
+                </q-btn>
+                <q-btn :loading="useIngreso.loading" :disable="useIngreso.loading" type="submit" label="Guardar Ingreso" color="primary"
+                  class="q-ma-sm">
+                  <q-tooltip>
+                    Guardar Ingreso
+                  </q-tooltip>
+                  <template v-slot:loading>
+                    <q-spinner color="white" size="1em" />
+                  </template>
+                </q-btn>
+              </div>
+            </q-form>
+          </q-card-section>
+        </q-card>
+      </q-dialog>
 
-        <div v-if="selectedOption === 'Listar Ingresos por Fechas'"
-          style="display: flex; flex-direction: row; text-align: center; flex-wrap: wrap; position: absolute; top: 147px; left: 295px;">
-          <label for="fecha1" style="height: 100%; line-height: 88px; margin-left: 40px;">De:</label>
-          <q-input v-model="fecha1" class="q-my-md" type="date" name="search" id="fecha1" />
+      <!-- Dialogo para editar ingreso -->
+      <q-dialog v-model="mostrarFormularioEditarIngreso">
+        <q-card>
+          <q-card-section>
+            <div class="text-h6">Editar Ingreso</div>
+          </q-card-section>
 
-          <label for="fecha2" style="height: 100%; line-height: 88px; margin-left: 40px;">A:</label>
-          <q-input v-model="fecha2" class="q-my-md" type="date" name="search" id="fecha2" />
-        </div>
-      </div>
+          <q-card-section>
+            <q-form @submit.prevent="editarIngreso">
+              <q-input v-model="fecha" label="Fecha" type="date" filled outlined class="q-mb-md" required />
+              <q-select v-model="sede" label="Sede" filled outlined :options="sedeOptions" class="q-mb-md"
+                style="max-width: 100%;">
+                <template v-slot:no-option>
+                  <q-item>
+                    <q-item-section>
+                      No results
+                    </q-item-section>
+                  </q-item>
+                </template>
+              </q-select>
+              <q-select filled outlined v-model="nombreCliente" use-input hide-selected fill-input input-debounce="0"
+                :options="clientesOptions" label="Cliente" emit-value map-options @filter="filterFn"
+                @input-value="setModel" class="q-mb-md" style="min-width: 100%;" required>
+                <template v-slot:no-option>
+                  <q-item>
+                    <q-item-section>
+                      No results
+                    </q-item-section>
+                  </q-item>
+                </template>
+              </q-select>
+              <div class="q-mt-md">
+                <q-btn @click="mostrarFormularioEditarIngreso = false" label="Cancelar" color="negative"
+                  class="q-ma-sm">
+                  <q-tooltip>
+                    Cancelar
+                  </q-tooltip>
+                </q-btn>
+                <q-btn :loading="useIngreso.loading" :disable="useIngreso.loading" type="submit" label="Guardar Cambios" color="primary"
+                  class="q-ma-sm">
+                  <q-tooltip>
+                    Guardar Cambios
+                  </q-tooltip>
+                  <template v-slot:loading>
+                    <q-spinner color="white" size="1em" />
+                  </template>
+                </q-btn>
+              </div>
+            </q-form>
+          </q-card-section>
+        </q-card>
+      </q-dialog>
+    </div>
 
-      <div>
-        <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
-          <q-btn label="Agregar Ingreso" @click="mostrarFormularioAgregarIngreso = true">
-            <!-- <q-btn label="Editar Ingreso" @click="mostrarFormularioEditarIngreso = true" /> -->
+    <q-table flat bordered title="Ingresos" title-class="text-green text-weight-bolder text-h5" :rows="filtrarFilas"
+      :columns="columns" row-key="id">
+      <template v-slot:body-cell-opciones="props">
+        <q-td :props="props">
+          <q-btn @click="cargarIngresoParaEdicion(props.row)">
+            ✏️
             <q-tooltip>
-              Agregar Ingreso
+              Editar Ingreso
             </q-tooltip>
           </q-btn>
-        </div>
-
-        <!-- Dialogo para agregar ingreso -->
-        <q-dialog v-model="mostrarFormularioAgregarIngreso" v-bind="mostrarFormularioAgregarIngreso && limpiarCampos()">
-          <q-card>
-            <q-card-section>
-              <div class="text-h6">Agregar Ingreso</div>
-            </q-card-section>
-
-            <q-card-section>
-              <q-form @submit.prevent="agregarIngreso">
-                <q-input v-model="fecha" label="Fecha" type="date" filled outlined class="q-mb-md" required />
-                <q-select v-model="sede" label="Sede" filled outlined :options="sedeOptions" class="q-mb-md"
-                  style="max-width: 100%;">
-                  <template v-slot:no-option>
-                    <q-item>
-                      <q-item-section>
-                        No results
-                      </q-item-section>
-                    </q-item>
-                  </template>
-                </q-select>
-                <q-select filled outlined v-model="nombreCliente" use-input hide-selected fill-input input-debounce="0"
-                  :options="clientesOptions" label="Cliente" emit-value map-options @filter="filterFn"
-                  @input-value="setModel" class="q-mb-md" style="min-width: 100%;" required>
-                  <template v-slot:no-option>
-                    <q-item>
-                      <q-item-section>
-                        No results
-                      </q-item-section>
-                    </q-item>
-                  </template>
-                </q-select>
-                <div class="q-mt-md">
-                  <q-btn @click="mostrarFormularioAgregarIngreso = false" label="Cancelar" color="negative"
-                    class="q-ma-sm">
-                    <q-tooltip>
-                      Cancelar
-                    </q-tooltip>
-                  </q-btn>
-                  <q-btn :loading="useIngreso.loading" type="submit" label="Guardar Ingreso" color="primary"
-                    class="q-ma-sm">
-                    <q-tooltip>
-                      Guardar Ingreso
-                    </q-tooltip>
-                    <template v-slot:loading>
-                      <q-spinner color="white" size="1em" />
-                    </template>
-                  </q-btn>
-                </div>
-              </q-form>
-            </q-card-section>
-          </q-card>
-        </q-dialog>
-
-        <!-- Dialogo para editar ingreso -->
-        <q-dialog v-model="mostrarFormularioEditarIngreso">
-          <q-card>
-            <q-card-section>
-              <div class="text-h6">Editar Ingreso</div>
-            </q-card-section>
-
-            <q-card-section>
-              <q-form @submit.prevent="editarIngreso">
-                <q-input v-model="fecha" label="Fecha" type="date" filled outlined class="q-mb-md" required />
-                <q-select v-model="sede" label="Sede" filled outlined :options="sedeOptions" class="q-mb-md"
-                  style="max-width: 100%;">
-                  <template v-slot:no-option>
-                    <q-item>
-                      <q-item-section>
-                        No results
-                      </q-item-section>
-                    </q-item>
-                  </template>
-                </q-select>
-                <q-select filled outlined v-model="nombreCliente" use-input hide-selected fill-input input-debounce="0"
-                  :options="clientesOptions" label="Cliente" emit-value map-options @filter="filterFn"
-                  @input-value="setModel" class="q-mb-md" style="min-width: 100%;" required>
-                  <template v-slot:no-option>
-                    <q-item>
-                      <q-item-section>
-                        No results
-                      </q-item-section>
-                    </q-item>
-                  </template>
-                </q-select>
-                <div class="q-mt-md">
-                  <q-btn @click="mostrarFormularioEditarIngreso = false" label="Cancelar" color="negative"
-                    class="q-ma-sm">
-                    <q-tooltip>
-                      Cancelar
-                    </q-tooltip>
-                  </q-btn>
-                  <q-btn :loading="useIngreso.loading" type="submit" label="Guardar Cambios" color="primary"
-                    class="q-ma-sm">
-                    <q-tooltip>
-                      Guardar Cambios
-                    </q-tooltip>
-                    <template v-slot:loading>
-                      <q-spinner color="white" size="1em" />
-                    </template>
-                  </q-btn>
-                </div>
-              </q-form>
-            </q-card-section>
-          </q-card>
-        </q-dialog>
-      </div>
-
-      <q-table flat bordered title="Ingresos" title-class="text-green text-weight-bolder text-h5" :rows="filtrarFilas"
-        :columns="columns" row-key="id">
-        <template v-slot:body-cell-opciones="props">
-          <q-td :props="props">
-            <q-btn @click="cargarIngresoParaEdicion(props.row)">
-              ✏️
-              <q-tooltip>
-                Editar Ingreso
-              </q-tooltip>
-            </q-btn>
-          </q-td>
-        </template>
-      </q-table>
-    </div>
+        </q-td>
+      </template>
+    </q-table>
   </div>
   <q-inner-loading :showing="isLoading" label="Por favor espere..." label-class="text-teal"
     label-style="font-size: 1.1em" />
 </template>
 
 <style scoped>
+* {
+  font-family: cursive;
+  font-style: italic;
+}
+
 .contSelect {
   display: flex;
   flex-direction: row;

@@ -4,35 +4,29 @@
 
         <div class="login-container">
             <h3>Login</h3>
-            
-            <form @submit.prevent="">
-                <div>
-                    <div class="input-container">
-                        <input class="input" type="email" placeholder="Email" v-model="email" autocomplete="username"/>
-                    </div>
-                    <div class="pass">
 
+            <form @submit.prevent="">
+                <div style="margin-top: -10px;">
+                    <q-input type="email" placeholder="Email" v-model="email" autocomplete="username" class="q-mb-md" />
                     <q-input v-model="password" :type="isPwd ? 'password' : 'text'" placeholder="Password"
-                        class="q-mb-md">
+                        class="q-mb-md" autocomplete="current-password">
                         <template v-slot:append>
                             <q-icon :name="isPwd ? 'visibility_off' : 'visibility'" class="cursor-pointer"
                                 @click="isPwd = !isPwd" />
                         </template>
                     </q-input>
-                    </div>
                 </div>
 
-                <p style="font-size: 12px;margin: -10px; padding: 0; border: 0;"><a href="/#/password">¿Olvidaste tu
+                <p style="font-size: 12px;margin: -10px; padding-top: 10px; border: 0;"><a href="/#/password">¿Olvidaste tu
                         contraseña?</a></p>
                 <q-btn style="margin-top: 40px; margin-bottom: 15px;" type="submit" :loading="useUsuario.loading"
-                    @click="login">
+                :disable="useUsuario.loading" @click="login">
                     Sign In
                     <template v-slot:loading>
                         <q-spinner color="white" size="1em" />
                     </template>
                 </q-btn>
             </form>
-
 
             <!-- <div class="social-login">
                 <button class="google-btn" @click="googleLogin">
@@ -67,7 +61,7 @@ async function login() {
         try {
             const r = await useUsuario.login(email.value, password.value);
             // console.log(r.response.data.msg);
-            if (r) {
+            if (r.status == 200) {
                 router.push('/Clientes');
             }
         } catch (error) {
@@ -125,8 +119,10 @@ async function validateCredentials() {
 }
 
 .login-container {
+    font-family: cursive;
+    font-style: italic;
     text-align: center;
-    width: 300px;
+    width: 320px;
     background: linear-gradient(to bottom, rgba(255, 255, 255, 0.842), rgb(255, 255, 255), rgb(255, 255, 255), rgb(255, 255, 255), rgba(255, 255, 255, 0.918));
     padding: 44px;
     border: 2px solid #ddd;
@@ -136,7 +132,7 @@ async function validateCredentials() {
         rgba(255, 1, 1, 0.1) 0px -79px 40px 0px inset,
         rgba(0, 0, 0, 0.38) 0px 2px 1px,
         rgba(0, 0, 0, 0.09) 0px 4px 2px,
-        rgba(61, 58, 80, 0.482) -1px 10px 8px 13px,
+        rgba(80, 68, 58, 0.482) -1px 10px 8px 13px,
         rgb(149, 107, 107) 60px 15676px 8px,
         rgb(0, 0, 0) 0px 32px 16px;
     /* padding-bottom: 10px;
@@ -160,116 +156,56 @@ form {
     align-items: center;
 }
 
-.input-container {
-    position: relative;
-    margin-bottom: 20px;
-    width: 100%;
-    display: block;
-    background: transparent;
-    font-size: 15px;
-    background-color: transparent;
-    outline: none;
-    box-shadow: none;
+.q-mb-md {
+    padding-inline: 20px;
 }
-
-.pass {
-    margin-right: 20px;
-}
-
-.input-container input[type="email"] {
-    background: transparent; /* Hace el fondo del input transparente */
-    border-left: none; /* Elimina el borde izquierdo */
-    border-right: none; /* Elimina el borde derecho */
-    border-top: none; /* Elimina el borde superior */
-    border-bottom: 1px solid #ccc;
-    padding-bottom: 14px;
-    width: 163px;
-}
-
 
 .cursor-pointer {
     font-size: 20px;
 }
 
 .input-container input:focus {
-    background: transparent; /* Asegura que el fondo sea transparente al enfocarlo */
-    outline: none; /* Elimina el borde de enfoque predeterminado */
-    box-shadow: none; /* Elimina la sombra del cuadro de enfoque predeterminado */
-}
-
-.q-mb-md {
-    padding: 0px 2px 10px 23px;
-}
-
-.input-container input:focus~label,
-.input-container input:not(:placeholder-shown)~label {
-    top: -15px;
-    font-size: 12px;
-    color: #72ae52;
-}
-
-.input-container label {
-    color: #999999;
-    /* font-size: 16px; */
-    font-weight: normal;
-    position: absolute;
-    pointer-events: none;
-    left: 5px;
-    top: 10px;
-    transition: 0.2s ease all;
-}
-
-.input-container input:focus~label {
     background: transparent;
-    color: #aaaa1c;
+    outline: none;
+    /* Elimina el borde de enfoque predeterminado */
+    box-shadow: none;
+    /* Elimina la sombra del cuadro de enfoque predeterminado */
 }
 
 button[type="submit"] {
     width: 100%;
     height: 40px;
-    background-color: #cfbdc3a8;
-    /* color: white; */
+    background-color: #d19376a8;
     border: none;
     border-radius: 10px;
     cursor: pointer;
     font-weight: bold;
-    box-shadow: rgba(0, 0, 0, 0.17) 0px -23px 25px 0px inset,
+    box-shadow: rgba(202, 13, 13, 0.164) 0px -23px 25px 0px inset,
         rgba(0, 0, 0, 0.366) 0px -36px 30px 0px inset,
         rgb(255, 255, 255) 0px -79px 40px 0px inset,
         rgba(0, 0, 0, 0.06) 0px 2px 1px,
-        rgba(0, 0, 0, 0.09) 0px 4px 2px,
+        rgba(201, 31, 31, 0.322) 0px 4px 2px,
         rgba(0, 0, 0, 0.09) 0px 8px 4px,
         rgba(0, 0, 0, 0.09) 0px 16px 8px,
         rgba(0, 0, 0, 0.09) 0px 32px 16px;
 }
 
-p {
-    margin-top: 20px;
-    font-size: 14px;
-    color: #666;
-}
-
 a {
-    /* text-decoration: none; */
     color: #8400ff;
     position: relative;
     top: -6px;
     font-size: 11px;
 }
 
-a:hover {
-    color: #23527c;
-}
-
-.social-login {
+/* .social-login {
     display: flex;
     flex-direction: row;
     justify-content: center;
     margin-top: 20px;
     gap: 15px;
-}
+} */
 
-.social-login button {
+/* .social-login button {
     width: 100%;
     display: flex;
     align-items: center;
@@ -281,13 +217,13 @@ a:hover {
     background-color: transparent;
     cursor: pointer;
     transition: transform 0.2s ease-in-out;
-}
+} */
 
-.social-login button:hover {
+/* .social-login button:hover {
     transform: scale(1.1);
-}
+} */
 
-.google-btn {
+/* .google-btn {
     background-color: #ea4335;
     color: #fff;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
@@ -307,5 +243,5 @@ a:hover {
     background-color: #1da1f2;
     color: #fff;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-}
+} */
 </style>

@@ -233,8 +233,13 @@ const editarMantenimiento = async () => {
 
   for (let maquina of maquinas.value) {
     if (maquina.descripcion == selectedMachine.value) {
-      idMaquinaSeleccionada = maquina._id
-      break;
+      if (maquina.estado == 1) {
+        idMaquinaSeleccionada = maquina._id
+        break;
+      } else {
+        notifyErrorRequest("Máquina seleccionada inactiva")
+        return;
+      }
     }
   }
   const mantenimientoEditado = {
@@ -309,204 +314,207 @@ watch(selectedOption, () => {
 </script>
 
 <template>
-  <div>
-    <div class="q-pa-md" v-if="!visible">
-      <div>
-        <h3 style="text-align: center; margin: 10px">Mantenimientos</h3>
-        <hr style="width: 70%; height: 5px; background-color: green" />
+  <div class="q-pa-md" v-if="!visible">
+    <div>
+      <h3 style="text-align: center; margin: 10px">Mantenimientos</h3>
+      <hr style="width: 70%; height: 5px; background-color: green" />
+    </div>
+
+    <div class="contSelect" style="margin-left: 5%; text-align: end; margin-right: 5%">
+      <q-select background-color="green" class="q-my-md" v-model="selectedOption" outlined dense options-dense
+        emit-value :options="options" />
+
+      <input v-if="
+        selectedOption ===
+        'Listar Mantenimiento de la Máquina por su Nombre'
+      " v-model="nombreMaquinaMantenimiento" class="q-my-md" type="text" name="search" id="searchMaquina"
+        @dblclick="selectAllText" placeholder="Nombre de la Máquina" />
+
+      <div v-if="selectedOption === 'Listar Mantenimientos por Fechas'"
+        style="display: flex; flex-direction: row; text-align: center; flex-wrap: wrap; position: absolute; top: 147px; left: 350px;">
+        <label for="fecha1" style="height: 100%; line-height: 88px; margin-left: 40px;">De:</label>
+        <q-input v-model="fecha1" class="q-my-md" type="date" name="search" id="fecha1" />
+
+        <label for="fecha2" style="height: 100%; line-height: 88px; margin-left: 40px;">A:</label>
+        <q-input v-model="fecha2" class="q-my-md" type="date" name="search" id="fecha2" />
       </div>
 
-      <div class="contSelect" style="margin-left: 5%; text-align: end; margin-right: 5%">
-        <q-select background-color="green" class="q-my-md" v-model="selectedOption" outlined dense options-dense
-          emit-value :options="options" />
+    </div>
 
-        <input v-if="
-          selectedOption ===
-          'Listar Mantenimiento de la Máquina por su Nombre'
-        " v-model="nombreMaquinaMantenimiento" class="q-my-md" type="text" name="search" id="searchMaquina"
-          @dblclick="selectAllText" placeholder="Nombre de la Máquina" />
-
-        <div v-if="selectedOption === 'Listar Mantenimientos por Fechas'"
-          style="display: flex; flex-direction: row; text-align: center; flex-wrap: wrap; position: absolute; top: 147px; left: 350px;">
-          <label for="fecha1" style="height: 100%; line-height: 88px; margin-left: 40px;">De:</label>
-          <q-input v-model="fecha1" class="q-my-md" type="date" name="search" id="fecha1" />
-
-          <label for="fecha2" style="height: 100%; line-height: 88px; margin-left: 40px;">A:</label>
-          <q-input v-model="fecha2" class="q-my-md" type="date" name="search" id="fecha2" />
-        </div>
-
+    <div>
+      <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
+        <q-btn label="Agregar Mantenimiento" @click="mostrarFormularioAgregarMantenimiento = true">
+          <!-- <q-btn label="Editar Mantenimiento" @click="mostrarFormularioEditarMantenimiento = true" /> -->
+          <q-tooltip>
+            Agregar Mantenimiento
+          </q-tooltip>
+        </q-btn>
       </div>
+      <!-- Dialogo para agregar mantenimiento -->
+      <q-dialog v-model="mostrarFormularioAgregarMantenimiento" n
+        v-bind="mostrarFormularioAgregarMantenimiento && limpiarCampos()">
+        <q-card>
+          <q-card-section>
+            <div class="text-h5" style="padding: 10px 0 0 25px;">Agregar Mantenimiento</div>
+          </q-card-section>
 
-      <div>
-        <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
-          <q-btn label="Agregar Mantenimiento" @click="mostrarFormularioAgregarMantenimiento = true">
-            <!-- <q-btn label="Editar Mantenimiento" @click="mostrarFormularioEditarMantenimiento = true" /> -->
+          <q-card-section>
+            <div class="q-pa-md">
+              <q-form @submit.prevent="agregarMantenimiento">
+                <!-- Campos del formulario de agregar mantenimiento -->
+                <!-- Selección de máquina -->
+                <q-select v-model="selectedMachine" filled outlined label="Máquina" :options="maquinasOptions"
+                  class="q-mb-md" style="max-width: 100%;">
+                  <template v-slot:no-option>
+                    <q-item>
+                      <q-item-section>
+                        No results
+                      </q-item-section>
+                    </q-item>
+                  </template>
+                </q-select>
+                <q-input v-model="fecha" label="Fecha" type="date" filled class="q-mb-md" required />
+                <q-input v-model.trim="descripcion" label="Descripción" type="textarea" filled class="q-mb-md"
+                  required />
+                <q-input v-model.trim="responsable" label="Responsable" filled class="q-mb-md" required />
+                <q-input v-model="precio" label="Precio" type="number" filled class="q-mb-md" required min="0" />
+                <q-select v-model="estadoM" label="Estado" outlined :options="estadoOptions" filled class="q-mb-md"
+                  style="max-width: 100%;" />
+
+                <!-- Botón para agregar mantenimiento -->
+                <div class="q-mt-md">
+                  <q-btn @click="mostrarFormularioAgregarMantenimiento = false" label="Cancelar" color="negative"
+                    class="q-ma-sm">
+                    <q-tooltip>
+                      Cancelar
+                    </q-tooltip>
+                  </q-btn>
+                  <q-btn :loading="useMantenimiento.loading" :disable="useMantenimiento.loading" type="submit" label="Guardar Mantenimiento" color="primary"
+                    class="q-ma-sm">
+                    <q-tooltip>
+                      Guardar Mantenimiento
+                    </q-tooltip>
+                    <template v-slot:loading>
+                      <q-spinner color="white" size="1em" />
+                    </template>
+                  </q-btn>
+                </div>
+              </q-form>
+            </div>
+          </q-card-section>
+        </q-card>
+      </q-dialog>
+
+      <!-- Dialogo para editar mantenimiento -->
+      <q-dialog v-model="mostrarFormularioEditarMantenimiento">
+        <q-card>
+          <q-card-section>
+            <div class="text-h5" style="padding: 10px 0 0 25px;">Editar Mantenimiento</div>
+          </q-card-section>
+
+          <q-card-section>
+            <div class="q-pa-md">
+              <q-form @submit.prevent="editarMantenimiento">
+                <!-- Campos del formulario de editar mantenimiento -->
+                <!-- Selección de máquina -->
+                <q-select v-model="selectedMachine" filled outlined label="Máquina" :options="maquinasOptions"
+                  class="q-mb-md" style="max-width: 100%;">
+                  <template v-slot:no-option>
+                    <q-item>
+                      <q-item-section>
+                        No results
+                      </q-item-section>
+                    </q-item>
+                  </template>
+                </q-select>
+                <q-input v-model="fecha" label="Fecha" type="date" filled class="q-mb-md" required />
+                <q-input v-model.trim="descripcion" label="Descripción" type="textarea" filled class="q-mb-md"
+                  required />
+                <q-input v-model.trim="responsable" label="Responsable" filled class="q-mb-md" required />
+                <q-input v-model="precio" label="Precio" type="number" filled class="q-mb-md" required min="0" />
+
+                <!-- Botón para editar mantenimiento -->
+                <div class="q-mt-md">
+                  <q-btn @click="mostrarFormularioEditarMantenimiento = false" label="Cancelar" color="negative"
+                    class="q-ma-sm">
+                    <q-tooltip>
+                      Cancelar
+                    </q-tooltip>
+                  </q-btn>
+                  <q-btn :loading="useMantenimiento.loading" :disable="useMantenimiento.loading" type="submit" label="Guardar Cambios" color="primary"
+                    class="q-ma-sm">
+                    <q-tooltip>
+                      Guardar Cambios
+                    </q-tooltip>
+                    <template v-slot:loading>
+                      <q-spinner color="white" size="1em" />
+                    </template>
+                  </q-btn>
+                </div>
+              </q-form>
+            </div>
+          </q-card-section>
+        </q-card>
+      </q-dialog>
+    </div>
+
+    <q-table flat bordered title="Mantenimientos" title-class="text-green text-weight-bolder text-h5"
+      :rows="filtrarFilas" :columns="columns" row-key="id">
+      <template v-slot:body-cell-opciones="props">
+        <q-td :props="props">
+          <q-btn @click="cargarMantenimientoParaEdicion(props.row)">
+            ✏️
             <q-tooltip>
-              Agregar Mantenimiento
+              Editar Mantenimiento
             </q-tooltip>
           </q-btn>
-        </div>
-        <!-- Dialogo para agregar mantenimiento -->
-        <q-dialog v-model="mostrarFormularioAgregarMantenimiento" n
-          v-bind="mostrarFormularioAgregarMantenimiento && limpiarCampos()">
-          <q-card>
-            <q-card-section>
-              <div class="text-h5" style="padding: 10px 0 0 25px;">Agregar Mantenimiento</div>
-            </q-card-section>
+          <q-btn v-if="props.row.estado == 1" @click="inactivarMantenimiento(props.row._id)">
+            ❌
+            <q-tooltip>
+              Inactivar Mantenimiento
+            </q-tooltip>
+          </q-btn>
+          <q-btn v-else @click="activarMantenimiento(props.row._id)">
+            ✅
+            <q-tooltip>
+              Activar Mantenimiento
+            </q-tooltip>
+          </q-btn>
+        </q-td>
+      </template>
 
-            <q-card-section>
-              <div class="q-pa-md">
-                <q-form @submit.prevent="agregarMantenimiento">
-                  <!-- Campos del formulario de agregar mantenimiento -->
-                  <!-- Selección de máquina -->
-                  <q-select v-model="selectedMachine" filled outlined label="Máquina" :options="maquinasOptions"
-                    class="q-mb-md" style="max-width: 100%;">
-                    <template v-slot:no-option>
-                      <q-item>
-                        <q-item-section>
-                          No results
-                        </q-item-section>
-                      </q-item>
-                    </template>
-                  </q-select>
-                  <q-input v-model="fecha" label="Fecha" type="date" filled class="q-mb-md" required />
-                  <q-input v-model.trim="descripcion" label="Descripción" type="textarea" filled class="q-mb-md"
-                    required />
-                  <q-input v-model.trim="responsable" label="Responsable" filled class="q-mb-md" required />
-                  <q-input v-model="precio" label="Precio" type="number" filled class="q-mb-md" required min="0" />
-                  <q-select v-model="estadoM" label="Estado" outlined :options="estadoOptions" filled class="q-mb-md"
-                    style="max-width: 100%;" />
+      <template class="a" v-slot:body-cell-estado="props">
+        <q-td class="b" :props="props">
+          <p :style="{
+            color: props.row.estado === 1 ? 'green' : 'red',
+            margin: 0,
+          }">
+            {{ props.row.estado === 1 ? "Activo" : "Inactivo" }}
+          </p>
+        </q-td>
+      </template>
 
-                  <!-- Botón para agregar mantenimiento -->
-                  <div class="q-mt-md">
-                    <q-btn @click="mostrarFormularioAgregarMantenimiento = false" label="Cancelar" color="negative"
-                      class="q-ma-sm">
-                      <q-tooltip>
-                        Cancelar
-                      </q-tooltip>
-                    </q-btn>
-                    <q-btn :loading="useMantenimiento.loading" type="submit" label="Guardar Mantenimiento"
-                      color="primary" class="q-ma-sm">
-                      <q-tooltip>
-                        Guardar Mantenimiento
-                      </q-tooltip>
-                      <template v-slot:loading>
-                        <q-spinner color="white" size="1em" />
-                      </template>
-                    </q-btn>
-                  </div>
-                </q-form>
-              </div>
-            </q-card-section>
-          </q-card>
-        </q-dialog>
-
-        <!-- Dialogo para editar mantenimiento -->
-        <q-dialog v-model="mostrarFormularioEditarMantenimiento">
-          <q-card>
-            <q-card-section>
-              <div class="text-h5" style="padding: 10px 0 0 25px;">Editar Mantenimiento</div>
-            </q-card-section>
-
-            <q-card-section>
-              <div class="q-pa-md">
-                <q-form @submit.prevent="editarMantenimiento">
-                  <!-- Campos del formulario de editar mantenimiento -->
-                  <!-- Selección de máquina -->
-                  <q-select v-model="selectedMachine" filled outlined label="Máquina" :options="maquinasOptions"
-                    class="q-mb-md" style="max-width: 100%;">
-                    <template v-slot:no-option>
-                      <q-item>
-                        <q-item-section>
-                          No results
-                        </q-item-section>
-                      </q-item>
-                    </template>
-                  </q-select>
-                  <q-input v-model="fecha" label="Fecha" type="date" filled class="q-mb-md" required />
-                  <q-input v-model.trim="descripcion" label="Descripción" type="textarea" filled class="q-mb-md"
-                    required />
-                  <q-input v-model.trim="responsable" label="Responsable" filled class="q-mb-md" required />
-                  <q-input v-model="precio" label="Precio" type="number" filled class="q-mb-md" required min="0" />
-
-                  <!-- Botón para editar mantenimiento -->
-                  <div class="q-mt-md">
-                    <q-btn @click="mostrarFormularioEditarMantenimiento = false" label="Cancelar" color="negative"
-                      class="q-ma-sm">
-                      <q-tooltip>
-                        Cancelar
-                      </q-tooltip>
-                    </q-btn>
-                    <q-btn :loading="useMantenimiento.loading" type="submit" label="Guardar Cambios" color="primary"
-                      class="q-ma-sm">
-                      <q-tooltip>
-                        Guardar Cambios
-                      </q-tooltip>
-                      <template v-slot:loading>
-                        <q-spinner color="white" size="1em" />
-                      </template>
-                    </q-btn>
-                  </div>
-                </q-form>
-              </div>
-            </q-card-section>
-          </q-card>
-        </q-dialog>
-      </div>
-
-      <q-table flat bordered title="Mantenimientos" title-class="text-green text-weight-bolder text-h5"
-        :rows="filtrarFilas" :columns="columns" row-key="id">
-        <template v-slot:body-cell-opciones="props">
-          <q-td :props="props">
-            <q-btn @click="cargarMantenimientoParaEdicion(props.row)">
-              ✏️
-              <q-tooltip>
-                Editar Mantenimiento
-              </q-tooltip>
-            </q-btn>
-            <q-btn v-if="props.row.estado == 1" @click="inactivarMantenimiento(props.row._id)">
-              ❌
-              <q-tooltip>
-                Inactivar Mantenimiento
-              </q-tooltip>
-            </q-btn>
-            <q-btn v-else @click="activarMantenimiento(props.row._id)">
-              ✅
-              <q-tooltip>
-                Activar Mantenimiento
-              </q-tooltip>
-            </q-btn>
-          </q-td>
-        </template>
-
-        <template class="a" v-slot:body-cell-estado="props">
-          <q-td class="b" :props="props">
-            <p :style="{
-              color: props.row.estado === 1 ? 'green' : 'red',
-              margin: 0,
-            }">
-              {{ props.row.estado === 1 ? "Activo" : "Inactivo" }}
-            </p>
-          </q-td>
-        </template>
-
-        <!-- Descripcion Column -->
-        <template v-slot:body-cell-descripcion="props">
-          <q-td :props="props" class="relative">
-            <div class="truncated-text" @mouseover="checkAndShowTooltip($event, props.row.descripcion, 20)"
-              @mouseleave="hideTooltip">
-              {{ truncateText(props.row.descripcion, 20) }}
-            </div>
-          </q-td>
-        </template>
-      </q-table>
-    </div>
+      <!-- Descripcion Column -->
+      <template v-slot:body-cell-descripcion="props">
+        <q-td :props="props" class="relative">
+          <div class="truncated-text" @mouseover="checkAndShowTooltip($event, props.row.descripcion, 20)"
+            @mouseleave="hideTooltip">
+            {{ truncateText(props.row.descripcion, 20) }}
+          </div>
+        </q-td>
+      </template>
+    </q-table>
   </div>
   <q-inner-loading :showing="isLoading" label="Por favor espere..." label-class="text-teal"
     label-style="font-size: 1.1em" />
 </template>
 
 <style scoped>
+* {
+  font-family: cursive;
+  font-style: italic;
+}
+
 .contSelect {
   display: flex;
   flex-direction: row;

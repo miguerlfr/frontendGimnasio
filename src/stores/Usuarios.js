@@ -3,8 +3,8 @@ import { ref } from "vue";
 import axios from "axios";
 import { notifyErrorRequest, notifySuccessRequest } from "../routes/routes.js";
 
-const url = "https://backendgimnasio-ip8j.onrender.com"
-// const url = "http://localhost:4505"
+// const url = "https://backendgimnasio-ip8j.onrender.com"
+const url = "http://localhost:4505"
 
 export const useStoreUsuarios = defineStore("Usuario", () => {
     let loading = ref(false)
@@ -188,21 +188,37 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
         try {
             loading.value = true;
             const r = await axios.put(`${url}/api/usuarios/restablecer/contrasena`, {email});
-            console.log("Respuesta del servidor:", r.data.msg); // Añadir esta línea
+            console.log("Respuesta del backend:", r.data.msg);
             return r;
         } catch (error) {
-            console.error("Error al restablecer contraseña", error);
+            notifyErrorRequest(error.response.data.msg);
+            console.error("Error al restablecer contraseña", error.response.data);
             return error;
         } finally {
             loading.value = false;
         }
     };
 
-    const putUsuariosPassword = async (data) => {
+    const contraseñaCambiada = async (tokenA) => {
         try {
             loading.value = true;
-            const r = await axios.put(`${url}/api/usuarios/cambiar/contrasena`, data);
-            console.log("Respuesta del servidor:", r.data.msg); // Añadir esta línea
+            const r = await axios.put(`${url}/api/usuarios/notificacion/token`, {}, {
+                headers: {
+                    tokenP: tokenA,
+                }
+            })            
+            return r;
+        } catch (error) {
+            console.error("Errro al avisar", error);
+            return error;
+        }
+    };
+
+    const putUsuariosPassword = async (token, data) => {
+        try {
+            loading.value = true;
+            const r = await axios.put(`${url}/api/usuarios/cambiar/contrasena/${token}`, data);
+            console.log("Respuesta del backend:", r);
             return r;
         } catch (error) {
             console.error("Error al restablecer contraseña", error);
@@ -223,6 +239,7 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
         putUsuariosActivar,
         putUsuariosInactivar,
         recuperarContrasena,
+        contraseñaCambiada,
         putUsuariosPassword,
         token,
         user,

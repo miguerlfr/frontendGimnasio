@@ -160,15 +160,14 @@ onMounted(() => {
   actualizarListadoSedes();
 });
 
-watch(selectedOption, (newValue) => {
+watch(selectedOption, () => {
   actualizarListadoSedes();
   isLoading
 });
 </script>
 
 <template>
-  <div>
-    <div class="q-pa-md" v-if="!visible">
+  <div class="q-pa-md" v-if="!visible">
       <div>
         <h3 style="text-align: center; margin: 10px">Sedes</h3>
         <hr style="width: 70%; height: 5px; background-color: green" />
@@ -216,7 +215,7 @@ watch(selectedOption, (newValue) => {
                       Cancelar
                     </q-tooltip>
                   </q-btn>
-                  <q-btn :loading="useSede.loading" type="submit" label="Guardar Sede" color="primary" class="q-ma-sm">
+                  <q-btn :loading="useSede.loading" :disable="useSede.loading" type="submit" label="Guardar Sede" color="primary" class="q-ma-sm">
                     <q-tooltip>
                       Guardar Sede
                     </q-tooltip>
@@ -251,7 +250,7 @@ watch(selectedOption, (newValue) => {
                       Cancelar
                     </q-tooltip>
                   </q-btn>
-                  <q-btn :loading="useSede.loading" type="submit" label="Guardar cambios" color="primary"
+                  <q-btn :loading="useSede.loading" :disable="useSede.loading" type="submit" label="Guardar cambios" color="primary"
                     class="q-ma-sm">
                     <q-tooltip>
                       Guardar cambios
@@ -303,13 +302,17 @@ watch(selectedOption, (newValue) => {
           </q-td>
         </template>
       </q-table>
-    </div>
   </div>
   <q-inner-loading :showing="isLoading" label="Por favor espere..." label-class="text-teal"
     label-style="font-size: 1.1em" />
 </template>
 
 <style scoped>
+* {
+  font-family: cursive;
+  font-style: italic;
+}
+
 .contSelect {
   display: flex;
   flex-direction: row;
@@ -318,7 +321,6 @@ watch(selectedOption, (newValue) => {
 
 .q-select {
   max-width: 200px;
-  /* Puedes ajustar el ancho según tu preferencia */
 }
 
 .q-my-md {

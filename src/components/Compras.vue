@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
 import { notifyErrorRequest } from "../routes/routes.js";
-import { useStoreVentas } from "../stores/Ventas.js";
+import { useStoreCompras } from "../stores/Compras.js";
 import { useStoreProductos } from "../stores/Productos.js";
 import { format } from "date-fns";
 
@@ -16,24 +16,24 @@ const listarCodigo = ref("")
 const listarFechasOne = ref("")
 const listarFechasTwo = ref("")
 
-// Variables parra mostrar formularios
-const mostrarFormularioEditarVenta = ref(false);
-const mostrarFormularioAgregarVenta = ref(false);
+// // Variables parra mostrar formularios
+const mostrarFormularioAgregarCompra = ref(false);
+const mostrarFormularioEditarCompra = ref(false);
 
 // Llamado de modelos
-const useVenta = useStoreVentas();
+const useCompra = useStoreCompras();
 const useProducto = useStoreProductos();
 
-// Variables de los inputs de agregar y editar
-const idVentaSeleccionada = ref("");
-const codigoProducto = ref("");
+// // Variables de los inputs de agregar y editar
+const idCompraSeleccionada = ref("");
 const cantidad = ref("");
+const codigoProducto = ref("");
 
-const selectedOption = ref("Listar Ventas");
+const selectedOption = ref("Listar Compras");
 const options = [
-  { label: "Listar Ventas", value: "Listar Ventas" },
-  { label: "Listar Ventas por Producto", value: "Listar Ventas por Producto" },
-  { label: "Listar Ventas por fechas", value: "Listar Ventas por fechas" }
+  { label: "Listar Compras", value: "Listar Compras" },
+  { label: "Listar Compras por Producto", value: "Listar Compras por Producto" },
+  { label: "Listar Compras por fechas", value: "Listar Compras por fechas" }
 ];
 
 let rows = ref([]);
@@ -47,8 +47,10 @@ const columns = ref([
   {
     name: "codigoProducto",
     label: "Producto",
-    field: row => (row.codigoProducto ? row.codigoProducto.descripcion : ''),
+    field: row => row.codigoProducto ? row.codigoProducto.descripcion : '',
     align: "center",
+    // field: row => row.productos.map(p => p.producto ? p.producto : '').join(', '),
+    // field: row => row.productos ? row.productos.map(p => `Producto: ${p.producto}, Cantidad: ${formatoNumerico(p.cantidad)}, Precio: ${formatoNumerico(p.precio)}`).join(', ') : '',
   },
   {
     name: "valorUnitario",
@@ -83,23 +85,23 @@ const productoOptions = computed(() => {
     }));
 });
 
-async function listarVentas() {
-  const ventasResponse = await useVenta.getVentas();
-  const ventas = ventasResponse.data.ventas;
-  console.log("Ventas", ventas);
+async function listarCompras() {
+  const comprasResponse = await useCompra.getCompras();
+  const compras = comprasResponse.data;
+  console.log("Compras", compras);
 
-  rows.value = ventas;
+  rows.value = compras;
   visible.value = false;
 }
 
 const filtrarFilas = computed(() => {
-  let ventasFiltradas = rows.value;
+  let comprasFiltradas = rows.value;
 
-  if (selectedOption.value === "Listar Ventas por Producto" && listarCodigo.value) {
-    ventasFiltradas = ventasFiltradas.filter(row =>
+  if (selectedOption.value === "Listar Compras por Producto" && listarCodigo.value) {
+    comprasFiltradas = comprasFiltradas.filter(row =>
       row.codigoProducto.descripcion.toLowerCase().includes(listarCodigo.value.toLowerCase())
     );
-    // notifySuccessRequest('Ventas listadas por producto exitosamente.');
+    // notifySuccessRequest('Compras listadas por producto exitosamente.');
   }
 
   if (listarFechasOne.value && listarFechasTwo.value) {
@@ -109,29 +111,29 @@ const filtrarFilas = computed(() => {
     const endDate = normalizeDate(listarFechasTwo.value);
 
     if (startDate === endDate) {
-      ventasFiltradas = ventasFiltradas.filter(venta => {
-        const ventaDate = normalizeDate(venta.createdAt);
-        return ventaDate === startDate;
+      comprasFiltradas = comprasFiltradas.filter(compra => {
+        const compraDate = normalizeDate(compra.createdAt);
+        return compraDate === startDate;
       });
-      // notifySuccessRequest('Ventas listadas por fechas exitosamente.');
+      // notifySuccessRequest('Compras listadas por fechas exitosamente.');
     } else {
       // notifyErrorRequest('Fechas inválidas o inconsistentes.');
     }
   }
 
-  return ventasFiltradas;
+  return comprasFiltradas;
 });
 
-function limpiarCampos() {
-  idVentaSeleccionada.value = "";
+const limpiarCampos = () => {
   codigoProducto.value = "";
   cantidad.value = "";
-}
+};
 
-async function validarDatosVenta(venta) {
-  const { codigoProducto } = venta;
+async function validarDatosCompra(compra) {
+  const { codigoProducto } = compra;
 
-  if (codigoProducto == undefined) {
+  // Verificar si el codigoProducto está definido
+  if (!codigoProducto) {
     notifyErrorRequest('El Producto es requerido.');
     return false;
   }
@@ -139,32 +141,32 @@ async function validarDatosVenta(venta) {
   return true;
 }
 
-async function agregarVenta() {
-  const nuevaVenta = {
+async function agregarCompra() {
+  const nuevaCompra = {
     codigoProducto: codigoProducto.value.id,
     cantidad: cantidad.value
   };
 
-  if (await validarDatosVenta(nuevaVenta)) {
-    const r = await useVenta.postVentas(nuevaVenta);
-    if (r.status == 200) {
-      mostrarFormularioAgregarVenta.value = false
-      listarVentas();
-      console.log("Venta a agregar exitosamente", nuevaVenta)
+  if (await validarDatosCompra(nuevaCompra)) {
+    const r = await useCompra.postCompras(nuevaCompra);
+    if (r.status == 201) {
+      mostrarFormularioAgregarCompra.value = false
+      listarCompras();
+      console.log("Compra agregada exitosamente", nuevaCompra)
     }
   }
 }
 
-function cargarVentaParaEdicion(venta) {
-  idVentaSeleccionada.value = venta._id;
-  codigoProducto.value = venta.codigoProducto.descripcion;
-  cantidad.value = venta.cantidad;
+function cargarCompraParaEdicion(compra) {
+  idCompraSeleccionada.value = compra._id;
+  codigoProducto.value = compra.codigoProducto.descripcion;
+  cantidad.value = compra.cantidad;
 
-  mostrarFormularioEditarVenta.value = true;
-  console.log("Datos de la venta a editar", venta);
+  mostrarFormularioEditarCompra.value = true;
+  console.log("Datos de la compra a editar", compra);
 }
 
-async function editarVenta() {
+async function editarCompra() {
   let idCodigoProducto = codigoProducto.value.id
 
   // Por si no cambio el producto tomar el valor del id del producto
@@ -179,38 +181,43 @@ async function editarVenta() {
       }
     }
   }
-  const ventaEditada = {
-    _id: idVentaSeleccionada.value,
+  const compraEditada = {
+    _id: idCompraSeleccionada.value,
     codigoProducto: idCodigoProducto,
     cantidad: cantidad.value
   };
-  if (await validarDatosVenta(ventaEditada)) {
-    const r = await useVenta.putVentas(idVentaSeleccionada.value, ventaEditada);
-    if (r.status == 200) {
-      mostrarFormularioEditarVenta.value = false;
-      listarVentas();
-      console.log("Venta editada exitosamente", ventaEditada)
+
+  if (await validarDatosCompra(compraEditada)) {
+    const r = await useCompra.putCompras(idCompraSeleccionada.value, compraEditada);
+    if (r.status === 200) {
+      mostrarFormularioEditarCompra.value = false;
+      listarCompras();
+      console.log("Compra editada exitosamente", compraEditada);
     }
   }
 }
 
 const isLoading = computed(() => visible.value);
 
+// Variable para aparecer le h5 de productos
+const hasProductos = computed(() => cardProductos.value.length > 0);
+
 onMounted(() => {
-  listarVentas();
+  listarCompras();
   listarProductos();
 });
 
 watch(selectedOption, () => {
-  listarVentas();
+  listarCompras();
   isLoading
 });
+
 </script>
 
 <template>
   <div class="q-pa-md" v-if="!visible">
     <div>
-      <h3 style="text-align: center; margin: 10px">Ventas</h3>
+      <h3 style="text-align: center; margin: 10px">Compras</h3>
       <hr style="width: 70%; height: 5px; background-color: green" />
     </div>
 
@@ -218,11 +225,11 @@ watch(selectedOption, () => {
       <q-select background-color="green" class="q-my-md" id="q-select" v-model="selectedOption" outlined dense
         options-dense emit-value :options="options" />
 
-      <input v-if="selectedOption === 'Listar Ventas por Producto'" v-model="listarCodigo" class="q-my-md" type="text"
+      <input v-if="selectedOption === 'Listar Compras por Producto'" v-model="listarCodigo" class="q-my-md" type="text"
         name="search" id="search" placeholder="Ingrese el producto" />
 
-      <div v-if="selectedOption === 'Listar Ventas por fechas'"
-        style="display: flex; flex-direction: row; text-align: center; flex-wrap: wrap; position: absolute; top: 150px; left: 240px;">
+      <div v-if="selectedOption === 'Listar Compras por fechas'"
+        style="display: flex; flex-direction: row; text-align: center; flex-wrap: wrap; position: absolute; top: 150px; left: 270px;">
         <label for="listarFechasOne" style="height: 100%; line-height: 88px; margin-left: 40px;">De:</label>
         <q-input v-model="listarFechasOne" class="q-my-md" type="date" name="search" id="listarFechasOne"
           placeholder="Ingrese la fecha" />
@@ -235,24 +242,24 @@ watch(selectedOption, () => {
 
     <div>
       <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
-        <q-btn label="Agregar Venta" @click="mostrarFormularioAgregarVenta = true">
-          <!-- <q-btn label="Editar Venta" @click="mostrarFormularioEditarVenta = true" /> -->
+        <q-btn label="Agregar Compra" @click="mostrarFormularioAgregarCompra = true">
           <q-tooltip>
-            Agregar Venta
+            Agregar Compra
           </q-tooltip>
         </q-btn>
       </div>
 
-      <!-- Formulario para agregar venta -->
-      <q-dialog v-model="mostrarFormularioAgregarVenta" v-bind="mostrarFormularioAgregarVenta && limpiarCampos()">
-        <q-card>
+      <!-- Formulario para agregar compra -->
+      <q-dialog v-model="mostrarFormularioAgregarCompra" v-bind="mostrarFormularioAgregarCompra && limpiarCampos()">
+        <q-card style="width: 380px;">
           <q-card-section>
-            <div class="text-h6">Agregar Venta</div>
+            <div class="text-h6" style="padding: 10px 0 0 25px;">Agregar Compra</div>
           </q-card-section>
-          <q-card-section>
-            <q-form @submit.prevent="agregarVenta">
+          <q-card-section style="padding: 20px 8px;">
+            <q-form @submit.prevent="agregarCompra">
+
               <q-select v-model="codigoProducto" label="Producto" filled outlined :options="productoOptions"
-                class="q-mb-md" required>
+                class="q-mb-md" required style="width: 85%; margin: auto; margin-bottom: 20px;">
                 <template v-slot:no-option>
                   <q-item>
                     <q-item-section>
@@ -262,37 +269,40 @@ watch(selectedOption, () => {
                 </template>
               </q-select>
               <q-input v-model="cantidad" label="Cantidad" type="number" filled outlined class="q-mb-md" min="0"
-                required />
-              
-              <q-btn label="Cancelar" color="negative" class="q-ma-sm" @click="mostrarFormularioAgregarVenta = false">
+                required style="width: 85%; margin: auto; margin-bottom: 20px;"/>
+
+              <div style="display: flex; width: 100%; justify-content: center;">
+              <q-btn label="Cancelar" color="negative" class="q-ma-sm" @click="mostrarFormularioAgregarCompra = false">
                 <q-tooltip>
                   Cancelar
                 </q-tooltip>
               </q-btn>
-              <q-btn :loading="useProducto.loading" :disable="useProducto.loading" type="submit" label="Guardar Producto" color="primary"
-                class="q-ma-sm">
+              <q-btn :loading="useCompra.loading" :disable="useCompra.loading" type="submit" label="Guardar Compra"
+                color="primary" class="q-ma-sm">
                 <q-tooltip>
-                  Guardar Producto
+                  Guardar Compra
                 </q-tooltip>
                 <template v-slot:loading>
                   <q-spinner color="white" size="1em" />
                 </template>
               </q-btn>
+              </div>
             </q-form>
           </q-card-section>
         </q-card>
       </q-dialog>
 
-      <!-- Formulario para editar venta -->
-      <q-dialog v-model="mostrarFormularioEditarVenta">
-        <q-card>
+      <!-- Formulario para editar compra -->
+      <q-dialog v-model="mostrarFormularioEditarCompra">
+        <q-card style="width: 380px;">
           <q-card-section>
-            <div class="text-h6">Editar Venta</div>
+            <div class="text-h6" style="padding: 10px 0 0 25px;">Editar Compra</div>
           </q-card-section>
-          <q-card-section>
-            <q-form @submit.prevent="editarVenta">
+          <q-card-section style="padding: 20px 8px;">
+            <q-form @submit.prevent="editarCompra">
+
               <q-select v-model="codigoProducto" label="Producto" filled outlined :options="productoOptions"
-                class="q-mb-md" required>
+                class="q-mb-md" required style="width: 85%; margin: auto; margin-bottom: 20px;">
                 <template v-slot:no-option>
                   <q-item>
                     <q-item-section>
@@ -302,35 +312,38 @@ watch(selectedOption, () => {
                 </template>
               </q-select>
               <q-input v-model="cantidad" label="Cantidad" type="number" filled outlined class="q-mb-md" min="0"
-                required />
-              <q-btn label="Cancelar" color="negative" class="q-ma-sm" @click="mostrarFormularioEditarVenta = false">
-                <q-tooltip>
-                  Cancelar
-                </q-tooltip>
-              </q-btn>
-              <q-btn :loading="useProducto.loading" :disable="useProducto.loading" type="submit" label="Guardar Cambios" color="primary"
-                class="q-ma-sm">
-                <q-tooltip>
-                  Guardar Cambios
-                </q-tooltip>
-                <template v-slot:loading>
-                  <q-spinner color="white" size="1em" />
-                </template>
-              </q-btn>
+              required style="width: 85%; margin: auto; margin-bottom: 20px;"/>
+
+              <div style="display: flex; width: 100%; justify-content: center;">
+                <q-btn label="Cancelar" color="negative" class="q-ma-sm" @click="mostrarFormularioEditarCompra = false">
+                  <q-tooltip>
+                    Cancelar
+                  </q-tooltip>
+                </q-btn>
+                <q-btn :loading="useCompra.loading" :disable="useCompra.loading" type="submit" label="Guardar Cambios"
+                  color="primary" class="q-ma-sm">
+                  <q-tooltip>
+                    Guardar Cambios
+                  </q-tooltip>
+                  <template v-slot:loading>
+                    <q-spinner color="white" size="1em" />
+                  </template>
+                </q-btn>
+                </div>
             </q-form>
           </q-card-section>
         </q-card>
       </q-dialog>
     </div>
 
-    <q-table flat bordered title="Ventas" title-class="text-green text-weight-bolder text-h5" :rows="filtrarFilas"
+    <q-table flat bordered title="Compras" title-class="text-green text-weight-bolder text-h5" :rows="filtrarFilas"
       :columns="columns" row-key="id">
       <template v-slot:body-cell-opciones="props">
         <q-td :props="props">
-          <q-btn @click="cargarVentaParaEdicion(props.row)">
+          <q-btn @click="cargarCompraParaEdicion(props.row)">
             ✏️
             <q-tooltip>
-              Editar Venta
+              Editar Compra
             </q-tooltip>
           </q-btn>
         </q-td>

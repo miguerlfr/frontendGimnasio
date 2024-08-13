@@ -117,8 +117,6 @@ const options = [
 
 let rows = ref([]);
 const columns = ref([
-  { name: "cliente", label: "Cliente", field: row => row.cliente ? row.cliente.nombre : '', align: "center" },
-  { name: "plan", label: "Plan", field: row => row.plan ? row.plan.descripcion : '', align: "center" },
   {
     name: "fecha",
     label: "Fecha",
@@ -130,6 +128,8 @@ const columns = ref([
     },
     align: "center",
   },
+  { name: "cliente", label: "Cliente", field: row => row.cliente ? row.cliente.nombre : '', align: "center" },
+  { name: "plan", label: "Plan", field: row => row.plan ? row.plan.descripcion : '', align: "center" },
   {
     name: "valor",
     label: "Valor",
@@ -219,7 +219,7 @@ async function validarDatosPago(pago) {
 
 const agregarPago = async () => {
   let idCliente = clientePago.value.id
-  
+
   for (let cliente of clientes.value) {
     if (`${cliente.nombre} - ${cliente.documento}` === clientePago.value) {
       idCliente = cliente._id;
@@ -276,15 +276,25 @@ async function editarPago() {
 
   for (let cliente of clientes.value) {
     if (`${cliente.nombre} - ${cliente.documento}` === clientePago.value) {
-      idCliente = cliente._id;
-      break;
+      if (cliente.estado == 1) {
+        idCliente = cliente._id;
+        break;
+      } else {
+        notifyErrorRequest("Cliente seleccionado inactivo")
+        return;
+      }
     }
   }
   for (let plan of planes.value) {
     if (plan.descripcion === planPago.value) {
-      idPlan = plan._id;
-      valorNuevo = plan.valor;
-      break;
+      if (plan.estado == 1) {
+        idPlan = plan._id;
+        valorNuevo = plan.valor;
+        break;
+      } else {
+        notifyErrorRequest("Plan seleccionado inactivo")
+        return;
+      }
     } else {
       valorNuevo = plan.valor;
     }
@@ -325,204 +335,210 @@ watch(selectedOption, () => {
 </script>
 
 <template>
-  <div>
-    <div class="q-pa-md" v-if="!visible">
-      <div>
-        <h3 style="text-align: center; margin: 10px">Pagos</h3>
-        <hr style="width: 70%; height: 5px; background-color: green" />
+  <div class="q-pa-md" v-if="!visible">
+    <div>
+      <h3 style="text-align: center; margin: 10px">Pagos</h3>
+      <hr style="width: 70%; height: 5px; background-color: green" />
+    </div>
+
+    <div class="contSelect" style="margin-left: 5%; text-align: end; margin-right: 5%">
+      <q-select background-color="green" class="q-my-md" v-model="selectedOption" outlined dense options-dense
+        emit-value :options="options" />
+
+      <div v-if="selectedOption === 'Listar Pagos por Fechas'"
+        style="display: flex; flex-direction: row; text-align: center; flex-wrap: wrap; position: absolute; top: 147px; left: 270px;">
+        <label for="fecha1" style="height: 100%; line-height: 88px; margin-left: 40px;">De:</label>
+        <q-input v-model="fecha1" class="q-my-md" type="date" name="search" id="fecha1"
+          placeholder="Ingrese la fecha" />
+
+        <label for="fecha2" style="height: 100%; line-height: 88px; margin-left: 40px;">A:</label>
+        <q-input v-model="fecha2" class="q-my-md" type="date" name="search" id="fecha2"
+          placeholder="Ingrese la fecha" />
       </div>
 
-      <div class="contSelect" style="margin-left: 5%; text-align: end; margin-right: 5%">
-        <q-select background-color="green" class="q-my-md" v-model="selectedOption" outlined dense options-dense
-          emit-value :options="options" />
+      <input v-if="selectedOption === 'Listar Pagos por Plan'" v-model="planC" class="q-my-md" type="text" name="search"
+        id="planC" placeholder="Ingrese el plan" />
 
-        <div v-if="selectedOption === 'Listar Pagos por Fechas'" style="display: flex; flex-direction: row; text-align: center; flex-wrap: wrap; position: absolute; top: 147px; left: 270px;">
-          <label for="fecha1"  style="height: 100%; line-height: 88px; margin-left: 40px;">De:</label>
-          <q-input v-model="fecha1" class="q-my-md" type="date" name="search" id="fecha1" placeholder="Ingrese la fecha" />
+      <input v-if="selectedOption === 'Listar Pagos por Cliente'" v-model="nombreCliente" class="q-my-md" type="text"
+        name="search" placeholder="Nombre del cliente" />
+    </div>
 
-          <label for="fecha2"  style="height: 100%; line-height: 88px; margin-left: 40px;">A:</label>
-          <q-input v-model="fecha2" class="q-my-md" type="date" name="search" id="fecha2" placeholder="Ingrese la fecha" />
-        </div>
-
-        <input v-if="selectedOption === 'Listar Pagos por Plan'" v-model="planC" class="q-my-md" type="text"
-          name="search" id="planC" placeholder="Ingrese el plan" />
-
-        <input v-if="selectedOption === 'Listar Pagos por Cliente'" v-model="nombreCliente" class="q-my-md" type="text"
-          name="search" placeholder="Nombre del cliente" />
+    <div>
+      <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
+        <q-btn label="Agregar Pago" @click="mostrarFormularioAgregarPago = true">
+          <!-- <q-btn label="Editar Pago" @click="mostrarFormularioEditarPago = true" /> -->
+          <q-tooltip>
+            Agregar Pago
+          </q-tooltip>
+        </q-btn>
       </div>
 
-      <div>
-        <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
-          <q-btn label="Agregar Pago" @click="mostrarFormularioAgregarPago = true">
-            <!-- <q-btn label="Editar Pago" @click="mostrarFormularioEditarPago = true" /> -->
+      <!-- Dialogo para agregar pago -->
+      <q-dialog v-model="mostrarFormularioAgregarPago" v-bind="mostrarFormularioAgregarPago && limpiarCampos()">
+        <q-card>
+          <q-card-section>
+            <div class="text-h5" style="padding: 10px 0 0 25px;">Agregar Pago</div>
+          </q-card-section>
+
+          <q-card-section>
+            <div class="q-pa-md">
+              <q-form @submit.prevent="agregarPago">
+                <!-- Campos del formulario de agregar pago -->
+                <q-select filled outlined v-model="clientePago" use-input hide-selected fill-input input-debounce="0"
+                  :options="clientesOptions" label="Cliente" emit-value map-options @filter="filterFn"
+                  @input-value="setModel" class="q-mb-md" style="min-width: 100%;" required>
+                  <template v-slot:no-option>
+                    <q-item>
+                      <q-item-section>
+                        No results
+                      </q-item-section>
+                    </q-item>
+                  </template>
+                </q-select>
+                <q-select v-model="planPago" label="Plan" filled outlined :options="planOptions" class="q-mb-md"
+                  style="max-width: 100%;">
+                  <template v-slot:no-option>
+                    <q-item>
+                      <q-item-section>
+                        No results
+                      </q-item-section>
+                    </q-item>
+                  </template>
+                </q-select>
+                <q-input v-model="fechaPago" label="Fecha" filled type="date" outlined class="q-mb-md" required />
+                <q-input v-model="valorPago" label="Valor" type="number" outlined class="q-mb-md"
+                  style="display: none;" />
+                <q-select v-model="estadoPago" label="Estado" filled outlined :options="estadoOptions" class="q-mb-md"
+                  style="max-width: 100%;" />
+
+                <!-- Botones de acción -->
+                <div class="q-mt-md">
+                  <q-btn @click="cancelarEdicionPago" label="Cancelar" color="negative" class="q-mr-sm">
+                    <q-tooltip>
+                      Cancelar
+                    </q-tooltip>
+                  </q-btn>
+                  <q-btn :loading="usePago.loading" :disable="usePago.loading" type="submit" label="Guardar pago" color="primary">
+                    <q-tooltip>
+                      Guardar pago
+                    </q-tooltip>
+                    <template v-slot:loading>
+                      <q-spinner color="white" size="1em" />
+                    </template>
+                  </q-btn>
+                </div>
+              </q-form>
+            </div>
+          </q-card-section>
+        </q-card>
+      </q-dialog>
+
+      <!-- Dialogo para editar pago -->
+      <q-dialog v-model="mostrarFormularioEditarPago">
+        <q-card>
+          <q-card-section>
+            <div class="text-h5" style="padding: 10px 0 0 25px;">Editar Pago</div>
+          </q-card-section>
+
+          <q-card-section>
+            <div class="q-pa-md">
+              <q-form @submit.prevent="editarPago">
+                <!-- Campos del formulario de editar pago -->
+                <q-select filled outlined v-model="clientePago" use-input hide-selected fill-input input-debounce="0"
+                  :options="clientesOptions" label="Cliente" emit-value map-options @filter="filterFn"
+                  @input-value="setModel" class="q-mb-md" style="min-width: 100%;">
+                  <template v-slot:no-option>
+                    <q-item>
+                      <q-item-section>
+                        No results
+                      </q-item-section>
+                    </q-item>
+                  </template>
+                </q-select>
+                <q-select v-model="planPago" label="Plan" filled outlined :options="planOptions" class="q-mb-md"
+                  style="max-width: 100%;">
+                  <template v-slot:no-option>
+                    <q-item>
+                      <q-item-section>
+                        No results
+                      </q-item-section>
+                    </q-item>
+                  </template>
+                </q-select>
+                <q-input v-model="fechaPago" label="Fecha" filled type="date" outlined class="q-mb-md" required />
+                <q-input v-model="valorPago" label="Valor" type="number" outlined class="q-mb-md"
+                  style="display: none;" />
+
+                <!-- Botones de acción -->
+                <div class="q-mt-md">
+                  <q-btn @click="cancelarEdicionPago" label="Cancelar" color="negative" class="q-mr-sm">
+                    <q-tooltip>
+                      Cancelar
+                    </q-tooltip>
+                  </q-btn>
+                  <q-btn :loading="usePago.loading" :disable="usePago.loading" type="submit" label="Guardar cambios" color="primary">
+                    <q-tooltip>
+                      Guardar cambios
+                    </q-tooltip>
+                    <template v-slot:loading>
+                      <q-spinner color="white" size="1em" />
+                    </template>
+                  </q-btn>
+                </div>
+              </q-form>
+            </div>
+          </q-card-section>
+        </q-card>
+      </q-dialog>
+    </div>
+
+    <q-table flat bordered title="Pagos" title-class="text-green text-weight-bolder text-h5" :rows="filtrarFilas"
+      :columns="columns" row-key="id">
+      <template v-slot:body-cell-opciones="props">
+        <q-td :props="props">
+          <q-btn @click="cargarPagoParaEdicion(props.row)">
+            ✏️
             <q-tooltip>
-              Agregar Pago
+              Editar Pago
             </q-tooltip>
           </q-btn>
-        </div>
+          <q-btn v-if="props.row.estado == 1" @click="inactivarPago(props.row._id)">
+            ❌
+            <q-tooltip>
+              Inactivar Pago
+            </q-tooltip>
+          </q-btn>
+          <q-btn v-else @click="activarPago(props.row._id)">
+            ✅
+            <q-tooltip>
+              Activar Pago
+            </q-tooltip>
+          </q-btn>
+        </q-td>
+      </template>
 
-        <!-- Dialogo para agregar pago -->
-        <q-dialog v-model="mostrarFormularioAgregarPago" v-bind="mostrarFormularioAgregarPago && limpiarCampos()">
-          <q-card>
-            <q-card-section>
-              <div class="text-h5" style="padding: 10px 0 0 25px;">Agregar Pago</div>
-            </q-card-section>
-
-            <q-card-section>
-              <div class="q-pa-md">
-                <q-form @submit.prevent="agregarPago">
-                  <!-- Campos del formulario de agregar pago -->
-                  <q-select filled outlined v-model="clientePago" use-input hide-selected fill-input input-debounce="0"
-                    :options="clientesOptions" label="Cliente" emit-value map-options @filter="filterFn"
-                    @input-value="setModel" class="q-mb-md" style="min-width: 100%;" required>
-                    <template v-slot:no-option>
-                      <q-item>
-                        <q-item-section>
-                          No results
-                        </q-item-section>
-                      </q-item>
-                    </template>
-                  </q-select>
-                  <q-select v-model="planPago" label="Plan" filled outlined :options="planOptions" class="q-mb-md"
-                    style="max-width: 100%;">
-                    <template v-slot:no-option>
-                      <q-item>
-                        <q-item-section>
-                          No results
-                        </q-item-section>
-                      </q-item>
-                    </template>
-                  </q-select>
-                  <q-input v-model="fechaPago" label="Fecha" filled type="date" outlined class="q-mb-md" required />
-                  <q-input v-model="valorPago" label="Valor" type="number" outlined class="q-mb-md"
-                    style="display: none;" />
-                  <q-select v-model="estadoPago" label="Estado" filled outlined :options="estadoOptions" class="q-mb-md"
-                    style="max-width: 100%;" />
-
-                  <!-- Botones de acción -->
-                  <div class="q-mt-md">
-                    <q-btn @click="cancelarEdicionPago" label="Cancelar" color="negative" class="q-mr-sm">
-                      <q-tooltip>
-                        Cancelar
-                      </q-tooltip>
-                    </q-btn>
-                    <q-btn :loading="usePago.loading" type="submit" label="Guardar pago" color="primary">
-                      <q-tooltip>
-                        Guardar pago
-                      </q-tooltip>
-                      <template v-slot:loading>
-                        <q-spinner color="white" size="1em" />
-                      </template>
-                    </q-btn>
-                  </div>
-                </q-form>
-              </div>
-            </q-card-section>
-          </q-card>
-        </q-dialog>
-
-        <!-- Dialogo para editar pago -->
-        <q-dialog v-model="mostrarFormularioEditarPago">
-          <q-card>
-            <q-card-section>
-              <div class="text-h5" style="padding: 10px 0 0 25px;">Editar Pago</div>
-            </q-card-section>
-
-            <q-card-section>
-              <div class="q-pa-md">
-                <q-form @submit.prevent="editarPago">
-                  <!-- Campos del formulario de editar pago -->
-                  <q-select filled outlined v-model="clientePago" use-input hide-selected fill-input input-debounce="0"
-                    :options="clientesOptions" label="Cliente" emit-value map-options @filter="filterFn"
-                    @input-value="setModel" class="q-mb-md" style="min-width: 100%;">
-                    <template v-slot:no-option>
-                      <q-item>
-                        <q-item-section>
-                          No results
-                        </q-item-section>
-                      </q-item>
-                    </template>
-                  </q-select>
-                  <q-select v-model="planPago" label="Plan" filled outlined :options="planOptions" class="q-mb-md"
-                    style="max-width: 100%;">
-                    <template v-slot:no-option>
-                      <q-item>
-                        <q-item-section>
-                          No results
-                        </q-item-section>
-                      </q-item>
-                    </template>
-                  </q-select>
-                  <q-input v-model="fechaPago" label="Fecha" filled type="date" outlined class="q-mb-md" required />
-                  <q-input v-model="valorPago" label="Valor" type="number" outlined class="q-mb-md"
-                    style="display: none;" />
-
-                  <!-- Botones de acción -->
-                  <div class="q-mt-md">
-                    <q-btn @click="cancelarEdicionPago" label="Cancelar" color="negative" class="q-mr-sm">
-                      <q-tooltip>
-                        Cancelar
-                      </q-tooltip>
-                    </q-btn>
-                    <q-btn :loading="usePago.loading" type="submit" label="Guardar cambios" color="primary">
-                      <q-tooltip>
-                        Guardar cambios
-                      </q-tooltip>
-                      <template v-slot:loading>
-                        <q-spinner color="white" size="1em" />
-                      </template>
-                    </q-btn>
-                  </div>
-                </q-form>
-              </div>
-            </q-card-section>
-          </q-card>
-        </q-dialog>
-      </div>
-
-      <q-table flat bordered title="Pagos" title-class="text-green text-weight-bolder text-h5" :rows="filtrarFilas"
-        :columns="columns" row-key="id">
-        <template v-slot:body-cell-opciones="props">
-          <q-td :props="props">
-            <q-btn @click="cargarPagoParaEdicion(props.row)">
-              ✏️
-              <q-tooltip>
-                Editar Pago
-              </q-tooltip>
-            </q-btn>
-            <q-btn v-if="props.row.estado == 1" @click="inactivarPago(props.row._id)">
-              ❌
-              <q-tooltip>
-                Inactivar Pago
-              </q-tooltip>
-            </q-btn>
-            <q-btn v-else @click="activarPago(props.row._id)">
-              ✅
-              <q-tooltip>
-                Activar Pago
-              </q-tooltip>
-            </q-btn>
-          </q-td>
-        </template>
-
-        <template class="a" v-slot:body-cell-estado="props">
-          <q-td class="b" :props="props">
-            <p :style="{
-              color: props.row.estado === 1 ? 'green' : 'red',
-              margin: 0,
-            }">
-              {{ props.row.estado === 1 ? "Activo" : "Inactivo" }}
-            </p>
-          </q-td>
-        </template>
-      </q-table>
-    </div>
+      <template class="a" v-slot:body-cell-estado="props">
+        <q-td class="b" :props="props">
+          <p :style="{
+            color: props.row.estado === 1 ? 'green' : 'red',
+            margin: 0,
+          }">
+            {{ props.row.estado === 1 ? "Activo" : "Inactivo" }}
+          </p>
+        </q-td>
+      </template>
+    </q-table>
   </div>
   <q-inner-loading :showing="isLoading" label="Por favor espere..." label-class="text-teal"
     label-style="font-size: 1.1em" />
 </template>
 
 <style scoped>
+* {
+  font-family: cursive;
+  font-style: italic;
+}
+
 .contSelect {
   display: flex;
   flex-direction: row;

@@ -1,24 +1,32 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { notifyErrorRequest } from "../routes/routes.js";
-import { notifySuccessRequest } from "../routes/routes.js";
+import { notifyErrorRequest, notifySuccessRequest } from "../routes/routes.js";
 import { useStoreUsuarios } from '../stores/Usuarios.js';
 
 let nuevaContrasenia = ref('');
 let confirmarContrasenia = ref('');
+const token = ref("");
+const aviso = ref("");
 const router = useRouter();
 const route = useRoute();
 const useUsuario = useStoreUsuarios();
-
-console.log('Route:', route);
-console.log('Route params:', route.params);
-
-const _id = ref(route.params.id);
 const passwordFieldType = ref('password');
 
 function togglePasswordVisibility() {
 	passwordFieldType.value = passwordFieldType.value === 'password' ? 'text' : 'password';
+}
+
+async function avisoo() {
+    try {
+        const res = await useUsuario.contraseñaCambiada(token.value);
+        if (res.data.code == "ERR_BAD_REQUEST") {
+            aviso.value = false;
+        }
+        aviso.value = true;
+    } catch (error) {
+        console.log(error);
+    }
 }
 
 const restablecerContrasenia = async () => {
@@ -32,10 +40,9 @@ const restablecerContrasenia = async () => {
 			return;
 		}
 		const datos = {
-			_id: _id.value,
 			nuevaContrasenia: nuevaContrasenia.value,
 		};
-		const response = await useUsuario.putUsuariosPassword(datos);
+		const response = await useUsuario.putUsuariosPassword(token.value, datos);
 
 		if (response.status === 200) {
 			notifySuccessRequest('Contraseña restablecida exitosamente');
@@ -52,6 +59,11 @@ const restablecerContrasenia = async () => {
 function regresar() {
 	router.push('/');
 }
+
+onMounted(() => {
+    token.value = route.query.tokenP || "";
+    avisoo();
+});
 </script>
 <template>
 	<div class="padre">
@@ -73,25 +85,22 @@ function regresar() {
 			<form @submit.prevent="restablecerContrasenia">
 				<div class="input_contrasena">
 					<input :type="passwordFieldType" class="input" placeholder="Nueva contraseña"
-						v-model="nuevaContrasenia" />
+						v-model="nuevaContrasenia" autocomplete="new-password"/>
 					<button type="button" @click="togglePasswordVisibility">
 						<q-icon :name="passwordFieldType === 'password' ? 'visibility_off' : 'visibility'" />
 					</button>
 				</div>
 				<div class="input_contrasena">
 					<input :type="passwordFieldType" class="input" placeholder="Confirmar contraseña"
-						v-model="confirmarContrasenia" />
+						v-model="confirmarContrasenia" autocomplete="new-password"/>
 					<button type="button" @click="togglePasswordVisibility">
 						<q-icon :name="passwordFieldType === 'password' ? 'visibility_off' : 'visibility'" />
 					</button>
 				</div>
 				<div class="div_button">
 					<q-btn style="color: black;" class="submit black"
-						type="submit" :loading="useUsuario.loading">
+						type="submit" >
 						Restablecer
-						<template v-slot:loading>
-							<q-spinner color="secondary" size="1em" />
-						</template>
 					</q-btn>
 				</div>
 			</form>
@@ -101,6 +110,11 @@ function regresar() {
 
 
 <style scoped>
+* {
+  font-family: cursive;
+  font-style: italic;
+}
+
 .titlee {
 	font-family: cursive;
 	font-style: italic;
@@ -197,12 +211,3 @@ function regresar() {
 	font-size: 16px;
 }
 </style>
-
-<!-- <template>
-    <div>
-        reset
-    </div>
-</template>
-
-<script setup>
-</script> -->

@@ -176,8 +176,7 @@ watch(selectedOption, (newValue) => {
 </script>
 
 <template>
-  <div>
-    <div class="q-pa-md" v-if="!visible">
+  <div class="q-pa-md" v-if="!visible">
       <div>
         <h3 style="text-align: center; margin: 10px">Planes</h3>
         <hr style="width: 70%; height: 5px; background-color: green" />
@@ -229,7 +228,7 @@ watch(selectedOption, (newValue) => {
                         Cancelar
                       </q-tooltip>
                     </q-btn>
-                    <q-btn :loading="usePlan.loading" type="submit" label="Guardar plan" color="primary">
+                    <q-btn :loading="usePlan.loading" :disable="usePlan.loading" type="submit" label="Guardar plan" color="primary">
                       <q-tooltip>
                         Guardar plan
                       </q-tooltip>
@@ -270,7 +269,7 @@ watch(selectedOption, (newValue) => {
                         Cancelar
                       </q-tooltip>
                     </q-btn>
-                    <q-btn :loading="usePlan.loading" type="submit" label="Guardar cambios" color="primary">
+                    <q-btn :loading="usePlan.loading" :disable="usePlan.loading" type="submit" label="Guardar cambios" color="primary">
                       <q-tooltip>
                         Guardar cambios
                       </q-tooltip>
@@ -332,13 +331,17 @@ watch(selectedOption, (newValue) => {
           </q-td>
         </template>
       </q-table>
-    </div>
   </div>
   <q-inner-loading :showing="isLoading" label="Por favor espere..." label-class="text-teal"
     label-style="font-size: 1.1em" />
 </template>
 
 <style scoped>
+* {
+  font-family: cursive;
+  font-style: italic;
+}
+
 .contSelect {
   display: flex;
   flex-direction: row;

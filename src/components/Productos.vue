@@ -91,7 +91,7 @@ const filteredRows = computed(() => {
 
 // const filteredRows = computed(() => {
 //   if (selectedOption.value.includes("Código")) {
-    
+
 //     loadingg.value = true;
 //     const codigoInput = listarCodigo.value;
 
@@ -99,7 +99,9 @@ const filteredRows = computed(() => {
 //       ? rows.value.filter(item => item.codigo.toString().includes(codigoInput))
 //       : rows.value;
 
-//     loadingg.value = false;
+//     setTimeout(function () {
+//       loadingg.value = false;
+//     }, 3000)
 //     return result;
 //   } else {
 //     return rows.value;
@@ -203,173 +205,176 @@ watch(selectedOption, () =>
 </script>
 
 <template>
-  <div>
-    <div class="q-pa-md" v-if="!visible">
-      <div>
-        <h3 style="text-align: center; margin: 10px">Productos</h3>
-        <hr style="width: 70%; height: 5px; background-color: green" />
+  <div class="q-pa-md" v-if="!visible">
+    <div>
+      <h3 style="text-align: center; margin: 10px">Productos</h3>
+      <hr style="width: 70%; height: 5px; background-color: green" />
+    </div>
+
+    <div class="contSelect" style="margin-left: 5%; text-align: end; margin-right: 5%">
+      <q-select background-color="green" class="q-my-md" v-model="selectedOption" outlined dense options-dense
+        emit-value :options="options" />
+
+      <input v-if="selectedOption === 'Listar Producto por Código'" v-model="listarCodigo" class="q-my-md" type="text"
+        name="listarCodigo" id="listarCodigo" placeholder="Código del producto" />
+    </div>
+
+    <div>
+      <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
+        <q-btn label="Agregar Producto" @click="mostrarFormularioAgregarProducto = true">
+          <q-tooltip>
+            Agregar Producto
+          </q-tooltip>
+        </q-btn>
+        <!-- <q-btn label="Editar Producto" @click="mostrarFormularioEditarProducto = true" /> -->
       </div>
 
-      <div class="contSelect" style="margin-left: 5%; text-align: end; margin-right: 5%">
-        <q-select background-color="green" class="q-my-md" v-model="selectedOption" outlined dense options-dense
-          emit-value :options="options" />
+      <!-- Diálogo para agregar producto -->
+      <q-dialog v-model="mostrarFormularioAgregarProducto" v-bind="mostrarFormularioAgregarProducto && limpiarCampos()">
+        <q-card>
+          <q-card-section>
+            <div class="text-h5" style="padding: 10px 0 0 25px;">Agregar Producto</div>
+          </q-card-section>
 
-        <input v-if="selectedOption === 'Listar Producto por Código'" v-model="listarCodigo" class="q-my-md" type="text"
-          name="listarCodigo" id="listarCodigo" placeholder="Código del producto" />
-      </div>
+          <q-card-section>
+            <q-form @submit.prevent="agregarProducto">
+              <q-input v-model.trim="codigoProducto" label="Código del producto" filled required class="q-mb-md" />
+              <q-input v-model.trim="descripcionProducto" type="textarea" label="Descripción del producto" filled
+                required class="q-mb-md" />
+              <q-input v-model="valorProducto" label="Valor del producto" type="number" filled required class="q-mb-md"
+                min="0" />
+              <q-input v-model="cantidadProducto" label="Cantidad del producto" type="number" filled required
+                class="q-mb-md" min="0" />
+              <q-select v-model="estadoProducto" label="Estado" filled outlined :options="estadoOptions" required
+                class="q-mb-md" style="max-width: 100%;" />
 
-      <div>
-        <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
-          <q-btn label="Agregar Producto" @click="mostrarFormularioAgregarProducto = true">
+              <!-- Botones de acción -->
+              <div class="q-mt-md">
+                <q-btn @click="mostrarFormularioAgregarProducto = false" label="Cancelar" color="negative"
+                  class="q-mr-sm">
+                  <q-tooltip>
+                    Cancelar
+                  </q-tooltip>
+                </q-btn>
+                <q-btn :loading="useProducto.loading" :disable="useProducto.loading" type="submit"
+                  label="Guardar Producto" color="primary">
+                  <q-tooltip>
+                    Guardar Producto
+                  </q-tooltip>
+                  <template v-slot:loading>
+                    <q-spinner color="white" size="1em" />
+                  </template>
+                </q-btn>
+              </div>
+            </q-form>
+          </q-card-section>
+        </q-card>
+      </q-dialog>
+
+      <!-- Diálogo para editar producto -->
+      <q-dialog v-model="mostrarFormularioEditarProducto">
+        <q-card>
+          <q-card-section>
+            <div class="text-h5" style="padding: 10px 0 0 25px;">Editar Producto</div>
+          </q-card-section>
+
+          <q-card-section>
+            <q-form @submit.prevent="editarProducto">
+              <q-input v-model.trim="codigoProducto" label="Código del producto" filled required class="q-mb-md" />
+              <q-input v-model.trim="descripcionProducto" type="textarea" label="Descripción del producto" filled
+                required class="q-mb-md" />
+              <q-input v-model="valorProducto" label="Valor del producto" type="number" filled required class="q-mb-md"
+                min="0" />
+              <q-input v-model="cantidadProducto" label="Cantidad del producto" type="number" filled required
+                class="q-mb-md" min="0" />
+              <!-- style="padding: 10px 0 0 25px;" -->
+              <!-- Botones de acción -->
+              <div class="q-mt-md">
+                <q-btn @click="mostrarFormularioEditarProducto = false" label="Cancelar" color="negative"
+                  class="q-mr-sm">
+                  <q-tooltip>
+                    Cancelar
+                  </q-tooltip>
+                </q-btn>
+                <q-btn :loading="useProducto.loading" :disable="useProducto.loading" type="submit"
+                  label="Guardar Cambios" color="primary">
+                  <q-tooltip>
+                    Guardar Cambios
+                  </q-tooltip>
+                  <template v-slot:loading>
+                    <q-spinner color="white" size="1em" />
+                  </template>
+                </q-btn>
+              </div>
+            </q-form>
+          </q-card-section>
+        </q-card>
+      </q-dialog>
+    </div>
+    <q-table flat bordered title="Productos" title-class="text-green text-weight-bolder text-h5" :rows="filteredRows"
+      :columns="columns" row-key="id" :loading="loadingg">
+
+      <template v-slot:body-cell-opciones="props">
+        <q-td :props="props">
+          <q-btn @click="cargarProductoParaEdicion(props.row)">
+            ✏️
             <q-tooltip>
-              Agregar Producto
+              Editar Producto
             </q-tooltip>
           </q-btn>
-          <!-- <q-btn label="Editar Producto" @click="mostrarFormularioEditarProducto = true" /> -->
-        </div>
+          <q-btn v-if="props.row.estado == 1" @click="inactivarProducto(props.row._id)">
+            ❌
+            <q-tooltip>
+              Inactivar Producto
+            </q-tooltip>
+          </q-btn>
+          <q-btn v-else @click="activarProducto(props.row._id)">
+            ✅
+            <q-tooltip>
+              Activar Producto
+            </q-tooltip>
+          </q-btn>
+        </q-td>
+      </template>
 
-        <!-- Diálogo para agregar producto -->
-        <q-dialog v-model="mostrarFormularioAgregarProducto"
-          v-bind="mostrarFormularioAgregarProducto && limpiarCampos()">
-          <q-card>
-            <q-card-section>
-              <div class="text-h5" style="padding: 10px 0 0 25px;">Agregar Producto</div>
-            </q-card-section>
+      <template class="a" v-slot:body-cell-estado="props">
+        <q-td class="b" :props="props">
+          <p :style="{
+            color: props.row.estado === 1 ? 'green' : 'red',
+            margin: 0,
+          }">
+            {{ props.row.estado === 1 ? "Activo" : "Inactivo" }}
+          </p>
+        </q-td>
+      </template>
 
-            <q-card-section>
-              <q-form @submit.prevent="agregarProducto">
-                <q-input v-model.trim="codigoProducto" label="Código del producto" filled required class="q-mb-md" />
-                <q-input v-model.trim="descripcionProducto" type="textarea" label="Descripción del producto" filled
-                  required class="q-mb-md" />
-                <q-input v-model="valorProducto" label="Valor del producto" type="number" filled required
-                  class="q-mb-md" min="0" />
-                <q-input v-model="cantidadProducto" label="Cantidad del producto" type="number" filled required
-                  class="q-mb-md" min="0" />
-                <q-select v-model="estadoProducto" label="Estado" filled outlined :options="estadoOptions" required
-                  class="q-mb-md" style="max-width: 100%;" />
+      <!-- Descripcion Column -->
+      <template v-slot:body-cell-descripcion="props">
+        <q-td :props="props" class="relative">
+          <div class="truncated-text" @mouseover="checkAndShowTooltip($event, props.row.descripcion, 20)"
+            @mouseleave="hideTooltip">
+            {{ truncateText(props.row.descripcion, 20) }}
+          </div>
+        </q-td>
+      </template>
 
-                <!-- Botones de acción -->
-                <div class="q-mt-md">
-                  <q-btn @click="mostrarFormularioAgregarProducto = false" label="Cancelar" color="negative"
-                    class="q-mr-sm">
-                    <q-tooltip>
-                      Cancelar
-                    </q-tooltip>
-                  </q-btn>
-                  <q-btn :loading="useProducto.loading" type="submit" label="Guardar Producto" color="primary">
-                    <q-tooltip>
-                      Guardar Producto
-                    </q-tooltip>
-                    <template v-slot:loading>
-                      <q-spinner color="white" size="1em" />
-                    </template>
-                  </q-btn>
-                </div>
-              </q-form>
-            </q-card-section>
-          </q-card>
-        </q-dialog>
-
-        <!-- Diálogo para editar producto -->
-        <q-dialog v-model="mostrarFormularioEditarProducto">
-          <q-card>
-            <q-card-section>
-              <div class="text-h5" style="padding: 10px 0 0 25px;">Editar Producto</div>
-            </q-card-section>
-
-            <q-card-section>
-              <q-form @submit.prevent="editarProducto">
-                <q-input v-model.trim="codigoProducto" label="Código del producto" filled required class="q-mb-md" />
-                <q-input v-model.trim="descripcionProducto" type="textarea" label="Descripción del producto" filled
-                  required class="q-mb-md" />
-                <q-input v-model="valorProducto" label="Valor del producto" type="number" filled required
-                  class="q-mb-md" min="0" />
-                <q-input v-model="cantidadProducto" label="Cantidad del producto" type="number" filled required
-                  class="q-mb-md" min="0" />
-                <!-- style="padding: 10px 0 0 25px;" -->
-                <!-- Botones de acción -->
-                <div class="q-mt-md">
-                  <q-btn @click="mostrarFormularioEditarProducto = false" label="Cancelar" color="negative"
-                    class="q-mr-sm">
-                    <q-tooltip>
-                      Cancelar
-                    </q-tooltip>
-                  </q-btn>
-                  <q-btn :loading="useProducto.loading" type="submit" label="Guardar Cambios" color="primary">
-                    <q-tooltip>
-                      Guardar Cambios
-                    </q-tooltip>
-                    <template v-slot:loading>
-                      <q-spinner color="white" size="1em" />
-                    </template>
-                  </q-btn>
-                </div>
-              </q-form>
-            </q-card-section>
-          </q-card>
-        </q-dialog>
-      </div>
-      <q-table flat bordered title="Productos" title-class="text-green text-weight-bolder text-h5" :rows="filteredRows"
-        :columns="columns" row-key="id" :loading="loadingg">
-
-        <template v-slot:body-cell-opciones="props">
-          <q-td :props="props">
-            <q-btn @click="cargarProductoParaEdicion(props.row)">
-              ✏️
-              <q-tooltip>
-                Editar Producto
-              </q-tooltip>
-            </q-btn>
-            <q-btn v-if="props.row.estado == 1" @click="inactivarProducto(props.row._id)">
-              ❌
-              <q-tooltip>
-                Inactivar Producto
-              </q-tooltip>
-            </q-btn>
-            <q-btn v-else @click="activarProducto(props.row._id)">
-              ✅
-              <q-tooltip>
-                Activar Producto
-              </q-tooltip>
-            </q-btn>
-          </q-td>
-        </template>
-
-        <template class="a" v-slot:body-cell-estado="props">
-          <q-td class="b" :props="props">
-            <p :style="{
-              color: props.row.estado === 1 ? 'green' : 'red',
-              margin: 0,
-            }">
-              {{ props.row.estado === 1 ? "Activo" : "Inactivo" }}
-            </p>
-          </q-td>
-        </template>
-
-        <!-- Descripcion Column -->
-        <template v-slot:body-cell-descripcion="props">
-          <q-td :props="props" class="relative">
-            <div class="truncated-text" @mouseover="checkAndShowTooltip($event, props.row.descripcion, 20)"
-              @mouseleave="hideTooltip">
-              {{ truncateText(props.row.descripcion, 20) }}
-            </div>
-          </q-td>
-        </template>
-
-        <template v-slot:loading>
-          <q-inner-loading :showing="loadingg" label="Por favor espere..." label-class="text-teal"
-            label-style="font-size: 1.1em">
-          </q-inner-loading>
-        </template>
-
-      </q-table>
-    </div>
+      <template v-slot:loading>
+        <q-inner-loading :showing="loadingg" label="Por favor espere..." label-class="text-teal"
+          label-style="font-size: 1.1em">
+        </q-inner-loading>
+      </template>
+    </q-table>
   </div>
   <q-inner-loading :showing="isLoading" label="Por favor espere..." label-class="text-teal"
     label-style="font-size: 1.1em" />
 </template>
 
 <style scoped>
+* {
+  font-family: cursive;
+  font-style: italic;
+}
+
 .contSelect {
   display: flex;
   flex-direction: row;

@@ -23,23 +23,14 @@ const codigo = ref("");
 const sede = ref("");
 const descripcion = ref("");
 const fechaIngreso = ref("");
-const fechaUltMan = ref("");
 const idMaquinaParaEditar = ref(null);
 
 const sedes = ref([])
 
 async function listarSedes() {
-  try {
-    const r = await useSede.getSedes();
-    if (r.data && r.data.sedes) {
-      sedes.value = r.data.sedes;
-      // console.log("Sedes listadas:", sedes.value);
-    } else {
-      console.error("La respuesta no contiene la propiedad 'sedes'.", r.data);
-    }
-  } catch (error) {
-    console.error("Error al listar las sedes:", error);
-  }
+  const r = await useSede.getSedes();
+  sedes.value = r.data.sedes;
+  // console.log("Sedes listadas:", sedes.value);
 }
 
 const sedeOptions = computed(() => {
@@ -88,14 +79,9 @@ const columns = ref([
     align: "center",
   },
   {
-    name: "fechaUltMan",
+    name: "updatedAt",
     label: "Fecha de Último Mantenimiento",
-    field: (row) => {
-      const fecha = new Date(row.fechaUltMan);
-      fecha.setDate(fecha.getDate() + 1);
-      const fechaFormateada = format(fecha, "dd/MM/yyyy");
-      return fechaFormateada;
-    },
+    field: (row) => format(new Date(row.updatedAt), 'dd/MM/yyyy'),
     align: "center",
   },
   { name: "estado", label: "Estado", field: "estado", align: "center" },
@@ -103,12 +89,12 @@ const columns = ref([
 ]);
 
 async function actualizarListadoMaquinas() {
-  const maquinasPromise = selectedOption.value === "Listar Maquinas Activos"
-  ? useMaquina.getMaquinasActivos()
-  : selectedOption.value === "Listar Maquinas Inactivos"
-  ? useMaquina.getMaquinasInactivos()
-  : useMaquina.getMaquinas();
-  
+  const maquinasPromise = selectedOption.value === "Listar Máquinas Activas"
+    ? useMaquina.getMaquinasActivas()
+    : selectedOption.value === "Listar Máquinas Inactivas"
+      ? useMaquina.getMaquinasInactivas()
+      : useMaquina.getMaquinas();
+
   rows.value = (await maquinasPromise).data.maquinas;
   visible.value = false;
   console.log("Maquinas", rows.value);
@@ -144,7 +130,6 @@ const limpiarCampos = () => {
   sede.value = "";
   descripcion.value = "";
   fechaIngreso.value = "";
-  fechaUltMan.value = "";
 };
 
 async function validarDatosMaquina(maquina) {
@@ -162,7 +147,6 @@ async function agregarMaquina() {
     sede: sede.value.id,
     descripcion: descripcion.value,
     fechaIngreso: fechaIngreso.value,
-    fechaUltMan: fechaUltMan.value,
     estado: estadoM.value === "Activo" ? 1 : 0
   };
 
@@ -183,7 +167,6 @@ const cargarMaquinaParaEdicion = (maquina) => {
   sede.value = maquina.sede.nombre;
   descripcion.value = maquina.descripcion;
   fechaIngreso.value = maquina.fechaIngreso.split("T")[0];
-  fechaUltMan.value = maquina.fechaUltMan.split("T")[0];
 
   mostrarFormularioEditarMaquina.value = true;
   console.log("Datos de la máquina a editar:", maquina);
@@ -193,16 +176,21 @@ const editarMaquina = async () => {
   let idSede = sede.value.id;
   for (let sedee of sedes.value) {
     if (sedee.nombre == sede.value) {
-      idSede = sedee._id
-      break;
+      if (sedee.estado == 1) {
+        idSede = sedee._id
+        break;
+      } else {
+        notifyErrorRequest("Sede seleccionada inactiva")
+        return;
+      }
     }
   }
+
   const maquinaEditada = {
     codigo: codigo.value,
     sede: idSede,
     descripcion: descripcion.value,
     fechaIngreso: fechaIngreso.value,
-    fechaUltMan: fechaUltMan.value,
   };
 
   if (await validarDatosMaquina(maquinaEditada)) {
@@ -250,191 +238,191 @@ watch(selectedOption, () =>
 </script>
 
 <template>
-  <div>
-    <div class="q-pa-md" v-if="!visible">
-      <div>
-        <h3 style="text-align: center; margin: 10px">Máquinas</h3>
-        <hr style="width: 70%; height: 5px; background-color: green" />
+  <div class="q-pa-md" v-if="!visible">
+    <div>
+      <h3 style="text-align: center; margin: 10px">Máquinas</h3>
+      <hr style="width: 70%; height: 5px; background-color: green" />
+    </div>
+
+    <div class="contSelect" style="margin-left: 5%; text-align: end; margin-right: 5%">
+      <q-select background-color="green" class="q-my-md" v-model="selectedOption" outlined dense options-dense
+        emit-value :options="options" />
+
+      <input v-if="selectedOption === 'Listar Máquina por Código'" v-model="codigoMaquina" class="q-my-md" type="text"
+        name="search" id="codigoMaquina" placeholder="Código de la máquina" />
+    </div>
+
+    <div>
+      <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
+        <q-btn label="Agregar Máquina" @click="mostrarFormularioAgregarMaquina = true">
+          <!-- <q-btn label="Editar Máquina" @click="mostrarFormularioEditarMaquina = true" /> -->
+          <q-tooltip>
+            Agregar Máquina
+          </q-tooltip>
+        </q-btn>
       </div>
+      <!-- Dialogo para agregar máquina -->
+      <q-dialog v-model="mostrarFormularioAgregarMaquina" v-bind="mostrarFormularioAgregarMaquina && limpiarCampos()">
+        <q-card>
+          <q-card-section>
+            <div class="text-h5" style="padding: 10px 0 0 25px;">Agregar Máquina</div>
+          </q-card-section>
 
-      <div class="contSelect" style="margin-left: 5%; text-align: end; margin-right: 5%">
-        <q-select background-color="green" class="q-my-md" v-model="selectedOption" outlined dense options-dense
-          emit-value :options="options" />
+          <q-card-section>
+            <div class="q-pa-md">
+              <q-form @submit.prevent="agregarMaquina">
+                <!-- Campos del formulario de agregar máquina -->
+                <q-input v-model.trim="codigo" label="Código" filled outlined class="q-mb-md" required />
+                <q-select v-model="sede" label="Sede" filled outlined :options="sedeOptions" class="q-mb-md"
+                  style="max-width: 100%;">
+                  <template v-slot:no-option>
+                    <q-item>
+                      <q-item-section>
+                        No results
+                      </q-item-section>
+                    </q-item>
+                  </template>
+                </q-select>
+                <q-input v-model.trim="descripcion" label="Descripción" type="textarea" filled outlined class="q-mb-md"
+                  required />
+                <q-input v-model="fechaIngreso" label="Fecha de Ingreso" filled type="date" outlined class="q-mb-md"
+                  required />
+                <q-select v-model="estadoM" label="Estado" outlined :options="estadoOptions" filled class="q-mb-md"
+                  style="max-width: 100%;" />
 
-        <input v-if="selectedOption === 'Listar Máquina por Código'" v-model="codigoMaquina" class="q-my-md" type="text"
-          name="search" id="codigoMaquina" placeholder="Código de la máquina" />
-      </div>
+                <!-- Botones de acción -->
+                <div class="q-mt-md">
+                  <q-btn @click="mostrarFormularioAgregarMaquina = false" label="Cancelar" color="negative"
+                    class="q-ma-sm">
+                    <q-tooltip>
+                      Cancelar
+                    </q-tooltip>
+                  </q-btn>
+                  <q-btn :loading="useMaquina.loading" :disable="useMaquina.loading" type="submit" label="Guardar Máquina" color="primary"
+                    class="q-ma-sm">
+                    <q-tooltip>
+                      Guardar Máquina
+                    </q-tooltip>
+                    <template v-slot:loading>
+                      <q-spinner color="white" size="1em" />
+                    </template>
+                  </q-btn>
+                </div>
+              </q-form>
+            </div>
+          </q-card-section>
+        </q-card>
+      </q-dialog>
 
-      <div>
-        <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
-          <q-btn label="Agregar Máquina" @click="mostrarFormularioAgregarMaquina = true">
-            <!-- <q-btn label="Editar Máquina" @click="mostrarFormularioEditarMaquina = true" /> -->
+      <!-- Dialogo para editar máquina -->
+      <q-dialog v-model="mostrarFormularioEditarMaquina">
+        <q-card>
+          <q-card-section>
+            <div class="text-h5" style="padding: 10px 0 0 25px;">Editar Máquina</div>
+          </q-card-section>
+
+          <q-card-section>
+            <div class="q-pa-md">
+              <q-form @submit.prevent="editarMaquina">
+                <!-- Campos del formulario de editar máquina -->
+                <q-input v-model.trim="codigo" label="Código" filled outlined class="q-mb-md" required />
+                <q-select v-model="sede" label="Sede" filled outlined :options="sedeOptions" class="q-mb-md"
+                  style="max-width: 100%;">
+                  <template v-slot:no-option>
+                    <q-item>
+                      <q-item-section>
+                        No results
+                      </q-item-section>
+                    </q-item>
+                  </template>
+                </q-select>
+                <q-input v-model.trim="descripcion" label="Descripción" type="textarea" filled outlined class="q-mb-md"
+                  required />
+                <q-input v-model="fechaIngreso" label="Fecha de Ingreso" filled type="date" outlined class="q-mb-md"
+                  required />
+
+                <!-- Botones de acción -->
+                <div class="q-mt-md">
+                  <q-btn @click="mostrarFormularioEditarMaquina = false" label="Cancelar" color="negative"
+                    class="q-ma-sm">
+                    <q-tooltip>
+                      Cancelar
+                    </q-tooltip>
+                  </q-btn>
+                  <q-btn :loading="useMaquina.loading" :disable="useMaquina.loading" type="submit" label="Guardar Cambios" color="primary"
+                    class="q-ma-sm">
+                    <q-tooltip>
+                      Guardar Cambios
+                    </q-tooltip>
+                    <template v-slot:loading>
+                      <q-spinner color="white" size="1em" />
+                    </template>
+                  </q-btn>
+                </div>
+              </q-form>
+            </div>
+          </q-card-section>
+        </q-card>
+      </q-dialog>
+    </div>
+
+    <q-table flat bordered title="Maquinas" title-class="text-green text-weight-bolder text-h5" :rows="filtrarFilas"
+      :columns="columns" row-key="id">
+      <template v-slot:body-cell-opciones="props">
+        <q-td :props="props">
+          <q-btn @click="cargarMaquinaParaEdicion(props.row)">
+            ✏️
             <q-tooltip>
-              Agregar Máquina
+              Editar Maquina
             </q-tooltip>
           </q-btn>
-        </div>
-        <!-- Dialogo para agregar máquina -->
-        <q-dialog v-model="mostrarFormularioAgregarMaquina" v-bind="mostrarFormularioAgregarMaquina && limpiarCampos()">
-          <q-card>
-            <q-card-section>
-              <div class="text-h5" style="padding: 10px 0 0 25px;">Agregar Máquina</div>
-            </q-card-section>
+          <q-btn v-if="props.row.estado == 1" @click="inactivarMaquina(props.row._id)">
+            ❌
+            <q-tooltip>
+              Inactivar Maquina
+            </q-tooltip>
+          </q-btn>
+          <q-btn v-else @click="activarMaquina(props.row._id)">
+            ✅
+            <q-tooltip>
+              Activar Maquina
+            </q-tooltip>
+          </q-btn>
+        </q-td>
+      </template>
 
-            <q-card-section>
-              <div class="q-pa-md">
-                <q-form @submit.prevent="agregarMaquina">
-                  <!-- Campos del formulario de agregar máquina -->
-                  <q-input v-model.trim="codigo" label="Código" filled outlined class="q-mb-md" required />
-                  <q-select v-model="sede" label="Sede" filled outlined :options="sedeOptions" class="q-mb-md"
-                    style="max-width: 100%;">
-                    <template v-slot:no-option>
-                      <q-item>
-                        <q-item-section>
-                          No results
-                        </q-item-section>
-                      </q-item>
-                    </template>
-                  </q-select>
-                  <q-input v-model.trim="descripcion" label="Descripción" type="textarea" filled outlined
-                    class="q-mb-md" required />
-                  <q-input v-model="fechaIngreso" label="Fecha de Ingreso" filled type="date" outlined class="q-mb-md"
-                    required />
-                  <q-input v-model="fechaUltMan" label="Fecha de Último Mantenimiento" filled type="date" outlined
-                    class="q-mb-md" required />
-                  <q-select v-model="estadoM" label="Estado" outlined :options="estadoOptions" filled class="q-mb-md"
-                    style="max-width: 100%;" />
+      <template class="a" v-slot:body-cell-estado="props">
+        <q-td class="b" :props="props">
+          <p :style="{
+            color: props.row.estado === 1 ? 'green' : 'red',
+            margin: 0,
+          }">
+            {{ props.row.estado === 1 ? "Activo" : "Inactivo" }}
+          </p>
+        </q-td>
+      </template>
 
-                  <!-- Botones de acción -->
-                  <div class="q-mt-md">
-                    <q-btn @click="mostrarFormularioAgregarMaquina = false" label="Cancelar" color="negative"
-                      class="q-ma-sm">
-                      <q-tooltip>
-                        Cancelar
-                      </q-tooltip>
-                    </q-btn>
-                    <q-btn :loading="useMaquina.loading" type="submit" label="Guardar Máquina" color="primary"
-                      class="q-ma-sm">
-                      <q-tooltip>
-                        Guardar Máquina
-                      </q-tooltip>
-                      <template v-slot:loading>
-                        <q-spinner color="white" size="1em" />
-                      </template>
-                    </q-btn>
-                  </div>
-                </q-form>
-              </div>
-            </q-card-section>
-          </q-card>
-        </q-dialog>
-
-        <!-- Dialogo para editar máquina -->
-        <q-dialog v-model="mostrarFormularioEditarMaquina">
-          <q-card>
-            <q-card-section>
-              <div class="text-h5" style="padding: 10px 0 0 25px;">Editar Máquina</div>
-            </q-card-section>
-
-            <q-card-section>
-              <div class="q-pa-md">
-                <q-form @submit.prevent="editarMaquina">
-                  <!-- Campos del formulario de editar máquina -->
-                  <q-input v-model.trim="codigo" label="Código" filled outlined class="q-mb-md" required />
-                  <q-select v-model="sede" label="Sede" filled outlined :options="sedeOptions" class="q-mb-md"
-                    style="max-width: 100%;">
-                    <template v-slot:no-option>
-                      <q-item>
-                        <q-item-section>
-                          No results
-                        </q-item-section>
-                      </q-item>
-                    </template>
-                  </q-select>
-                  <q-input v-model.trim="descripcion" label="Descripción" type="textarea" filled outlined
-                    class="q-mb-md" required />
-                  <q-input v-model="fechaIngreso" label="Fecha de Ingreso" filled type="date" outlined class="q-mb-md"
-                    required />
-                  <q-input v-model="fechaUltMan" label="Fecha de Último Mantenimiento" filled type="date" outlined
-                    class="q-mb-md" required />
-                  <!-- Botones de acción -->
-                  <div class="q-mt-md">
-                    <q-btn @click="mostrarFormularioEditarMaquina = false" label="Cancelar" color="negative"
-                      class="q-ma-sm">
-                      <q-tooltip>
-                        Cancelar
-                      </q-tooltip>
-                    </q-btn>
-                    <q-btn :loading="useMaquina.loading" type="submit" label="Guardar Cambios" color="primary"
-                      class="q-ma-sm">
-                      <q-tooltip>
-                        Guardar Cambios
-                      </q-tooltip>
-                      <template v-slot:loading>
-                        <q-spinner color="white" size="1em" />
-                      </template>
-                    </q-btn>
-                  </div>
-                </q-form>
-              </div>
-            </q-card-section>
-          </q-card>
-        </q-dialog>
-      </div>
-
-      <q-table flat bordered title="Maquinas" title-class="text-green text-weight-bolder text-h5" :rows="filtrarFilas"
-        :columns="columns" row-key="id">
-        <template v-slot:body-cell-opciones="props">
-          <q-td :props="props">
-            <q-btn @click="cargarMaquinaParaEdicion(props.row)">
-              ✏️
-              <q-tooltip>
-                Editar Maquina
-              </q-tooltip>
-            </q-btn>
-            <q-btn v-if="props.row.estado == 1" @click="inactivarMaquina(props.row._id)">
-              ❌
-              <q-tooltip>
-                Inactivar Maquina
-              </q-tooltip>
-            </q-btn>
-            <q-btn v-else @click="activarMaquina(props.row._id)">
-              ✅
-              <q-tooltip>
-                Activar Maquina
-              </q-tooltip>
-            </q-btn>
-          </q-td>
-        </template>
-
-        <template class="a" v-slot:body-cell-estado="props">
-          <q-td class="b" :props="props">
-            <p :style="{
-              color: props.row.estado === 1 ? 'green' : 'red',
-              margin: 0,
-            }">
-              {{ props.row.estado === 1 ? "Activo" : "Inactivo" }}
-            </p>
-          </q-td>
-        </template>
-
-        <!-- Descripcion Column -->
-        <template v-slot:body-cell-descripcion="props">
-          <q-td :props="props" class="relative">
-            <div class="truncated-text" @mouseover="checkAndShowTooltip($event, props.row.descripcion, 20)"
-              @mouseleave="hideTooltip">
-              {{ truncateText(props.row.descripcion, 20) }}
-            </div>
-          </q-td>
-        </template>
-      </q-table>
-    </div>
+      <!-- Descripcion Column -->
+      <template v-slot:body-cell-descripcion="props">
+        <q-td :props="props" class="relative">
+          <div class="truncated-text" @mouseover="checkAndShowTooltip($event, props.row.descripcion, 20)"
+            @mouseleave="hideTooltip">
+            {{ truncateText(props.row.descripcion, 20) }}
+          </div>
+        </q-td>
+      </template>
+    </q-table>
   </div>
   <q-inner-loading :showing="isLoading" label="Por favor espere..." label-class="text-teal"
     label-style="font-size: 1.1em" />
 </template>
 
 <style scoped>
+* {
+  font-family: cursive;
+  font-style: italic;
+}
+
 .contSelect {
   display: flex;
   flex-direction: row;

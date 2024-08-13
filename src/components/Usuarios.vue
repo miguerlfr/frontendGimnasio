@@ -87,13 +87,13 @@ async function actualizarListadoUsuarios() {
 
 async function inactivarUsuario(id) {
   const r = await useUsuario.putUsuariosInactivar(id);
-  console.log(r.data);
+  // console.log(r.data);
   actualizarListadoUsuarios();
 }
 
 async function activarUsuario(id) {
   const r = await useUsuario.putUsuariosActivar(id);
-  console.log(r.data);
+  // console.log(r.data);
   actualizarListadoUsuarios();
 }
 
@@ -125,8 +125,13 @@ const editarUsuario = async () => {
   // Por si no cambio de sede tomar el valor del id de la sede
   for (let sedee of sedes.value) {
     if (sedee.nombre === sede.value) {
-      idSede = sedee._id;
-      break;
+      if (sedee.estado == 1) {
+        idSede = sedee._id;
+        break;
+      } else {
+        notifyErrorRequest("Sede seleccionada inactiva")
+        return;
+      }
     }
   }
   const datosUsuario = {
@@ -207,6 +212,9 @@ const sedeOptions = computed(() => {
     }));
 });
 
+// Propiedad calculada para comprobar si el usuario es un administrador
+const esAdmin = computed(() => useUsuario.user.rol === 'Administrador');
+
 const isLoading = computed(() => visible.value);
 
 // Funciones auxiliares
@@ -232,114 +240,112 @@ watch(selectedOption, () =>
 </script>
 
 <template>
-  <div>
-    <div class="q-pa-md" v-if="!visible">
-      <div>
-        <h3 style="text-align: center; margin: 10px">Usuarios</h3>
-        <hr style="width: 70%; height: 5px; background-color: green" />
+  <div class="q-pa-md" v-if="!visible">
+    <div>
+      <h3 style="text-align: center; margin: 10px">Usuarios</h3>
+      <hr style="width: 70%; height: 5px; background-color: green" />
+    </div>
+
+    <div class="contSelect" style="margin-left: 5%; text-align: end; margin-right: 5%">
+      <q-select background-color="green" class="q-my-md" v-model="selectedOption" outlined dense options-dense
+        emit-value :options="options" />
+
+      <input v-if="selectedOption === 'Listar Usuario por su Email'" v-model="emailUsuario" class="q-my-md" type="email"
+        name="emailUsuario" id="emailUsuario" placeholder="Email del usuario" />
+    </div>
+
+    <div>
+      <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
+        <q-btn label="Agregar Usuario" @click="mostrarFormularioAgregarUsuarios = true">
+          <!-- <q-btn label="Editar Usuario" @click="mostrarFormularioEditarUsuarios = true" /> -->
+          <q-tooltip>
+            Agregar Usuario
+          </q-tooltip>
+        </q-btn>
       </div>
 
-      <div class="contSelect" style="margin-left: 5%; text-align: end; margin-right: 5%">
-        <q-select background-color="green" class="q-my-md" v-model="selectedOption" outlined dense options-dense
-          emit-value :options="options" />
+      <!-- Formulario para agregar usuario -->
+      <q-dialog v-model="mostrarFormularioAgregarUsuarios" v-bind="mostrarFormularioAgregarUsuarios && limpiarCampos()">
+        <q-card>
+          <q-card-section>
+            <div class="text-h6">Agregar Usuario</div>
+          </q-card-section>
+          <q-card-section>
+            <q-form @submit.prevent="agregarUsuario">
+              <q-select v-model="sede" label="Sede" filled outlined :options="sedeOptions" class="q-mb-md"
+                style="max-width: 100%;">
+                <template v-slot:no-option>
+                  <q-item>
+                    <q-item-section>
+                      No results
+                    </q-item-section>
+                  </q-item>
+                </template>
+              </q-select>
+              <q-input v-model.trim="nombre" label="Nombre" filled outlined autocomplete="username"
+                @dblclick="seleccionarTodoElTexto" class="q-mb-md" required />
+              <q-input v-model.trim="email" label="Email" filled type="email" outlined autocomplete="email"
+                class="q-mb-md" required />
+              <q-input v-model="telefono" label="Telefono" type="number" filled outlined autocomplete="tel"
+                @dblclick="seleccionarTodoElTexto" class="q-mb-md" min="0" required />
 
-        <input v-if="selectedOption === 'Listar Usuario por su Email'" v-model="emailUsuario" class="q-my-md"
-          type="email" name="emailUsuario" id="emailUsuario" placeholder="Email del usuario" />
-      </div>
+              <q-input v-model="password" filled :type="isPwd ? 'password' : 'text'" placeholder="Password"
+                class="q-mb-md">
+                <template v-slot:append>
+                  <q-icon :name="isPwd ? 'visibility_off' : 'visibility'" class="cursor-pointer"
+                    @click="isPwd = !isPwd" />
+                </template>
+              </q-input>
 
-      <div>
-        <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
-          <q-btn label="Agregar Usuario" @click="mostrarFormularioAgregarUsuarios = true">
-            <!-- <q-btn label="Editar Usuario" @click="mostrarFormularioEditarUsuarios = true" /> -->
-            <q-tooltip>
-              Agregar Usuario
-            </q-tooltip>
-          </q-btn>
-        </div>
+              <q-select v-model="rol" label="Rol" filled outlined :options="rolOptions" class="q-mb-md"
+                @dblclick="seleccionarTodoElTexto" style="max-width: 100%;" />
+              <q-select v-model="estado" label="Estado" filled outlined :options="estadoOptions" class="q-mb-md"
+                style="max-width: 100%;" />
+              <q-btn @click="mostrarFormularioAgregarUsuarios = false" label="Cancelar" class="q-ma-sm">
+                <q-tooltip>
+                  Cancelar
+                </q-tooltip>
+              </q-btn>
+              <q-btn :loading="useUsuario.loading" :disable="useUsuario.loading" type="submit" label="Guardar Usuario"
+                color="primary" class="q-ma-sm">
+                <q-tooltip>
+                  Guardar Usuario
+                </q-tooltip>
+                <template v-slot:loading>
+                  <q-spinner color="white" size="1em" />
+                </template>
+              </q-btn>
+            </q-form>
+          </q-card-section>
+        </q-card>
+      </q-dialog>
 
-        <!-- Formulario para agregar usuario -->
-        <q-dialog v-model="mostrarFormularioAgregarUsuarios"
-          v-bind="mostrarFormularioAgregarUsuarios && limpiarCampos()">
-          <q-card>
-            <q-card-section>
-              <div class="text-h6">Agregar Usuario</div>
-            </q-card-section>
-            <q-card-section>
-              <q-form @submit.prevent="agregarUsuario">
-                <q-select v-model="sede" label="Sede" filled outlined :options="sedeOptions" class="q-mb-md"
-                  style="max-width: 100%;">
-                  <template v-slot:no-option>
-                    <q-item>
-                      <q-item-section>
-                        No results
-                      </q-item-section>
-                    </q-item>
-                  </template>
-                </q-select>
-                <q-input v-model.trim="nombre" label="Nombre" filled outlined autocomplete="username"
-                  @dblclick="seleccionarTodoElTexto" class="q-mb-md" required />
-                <q-input v-model.trim="email" label="Email" filled type="email" outlined autocomplete="email"
-                  class="q-mb-md" required />
-                <q-input v-model="telefono" label="Telefono" type="number" filled outlined autocomplete="tel"
-                  @dblclick="seleccionarTodoElTexto" class="q-mb-md" min="0" required />
+      <!-- Formulario para editar usuario -->
+      <q-dialog v-model="mostrarFormularioEditarUsuarios">
+        <q-card>
+          <q-card-section>
+            <div class="text-h6">Editar Usuario</div>
+          </q-card-section>
+          <q-card-section>
+            <q-form @submit.prevent="editarUsuario">
+              <q-select v-model="sede" label="Sede" filled outlined :options="sedeOptions" class="q-mb-md"
+                style="max-width: 100%;">
+                <template v-slot:no-option>
+                  <q-item>
+                    <q-item-section>
+                      No results
+                    </q-item-section>
+                  </q-item>
+                </template>
+              </q-select>
+              <q-input v-model.trim="nombre" label="Nombre" filled outlined autocomplete="username"
+                @dblclick="seleccionarTodoElTexto" class="q-mb-md" required />
+              <q-input v-model.trim="email" label="Email" type="email" filled outlined autocomplete="email"
+                class="q-mb-md" required />
+              <q-input v-model="telefono" label="Telefono" type="number" filled outlined autocomplete="tel"
+                @dblclick="seleccionarTodoElTexto" class="q-mb-md" min="0" required />
 
-                <q-input v-model="password" filled :type="isPwd ? 'password' : 'text'" placeholder="Password"
-                  class="q-mb-md">
-                  <template v-slot:append>
-                    <q-icon :name="isPwd ? 'visibility_off' : 'visibility'" class="cursor-pointer"
-                      @click="isPwd = !isPwd" />
-                  </template>
-                </q-input>
-
-                <q-select v-model="rol" label="Rol" filled outlined :options="rolOptions" class="q-mb-md"
-                  @dblclick="seleccionarTodoElTexto" style="max-width: 100%;" />
-                <q-select v-model="estado" label="Estado" filled outlined :options="estadoOptions" class="q-mb-md"
-                  style="max-width: 100%;" />
-                <q-btn @click="mostrarFormularioAgregarUsuarios = false" label="Cancelar" class="q-ma-sm">
-                  <q-tooltip>
-                    Cancelar
-                  </q-tooltip>
-                </q-btn>
-                <q-btn :loading="useUsuario.loading" type="submit" label="Guardar Usuario" color="primary"
-                  class="q-ma-sm">
-                  <q-tooltip>
-                    Guardar Usuario
-                  </q-tooltip>
-                  <template v-slot:loading>
-                    <q-spinner color="white" size="1em" />
-                  </template>
-                </q-btn>
-              </q-form>
-            </q-card-section>
-          </q-card>
-        </q-dialog>
-
-        <!-- Formulario para editar usuario -->
-        <q-dialog v-model="mostrarFormularioEditarUsuarios">
-          <q-card>
-            <q-card-section>
-              <div class="text-h6">Editar Usuario</div>
-            </q-card-section>
-            <q-card-section>
-              <q-form @submit.prevent="editarUsuario">
-                <q-select v-model="sede" label="Sede" filled outlined :options="sedeOptions" class="q-mb-md"
-                  style="max-width: 100%;">
-                  <template v-slot:no-option>
-                    <q-item>
-                      <q-item-section>
-                        No results
-                      </q-item-section>
-                    </q-item>
-                  </template>
-                </q-select>
-                <q-input v-model.trim="nombre" label="Nombre" filled outlined autocomplete="username"
-                  @dblclick="seleccionarTodoElTexto" class="q-mb-md" required />
-                <q-input v-model.trim="email" label="Email" type="email" filled outlined autocomplete="email"
-                  class="q-mb-md" required />
-                <q-input v-model="telefono" label="Telefono" type="number" filled outlined autocomplete="tel"
-                  @dblclick="seleccionarTodoElTexto" class="q-mb-md" min="0" required />
-
-                <!-- <q-input v-model="password" filled :type="isPwd ? 'password' : 'text'" placeholder="Password"
+              <!-- <q-input v-model="password" filled :type="isPwd ? 'password' : 'text'" placeholder="Password"
                   class="q-m|b-md">
                   <template v-slot:append>
                     <q-icon :name="isPwd ? 'visibility_off' : 'visibility'" class="cursor-pointer"
@@ -347,87 +353,88 @@ watch(selectedOption, () =>
                   </template>
                 </q-input> -->
 
-                <q-select v-model="rol" label="Rol" filled outlined :options="rolOptions" class="q-mb-md"
-                  @dblclick="seleccionarTodoElTexto" style="max-width: 100%;" />
-                <q-btn @click="mostrarFormularioEditarUsuarios = false" label="Cancelar" class="q-ma-sm">
-                  <q-tooltip>
-                    Cancelar
-                  </q-tooltip>
-                </q-btn>
-                <q-btn :loading="useUsuario.loading" type="submit" label="Guardar cambios" color="primary"
-                  class="q-ma-sm">
-                  <q-tooltip>
-                    Guardar cambios
-                  </q-tooltip>
-                  <template v-slot:loading>
-                    <q-spinner color="white" size="1em" />
-                  </template>
-                </q-btn>
-              </q-form>
-            </q-card-section>
-          </q-card>
-        </q-dialog>
-      </div>
-
-      <q-table flat bordered title="Usuarios" title-class="text-green text-weight-bolder text-h5" :rows="filtrarFilas"
-        :columns="columns" row-key="id">
-        <q-select background-color="green" class="q-my-md" v-model="selectedOption" outlined dense options-dense
-          emit-value :options="options" />
-        <template v-slot:body-cell-opciones="props">
-          <q-td :props="props">
-            <q-btn @click="mostrarDatosParaEditar(props.row)">
-              ✏️
-              <q-tooltip>
-                Editar Usuario
-              </q-tooltip>
-            </q-btn>
-            <q-btn v-if="props.row.estado == 1" @click="inactivarUsuario(props.row._id)">
-              ❌
-              <q-tooltip>
-                Inactivar Usuario
-              </q-tooltip>
-            </q-btn>
-            <q-btn v-else @click="activarUsuario(props.row._id)">
-              ✅
-              <q-tooltip>
-                Activar Usuario
-              </q-tooltip>
-            </q-btn>
-          </q-td>
-        </template>
-
-        <template class="a" v-slot:body-cell-estado="props">
-          <q-td class="b" :props="props">
-            <p :style="{
-              color: props.row.estado === 1 ? 'green' : 'red',
-              margin: 0,
-            }">
-              {{ props.row.estado === 1 ? "Activo" : "Inactivo" }}
-            </p>
-          </q-td>
-        </template>
-      </q-table>
+              <q-select v-model="rol" label="Rol" filled outlined :options="rolOptions" class="q-mb-md"
+                @dblclick="seleccionarTodoElTexto" style="max-width: 100%;" />
+              <q-btn @click="mostrarFormularioEditarUsuarios = false" label="Cancelar" class="q-ma-sm">
+                <q-tooltip>
+                  Cancelar
+                </q-tooltip>
+              </q-btn>
+              <q-btn :loading="useUsuario.loading" :disable="useUsuario.loading" type="submit" label="Guardar cambios"
+                color="primary" class="q-ma-sm">
+                <q-tooltip>
+                  Guardar cambios
+                </q-tooltip>
+                <template v-slot:loading>
+                  <q-spinner color="white" size="1em" />
+                </template>
+              </q-btn>
+            </q-form>
+          </q-card-section>
+        </q-card>
+      </q-dialog>
     </div>
+
+    <q-table flat bordered title="Usuarios" title-class="text-green text-weight-bolder text-h5" :rows="filtrarFilas"
+      :columns="columns" row-key="id">
+      <q-select background-color="green" class="q-my-md" v-model="selectedOption" outlined dense options-dense
+        emit-value :options="options" />
+      <template v-slot:body-cell-opciones="props">
+        <q-td :props="props">
+          <q-btn @click="mostrarDatosParaEditar(props.row)">
+            ✏️
+            <q-tooltip>
+              Editar Usuario
+            </q-tooltip>
+          </q-btn>
+          <!-- Botón para Inactivar Usuario -->
+          <q-btn v-if="!(props.row._id === useUsuario.user._id && esAdmin) && props.row.estado === 1"
+            @click="inactivarUsuario(props.row._id)">
+            ❌
+            <q-tooltip>
+              Inactivar Usuario
+            </q-tooltip>
+          </q-btn>
+
+          <!-- Botón para Activar Usuario -->
+          <q-btn v-if="!(props.row._id === useUsuario.user._id && esAdmin) && props.row.estado === 0"
+            @click="activarUsuario(props.row._id)">
+            ✅
+            <q-tooltip>
+              Activar Usuario
+            </q-tooltip>
+          </q-btn>
+
+        </q-td>
+      </template>
+
+      <template class="a" v-slot:body-cell-estado="props">
+        <q-td class="b" :props="props">
+          <p :style="{
+            color: props.row.estado === 1 ? 'green' : 'red',
+            margin: 0,
+          }">
+            {{ props.row.estado === 1 ? "Activo" : "Inactivo" }}
+          </p>
+        </q-td>
+      </template>
+    </q-table>
   </div>
   <q-inner-loading :showing="isLoading" label="Por favor espere..." label-class="text-teal"
     label-style="font-size: 1.1em" />
 </template>
 
 <style scoped>
+* {
+  font-family: cursive;
+  font-style: italic;
+}
+
 .contSelect {
   display: flex;
   flex-direction: row;
   gap: 20px;
 }
-
-/* .eye-wrapper {
-  display: flex;
-  align-items: center;
-}
-
-.eye-icon {
-  font-size: 24px;
-} */
 
 .q-select {
   max-width: 200px;

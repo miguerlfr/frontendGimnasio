@@ -31,7 +31,7 @@ const seguimientoSeleccionado = ref(null);
 
 // Variables reactivas para los datos del cliente
 const nombreCliente = ref(""),
-  telefonoCliente = ref(""),
+  emailCliente = ref(""),
   idClienteSeleccionado = ref(null),
   fechaIngresoCliente = ref(""),
   documentoCliente = ref(""),
@@ -117,7 +117,7 @@ let columns = ref([
     field: "direccion",
     align: "center",
   },
-  { name: "telefono", label: "Telefono", field: "telefono", align: "center" },
+  { name: "email", label: "Email", field: "email", align: "center" },
   {
     name: "objetivo",
     label: "Objetivo",
@@ -234,7 +234,7 @@ async function agregarCliente() {
     fechaNacimiento: fechaNacimientoCliente.value,
     edad: edadCliente.value,
     direccion: direccionCliente.value,
-    telefono: telefonoCliente.value,
+    email: emailCliente.value,
     objetivo: objetivoCliente.value,
     observaciones: observacionesCliente.value,
     estado: estadoCliente.value === "Activo" ? 1 : 0,
@@ -258,25 +258,34 @@ async function editarCliente() {
 
   for (let plan of planes.value) {
     if (plan.descripcion === planCliente.value) {
+      if(plan.estado == 1){
       planActual = plan._id;
       break;
+      } else {
+        notifyErrorRequest("Plan seleccionado inactivo")
+        return;
+      }
     }
   }
+
+  console.log("p",planCliente.value);
+  
   const clienteEditado = {
+    _id: idClienteSeleccionado.value,
     nombre: nombreCliente.value,
     fechaIngreso: fechaIngresoCliente.value,
     documento: documentoCliente.value,
     fechaNacimiento: fechaNacimientoCliente.value,
     edad: edadCliente.value,
     direccion: direccionCliente.value,
-    telefono: telefonoCliente.value,
+    email: emailCliente.value,
     objetivo: objetivoCliente.value,
     observaciones: observacionesCliente.value,
     plan: planActual,
     fechaVencimiento: fechaVencimientoCliente.value,
     seguimiento: seguimientoCliente.value
   };
-
+  console.log("Datos del cliente a validar:", clienteEditado);
   if (await validarDatosCliente(clienteEditado)) {
     const r = await useCliente.putClientes(idClienteSeleccionado.value, clienteEditado);
     if (r.status == 200) {
@@ -295,7 +304,7 @@ const limpiarCampos = () => {
   fechaNacimientoCliente.value = '';
   edadCliente.value = '';
   direccionCliente.value = '';
-  telefonoCliente.value = '';
+  emailCliente.value = '';
   objetivoCliente.value = '';
   observacionesCliente.value = '';
   planCliente.value = '';
@@ -307,7 +316,7 @@ const limpiarCampos = () => {
 const cargarClienteParaEdicion = (cliente) => {
   idClienteSeleccionado.value = cliente._id;
   nombreCliente.value = cliente.nombre;
-  telefonoCliente.value = cliente.telefono;
+  emailCliente.value = cliente.email;
   fechaIngresoCliente.value = cliente.fechaIngreso.split("T")[0];
   documentoCliente.value = cliente.documento;
   fechaNacimientoCliente.value = cliente.fechaNacimiento.split("T")[0];
@@ -334,10 +343,10 @@ const cargarClienteParaEdicion = (cliente) => {
 };
 
 async function validarDatosCliente(cliente) {
-  const { /* fechaIngreso, */  fechaNacimiento, documento, telefono, plan } = cliente;
+  const { /* fechaIngreso, */  fechaNacimiento, documento, email, plan } = cliente;
 
   const documentoLength = documento.toString().length;
-  const telefonoLength = telefono.toString();
+  const emailLength = email.toString();
 
   // Validar fecha de ingreso
   // if (fechaIngreso && new Date(fechaIngreso).toISOString().split('T')[0] < new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().split('T')[0]) {
@@ -355,12 +364,8 @@ async function validarDatosCliente(cliente) {
     notifyErrorRequest(`El Documento no puede tener más de 18 dígitos.`);
     return false;
   }
-  if (telefonoLength.length < 7) {
+  if (emailLength.length < 7) {
     notifyErrorRequest("El Teléfono debe tener al menos 7 dígitos.");
-    return false;
-  }
-  if (telefonoLength.length > 15) {
-    notifyErrorRequest("El Teléfono no puede tener más de 15 dígitos.");
     return false;
   }
   if (plan === '') {
@@ -481,7 +486,6 @@ watch(selectedOption, () =>
 
 <template>
   <div class="q-pa-md" v-if="!visible">
-    <div>
       <div>
         <h3 style="text-align: center; margin: 10px">Clientes</h3>
         <hr style="width: 70%; height: 5px; background-color: green" />
@@ -540,7 +544,7 @@ watch(selectedOption, () =>
                     <q-input v-model="edadCliente" label="Edad" type="number" filled class="q-mb-md"
                       style="display: none" />
                     <q-input v-model.trim="direccionCliente" label="Dirección" filled required class="q-mb-md" />
-                    <q-input v-model="telefonoCliente" label="Teléfono" type="number" filled required class="q-mb-md"
+                    <q-input v-model="emailCliente" label="Email" type="string" filled required class="q-mb-md"
                       min="0" />
                     <q-input v-model.trim="objetivoCliente" label="Objetivo" type="textarea" filled required
                       class="q-mb-md" />
@@ -605,7 +609,7 @@ watch(selectedOption, () =>
                       </q-tooltip>
                     </q-btn>
                   </div>
-                  <q-btn :loading="useCliente.loading" type="submit" label="Guardar Cliente" color="primary"
+                  <q-btn :loading="useCliente.loading" :disable="useCliente.loading" type="submit" label="Guardar Cliente" color="primary"
                     class="q-ma-sm">
                     <q-tooltip>
                       Guardar Cliente
@@ -649,7 +653,7 @@ watch(selectedOption, () =>
                     <q-input v-model="edadCliente" label="Edad" type="number" filled class="q-mb-md"
                       style="display: none" />
                     <q-input v-model.trim="direccionCliente" label="Dirección" filled class="q-mb-md" required />
-                    <q-input v-model="telefonoCliente" label="Teléfono" type="number" filled required class="q-mb-md"
+                    <q-input v-model="emailCliente" label="Email" type="string" filled required class="q-mb-md"
                       min="0" />
                     <q-input v-model.trim="objetivoCliente" label="Objetivo" type="textarea" filled required
                       class="q-mb-md" />
@@ -673,7 +677,7 @@ watch(selectedOption, () =>
                 <!-- Contenedor principal para el formulario y seguimientos -->
                 <div class="seguimientos-container">
                   <q-card-section v-if="hasSeguimientos" class="text-h5" style="text-align: center; font-weight: bold;">
-                    Seguimientos
+                    Seguimiento(s)
                   </q-card-section>
                   <!-- Mostrar Seguimientos Existentes -->
                   <div v-for="(item, index) in seguimientoCliente" :key="index" class="seguimiento-item">
@@ -711,7 +715,7 @@ watch(selectedOption, () =>
                     </q-btn>
                   </div>
                   <q-btn type="submit" label="Guardar Cambios" color="primary" class="q-ma-sm"
-                    :loading="useCliente.loading">
+                    :loading="useCliente.loading" :disable="useCliente.loading">
                     <q-tooltip>
                       Guardar Cambios
                     </q-tooltip>
@@ -849,13 +853,16 @@ watch(selectedOption, () =>
         :style="{ top: tooltipPosition.top + 'px', left: tooltipPosition.left + 'px' }">
         <p>{{ tooltipText }}</p>
       </div>
-    </div>
   </div>
   <q-inner-loading :showing="isLoading" label="Por favor espere..." label-class="text-teal"
     label-style="font-size: 1.1em" />
 </template>
 
 <style scoped>
+* {
+  font-family: cursive;
+  font-style: italic;
+}
 /* .truncated-text {
   overflow: hidden;
   white-space: nowrap;
