@@ -11,11 +11,6 @@ const aviso = ref("");
 const router = useRouter();
 const route = useRoute();
 const useUsuario = useStoreUsuarios();
-<<<<<<< HEAD
-=======
-
-const id = ref(route.body.id);
->>>>>>> fc7471de55684ac2b620ce7cc6e434eda6ae87a0
 const passwordFieldType = ref('password');
 
 function togglePasswordVisibility() {
@@ -44,17 +39,10 @@ const restablecerContrasenia = async () => {
 			notifyErrorRequest('Las contraseñas no coinciden');
 			return;
 		}
-<<<<<<< HEAD
 		const datos = {
 			nuevaContrasenia: nuevaContrasenia.value,
 		};
 		const response = await useUsuario.putUsuariosPassword(token.value, datos);
-=======
-        const datos = {
-            nuevaContrasenia: nuevaContrasenia.value,
-        };
-        const response = await useUsuario.putUsuariosPassword(id.value, datos);
->>>>>>> fc7471de55684ac2b620ce7cc6e434eda6ae87a0
 
 	} catch (error) {
 		notifyErrorRequest('Error en el servidor.');
@@ -104,12 +92,8 @@ onMounted(() => {
 					</button>
 				</div>
 				<div class="div_button">
-<<<<<<< HEAD
 					<q-btn style="color: black;" class="submit black"
 						type="submit" >
-=======
-					<q-btn style="color: black;" class="submit black" type="submit" :loading="useUsuario.loading">
->>>>>>> fc7471de55684ac2b620ce7cc6e434eda6ae87a0
 						Restablecer
 					</q-btn>
 				</div>
