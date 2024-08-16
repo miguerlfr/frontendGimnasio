@@ -9,7 +9,7 @@ const url = "https://backendgimnasio-ip8j.onrender.com"
 
 export const useStoreProductos = defineStore("Producto", () => {
     let loading = ref(false)
-    const useUsuario = useStoreUsuarios();
+    const useUsuario = useStoreUsuarios()
 
     const getProductos = async () => {
         try {
