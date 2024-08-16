@@ -629,19 +629,21 @@ watch(selectedOption, () =>
                   style="position: relative; display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center">
 
                   <!-- Botón para agregar seguimiento -->
-                  <q-btn @click="addSeguimiento" :disable="useCliente.loading" label="Agregar Seguimiento" color="primary" class="q-ma-sm">
+                  <q-btn @click="addSeguimiento" :disable="useCliente.loading" label="Agregar Seguimiento"
+                    color="primary" class="q-ma-sm">
                     <q-tooltip>
                       Agregar Seguimiento
                     </q-tooltip>
                   </q-btn>
-                  <q-btn @click="deleteSeguimiento" :disable="useCliente.loading" label="Eliminar Seguimiento" color="primary" class="q-ma-sm">
+                  <q-btn @click="deleteSeguimiento" :disable="useCliente.loading" label="Eliminar Seguimiento"
+                    color="primary" class="q-ma-sm">
                     <q-tooltip>
                       Eliminar Seguimiento
                     </q-tooltip>
                   </q-btn>
                 </div>
-                <q-btn :loading="useCliente.loading" :disable="useCliente.loading" type="submit" :label="isInstructor ? 'Guardar Seguimiento' : 'Guardar Cliente'"
-                  color="primary" class="q-ma-sm">
+                <q-btn :loading="useCliente.loading" :disable="useCliente.loading" type="submit"
+                  :label="isInstructor ? 'Guardar Seguimiento' : 'Guardar Cliente'" color="primary" class="q-ma-sm">
                   <q-tooltip>
                     {{ isInstructor ? `Guardar Seguimiento` : `Guardar Cliente` }}
                   </q-tooltip>
@@ -733,12 +735,14 @@ watch(selectedOption, () =>
                 <div class="q-mt-md"
                   style="position: relative; display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center;">
                   <!-- Botón para agregar seguimiento -->
-                  <q-btn @click="addSeguimiento" :disable="useCliente.loading" label="Agregar Seguimiento" color="primary" class="q-ma-sm">
+                  <q-btn @click="addSeguimiento" :disable="useCliente.loading" label="Agregar Seguimiento"
+                    color="primary" class="q-ma-sm">
                     <q-tooltip>
                       Agregar Seguimiento
                     </q-tooltip>
                   </q-btn>
-                  <q-btn @click="deleteSeguimiento" :disable="useCliente.loading" label="Eliminar Seguimiento" color="primary" class="q-ma-sm">
+                  <q-btn @click="deleteSeguimiento" :disable="useCliente.loading" label="Eliminar Seguimiento"
+                    color="primary" class="q-ma-sm">
                     <q-tooltip>
                       Eliminar Seguimiento
                     </q-tooltip>

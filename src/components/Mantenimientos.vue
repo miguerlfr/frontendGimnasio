@@ -10,6 +10,7 @@ function formatoNumerico(numero) {
 }
 
 const visible = ref(true);
+const loadingg = ref(true)
 
 // variables para mostrar el div que aparece al pasarle el mouse a la descripción
 const tooltipText = ref('');
@@ -134,18 +135,27 @@ const columns = ref([
 ]);
 
 async function actualizarListadoMantenimientos() {
-  const mantenimientosPromise = selectedOption.value === "Listar Mantenimientos Activos"
-    ? useMantenimiento.getMantenimientosActivos()
-    : selectedOption.value === "Listar Mantenimientos Inactivos"
-      ? useMantenimiento.getMantenimientosInactivos()
-      : useMantenimiento.getMantenimientos();
+  loadingg.value = true;
+  try {
+    const mantenimientosPromise = selectedOption.value === "Listar Mantenimientos Activos"
+      ? useMantenimiento.getMantenimientosActivos()
+      : selectedOption.value === "Listar Mantenimientos Inactivos"
+        ? useMantenimiento.getMantenimientosInactivos()
+        : useMantenimiento.getMantenimientos();
 
-  rows.value = (await mantenimientosPromise).data.mantenimientos;
-  visible.value = false;
-  console.log("Mantenimientos", rows.value);
+    rows.value = (await mantenimientosPromise).data.mantenimientos;
+    console.log("Mantenimientos", rows.value);
+  } finally {
+    loadingg.value = false;
+    visible.value = false;
+  }
 }
 
 const filtrarFilas = computed(() => {
+  if (loadingg.value) {
+    return []; // Retorna una lista vacía mientras se está cargando
+  }
+
   const searchTermNombreMaquina = nombreMaquinaMantenimiento.value || '';
   const fecha1Value = fecha1.value ? new Date(fecha1.value) : null;
   const fecha2Value = fecha2.value ? new Date(fecha2.value) : null;
@@ -308,8 +318,9 @@ onMounted(async () => {
 });
 
 watch(selectedOption, () => {
-  actualizarListadoMantenimientos(),
-    isLoading
+  actualizarListadoMantenimientos();
+  isLoading;
+  loadingg
 });
 </script>
 
@@ -389,8 +400,8 @@ watch(selectedOption, () => {
                       Cancelar
                     </q-tooltip>
                   </q-btn>
-                  <q-btn :loading="useMantenimiento.loading" :disable="useMantenimiento.loading" type="submit" label="Guardar Mantenimiento" color="primary"
-                    class="q-ma-sm">
+                  <q-btn :loading="useMantenimiento.loading" :disable="useMantenimiento.loading" type="submit"
+                    label="Guardar Mantenimiento" color="primary" class="q-ma-sm">
                     <q-tooltip>
                       Guardar Mantenimiento
                     </q-tooltip>
@@ -441,8 +452,8 @@ watch(selectedOption, () => {
                       Cancelar
                     </q-tooltip>
                   </q-btn>
-                  <q-btn :loading="useMantenimiento.loading" :disable="useMantenimiento.loading" type="submit" label="Guardar Cambios" color="primary"
-                    class="q-ma-sm">
+                  <q-btn :loading="useMantenimiento.loading" :disable="useMantenimiento.loading" type="submit"
+                    label="Guardar Cambios" color="primary" class="q-ma-sm">
                     <q-tooltip>
                       Guardar Cambios
                     </q-tooltip>
@@ -459,7 +470,7 @@ watch(selectedOption, () => {
     </div>
 
     <q-table flat bordered title="Mantenimientos" title-class="text-green text-weight-bolder text-h5"
-      :rows="filtrarFilas" :columns="columns" row-key="id">
+      :rows="filtrarFilas" :columns="columns" row-key="id" :loading="loadingg">
       <template v-slot:body-cell-opciones="props">
         <q-td :props="props">
           <q-btn @click="cargarMantenimientoParaEdicion(props.row)">
@@ -502,6 +513,12 @@ watch(selectedOption, () => {
             {{ truncateText(props.row.descripcion, 20) }}
           </div>
         </q-td>
+      </template>
+
+      <template v-slot:loading>
+        <q-inner-loading :showing="loadingg" label="Por favor espere..." label-class="text-teal"
+          label-style="font-size: 1.1em">
+        </q-inner-loading>
       </template>
     </q-table>
   </div>

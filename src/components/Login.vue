@@ -17,10 +17,11 @@
                     </q-input>
                 </div>
 
-                <p style="font-size: 12px;margin: -10px; padding-top: 10px; border: 0;"><a href="/#/password">¿Olvidaste tu
+                <p style="font-size: 12px;margin: -10px; padding-top: 10px; border: 0;"><a href="/#/password">¿Olvidaste
+                        tu
                         contraseña?</a></p>
                 <q-btn style="margin-top: 40px; margin-bottom: 15px;" type="submit" :loading="useUsuario.loading"
-                :disable="useUsuario.loading" @click="login">
+                    :disable="useUsuario.loading" @click="login">
                     Sign In
                     <template v-slot:loading>
                         <q-spinner color="white" size="1em" />

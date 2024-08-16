@@ -12,6 +12,7 @@ function formatoNumerico(numero) {
 
 // Loading
 const visible = ref(true);
+const loadingg = ref(true)
 const listarCodigo = ref("")
 const listarFechasOne = ref("")
 const listarFechasTwo = ref("")
@@ -84,15 +85,24 @@ const productoOptions = computed(() => {
 });
 
 async function listarVentas() {
-  const ventasResponse = await useVenta.getVentas();
-  const ventas = ventasResponse.data.ventas;
-  console.log("Ventas", ventas);
+  loadingg.value = true;
+  try {
+    const ventasResponse = await useVenta.getVentas();
+    const ventas = ventasResponse.data.ventas;
+    console.log("Ventas", ventas);
 
-  rows.value = ventas;
-  visible.value = false;
+    rows.value = ventas;
+  } finally {
+    loadingg.value = false;
+    visible.value = false;
+  }
 }
 
 const filtrarFilas = computed(() => {
+  if (loadingg.value) {
+    return []; // Retorna una lista vacía mientras se está cargando
+  }
+
   let ventasFiltradas = rows.value;
 
   if (selectedOption.value === "Listar Ventas por Producto" && listarCodigo.value) {
@@ -204,6 +214,7 @@ onMounted(() => {
 watch(selectedOption, () => {
   listarVentas();
   isLoading
+  loadingg
 });
 </script>
 
@@ -263,14 +274,14 @@ watch(selectedOption, () => {
               </q-select>
               <q-input v-model="cantidad" label="Cantidad" type="number" filled outlined class="q-mb-md" min="0"
                 required />
-              
+
               <q-btn label="Cancelar" color="negative" class="q-ma-sm" @click="mostrarFormularioAgregarVenta = false">
                 <q-tooltip>
                   Cancelar
                 </q-tooltip>
               </q-btn>
-              <q-btn :loading="useProducto.loading" :disable="useProducto.loading" type="submit" label="Guardar Producto" color="primary"
-                class="q-ma-sm">
+              <q-btn :loading="useProducto.loading" :disable="useProducto.loading" type="submit"
+                label="Guardar Producto" color="primary" class="q-ma-sm">
                 <q-tooltip>
                   Guardar Producto
                 </q-tooltip>
@@ -308,8 +319,8 @@ watch(selectedOption, () => {
                   Cancelar
                 </q-tooltip>
               </q-btn>
-              <q-btn :loading="useProducto.loading" :disable="useProducto.loading" type="submit" label="Guardar Cambios" color="primary"
-                class="q-ma-sm">
+              <q-btn :loading="useProducto.loading" :disable="useProducto.loading" type="submit" label="Guardar Cambios"
+                color="primary" class="q-ma-sm">
                 <q-tooltip>
                   Guardar Cambios
                 </q-tooltip>
@@ -324,7 +335,7 @@ watch(selectedOption, () => {
     </div>
 
     <q-table flat bordered title="Ventas" title-class="text-green text-weight-bolder text-h5" :rows="filtrarFilas"
-      :columns="columns" row-key="id">
+      :columns="columns" row-key="id" :loading="loadingg">
       <template v-slot:body-cell-opciones="props">
         <q-td :props="props">
           <q-btn @click="cargarVentaParaEdicion(props.row)">
@@ -334,6 +345,12 @@ watch(selectedOption, () => {
             </q-tooltip>
           </q-btn>
         </q-td>
+      </template>
+
+      <template v-slot:loading>
+        <q-inner-loading :showing="loadingg" label="Por favor espere..." label-class="text-teal"
+          label-style="font-size: 1.1em">
+        </q-inner-loading>
       </template>
     </q-table>
   </div>

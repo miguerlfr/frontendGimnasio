@@ -6,6 +6,7 @@ import { useStoreSedes } from "../stores/Sedes.js";
 
 // Loading
 const visible = ref(true);
+const loadingg = ref(true)
 
 // Variables parra mostrar formularios
 const mostrarFormularioAgregarUsuarios = ref(false);
@@ -74,15 +75,20 @@ async function listarSedes() {
 }
 
 async function actualizarListadoUsuarios() {
-  const usuariosPromise = selectedOption.value === "Listar Usuarios Activos"
-    ? useUsuario.getUsuariosActivos()
-    : selectedOption.value === "Listar Usuarios Inactivos"
-      ? useUsuario.getUsuariosInactivos()
-      : useUsuario.getUsuarios();
+  loadingg.value = true;
+  try {
+    const usuariosPromise = selectedOption.value === "Listar Usuarios Activos"
+      ? useUsuario.getUsuariosActivos()
+      : selectedOption.value === "Listar Usuarios Inactivos"
+        ? useUsuario.getUsuariosInactivos()
+        : useUsuario.getUsuarios();
 
-  rows.value = (await usuariosPromise).data.usuarios
-  visible.value = false;
-  console.log("Usuarios", rows.value);
+    rows.value = (await usuariosPromise).data.usuarios
+    console.log("Usuarios", rows.value);
+  } finally {
+    loadingg.value = false;
+    visible.value = false;
+  }
 }
 
 async function inactivarUsuario(id) {
@@ -194,6 +200,10 @@ async function validarDatosUsuario(usuario) {
 
 // Funciones computadas
 const filtrarFilas = computed(() => {
+  if (loadingg.value) {
+    return []; // Retorna una lista vacía mientras se está cargando
+  }
+
   if (selectedOption.value === "Listar Usuario por su Email" && emailUsuario.value) {
     const searchTerm = emailUsuario.value;
     return rows.value.filter(usuario =>
@@ -235,7 +245,8 @@ onMounted(() => {
 
 watch(selectedOption, () =>
   actualizarListadoUsuarios(),
-  isLoading
+  isLoading,
+  loadingg
 );
 </script>
 
@@ -376,7 +387,8 @@ watch(selectedOption, () =>
     </div>
 
     <q-table flat bordered title="Usuarios" title-class="text-green text-weight-bolder text-h5" :rows="filtrarFilas"
-      :columns="columns" row-key="id">
+      :columns="columns" row-key="id" :loading="loadingg">
+
       <q-select background-color="green" class="q-my-md" v-model="selectedOption" outlined dense options-dense
         emit-value :options="options" />
       <template v-slot:body-cell-opciones="props">
@@ -417,6 +429,12 @@ watch(selectedOption, () =>
             {{ props.row.estado === 1 ? "Activo" : "Inactivo" }}
           </p>
         </q-td>
+      </template>
+
+      <template v-slot:loading>
+        <q-inner-loading :showing="loadingg" label="Por favor espere..." label-class="text-teal"
+          label-style="font-size: 1.1em">
+        </q-inner-loading>
       </template>
     </q-table>
   </div>

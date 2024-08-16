@@ -33,6 +33,7 @@ const useSede = useStoreSedes();
 
 // Loading
 const visible = ref(true);
+const loadingg = ref(true)
 
 const codigoSede = ref("")
 
@@ -62,6 +63,10 @@ const columns = ref([
 ]);
 
 const filteredRows = computed(() => {
+  if (loadingg.value) {
+    return []; // Retorna una lista vacía mientras se está cargando
+  }
+
   const codigoInput = selectedOption.value === "Listar Sede por Código" && codigoSede.value.trim();
 
   // Filtra por código si se ha especificado un código y se ha seleccionado la opción correspondiente
@@ -71,15 +76,20 @@ const filteredRows = computed(() => {
 });
 
 async function actualizarListadoSedes() {
-  const sedePromise = selectedOption.value === "Listar Sedes Activas"
-  ? useSede.getSedesActivas()
-  : selectedOption.value === "Listar Sedes Inactivas"
-  ? useSede.getSedesInactivas()
-  : useSede.getSedes();
-  
-  rows.value = (await sedePromise).data.sedes;
-  visible.value = false;
-  console.log("Sedes", rows.value);
+  loadingg.value = true;
+  try {
+    const sedePromise = selectedOption.value === "Listar Sedes Activas"
+      ? useSede.getSedesActivas()
+      : selectedOption.value === "Listar Sedes Inactivas"
+        ? useSede.getSedesInactivas()
+        : useSede.getSedes();
+
+    rows.value = (await sedePromise).data.sedes;
+    console.log("Sedes", rows.value);
+  } finally {
+    loadingg.value = false;
+    visible.value = false;
+  }
 }
 
 async function inactivarSede(id) {
@@ -163,145 +173,153 @@ onMounted(() => {
 watch(selectedOption, () => {
   actualizarListadoSedes();
   isLoading
+  loadingg
 });
 </script>
 
 <template>
   <div class="q-pa-md" v-if="!visible">
-      <div>
-        <h3 style="text-align: center; margin: 10px">Sedes</h3>
-        <hr style="width: 70%; height: 5px; background-color: green" />
-      </div>
+    <div>
+      <h3 style="text-align: center; margin: 10px">Sedes</h3>
+      <hr style="width: 70%; height: 5px; background-color: green" />
+    </div>
 
-      <div class="contSelect" style="margin-left: 5%; text-align: end; margin-right: 5%">
-        <q-select background-color="green" class="q-my-md" v-model="selectedOption" outlined dense options-dense
-          emit-value :options="options" />
+    <div class="contSelect" style="margin-left: 5%; text-align: end; margin-right: 5%">
+      <q-select background-color="green" class="q-my-md" v-model="selectedOption" outlined dense options-dense
+        emit-value :options="options" />
 
-        <input v-if="selectedOption === 'Listar Sede por Código'" v-model="codigoSede" class="q-my-md" type="text"
-          name="codigoSede" id="codigoSede" placeholder="Código de la sede" />
-      </div>
+      <input v-if="selectedOption === 'Listar Sede por Código'" v-model="codigoSede" class="q-my-md" type="text"
+        name="codigoSede" id="codigoSede" placeholder="Código de la sede" />
+    </div>
 
-      <div>
+    <div>
+      <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
         <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
-          <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-mb-md">
-            <q-btn label="Agregar Sede" @click="mostrarFormularioAgregarSedes = true">
-              <q-tooltip>
-                Agregar Sede
-              </q-tooltip>
-            </q-btn>
-          </div>
-
+          <q-btn label="Agregar Sede" @click="mostrarFormularioAgregarSedes = true">
+            <q-tooltip>
+              Agregar Sede
+            </q-tooltip>
+          </q-btn>
         </div>
-        <!-- Dialogo para agregar sede -->
-        <q-dialog v-model="mostrarFormularioAgregarSedes" v-bind="mostrarFormularioAgregarSedes && limpiarCampos()">
-          <q-card>
-            <q-card-section>
-              <div class="text-h6">Agregar Sede</div>
-            </q-card-section>
 
-            <q-card-section>
-              <q-form @submit.prevent="agregarSede">
-                <q-input v-model.trim="nombre" label="Nombre" filled required class="q-mb-md" />
-                <q-input v-model.trim="direccion" label="Dirección" filled required class="q-mb-md" />
-                <q-input v-model="codigo" label="Código" type="number" filled required class="q-mb-md" />
-                <q-input v-model.trim="horario" label="Horario" filled required class="q-mb-md" />
-                <q-input v-model.trim="ciudad" label="Ciudad" filled required class="q-mb-md" />
-                <q-input v-model="telefono" label="Teléfono" type="number" filled required class="q-mb-md" min="0" />
-                <q-select v-model="estado" label="Estado" filled required :options="estadoOptions" class="q-mb-md"
-                  style="max-width: 100%;" />
-                <div class="q-mt-md">
-                  <q-btn @click="mostrarFormularioAgregarSedes = false" label="Cancelar" class="q-mr-sm">
-                    <q-tooltip>
-                      Cancelar
-                    </q-tooltip>
-                  </q-btn>
-                  <q-btn :loading="useSede.loading" :disable="useSede.loading" type="submit" label="Guardar Sede" color="primary" class="q-ma-sm">
-                    <q-tooltip>
-                      Guardar Sede
-                    </q-tooltip>
-                    <template v-slot:loading>
-                      <q-spinner color="white" size="1em" />
-                    </template>
-                  </q-btn>
-                </div>
-              </q-form>
-            </q-card-section>
-          </q-card>
-        </q-dialog>
-
-        <!-- Dialogo para editar sede -->
-        <q-dialog v-model="mostrarFormularioEditarSedes">
-          <q-card>
-            <q-card-section>
-              <div class="text-h6">Editar Sede</div>
-            </q-card-section>
-
-            <q-card-section>
-              <q-form @submit.prevent="editarSede">
-                <q-input v-model.trim="nombre" label="Nombre" filled required class="q-mb-md" />
-                <q-input v-model.trim="direccion" label="Dirección" filled required class="q-mb-md" />
-                <q-input v-model="codigo" label="Código" type="number" filled required class="q-mb-md" />
-                <q-input v-model.trim="horario" label="Horario" filled required class="q-mb-md" />
-                <q-input v-model.trim="ciudad" label="Ciudad" filled required class="q-mb-md" />
-                <q-input v-model="telefono" label="Teléfono" type="number" filled required class="q-mb-md" min="0" />
-                <div class="q-mt-md">
-                  <q-btn @click="mostrarFormularioEditarSedes = false" label="Cancelar" class="q-mr-sm">
-                    <q-tooltip>
-                      Cancelar
-                    </q-tooltip>
-                  </q-btn>
-                  <q-btn :loading="useSede.loading" :disable="useSede.loading" type="submit" label="Guardar cambios" color="primary"
-                    class="q-ma-sm">
-                    <q-tooltip>
-                      Guardar cambios
-                    </q-tooltip>
-                    <template v-slot:loading>
-                      <q-spinner color="white" size="1em" />
-                    </template>
-                  </q-btn>
-                </div>
-              </q-form>
-            </q-card-section>
-          </q-card>
-        </q-dialog>
       </div>
+      <!-- Dialogo para agregar sede -->
+      <q-dialog v-model="mostrarFormularioAgregarSedes" v-bind="mostrarFormularioAgregarSedes && limpiarCampos()">
+        <q-card>
+          <q-card-section>
+            <div class="text-h6">Agregar Sede</div>
+          </q-card-section>
 
-      <q-table flat bordered title="Sedes" title-class="text-green text-weight-bolder text-h5" :rows="filteredRows"
-        :columns="columns" row-key="id">
-        <template v-slot:body-cell-opciones="props">
-          <q-td :props="props">
-            <q-btn @click="mostrarDatosParaEditar(props.row)">
-              ✏️
-              <q-tooltip>
-                Editar Sede
-              </q-tooltip>
-            </q-btn>
-            <q-btn v-if="props.row.estado == 1" @click="inactivarSede(props.row._id)">
-              ❌
-              <q-tooltip>
-                Inactivar Sede
-              </q-tooltip>
-            </q-btn>
-            <q-btn v-else @click="activarSede(props.row._id)">
-              ✅
-              <q-tooltip>
-                Activar Sede
-              </q-tooltip>
-            </q-btn>
-          </q-td>
-        </template>
+          <q-card-section>
+            <q-form @submit.prevent="agregarSede">
+              <q-input v-model.trim="nombre" label="Nombre" filled required class="q-mb-md" />
+              <q-input v-model.trim="direccion" label="Dirección" filled required class="q-mb-md" />
+              <q-input v-model="codigo" label="Código" type="number" filled required class="q-mb-md" />
+              <q-input v-model.trim="horario" label="Horario" filled required class="q-mb-md" />
+              <q-input v-model.trim="ciudad" label="Ciudad" filled required class="q-mb-md" />
+              <q-input v-model="telefono" label="Teléfono" type="number" filled required class="q-mb-md" min="0" />
+              <q-select v-model="estado" label="Estado" filled required :options="estadoOptions" class="q-mb-md"
+                style="max-width: 100%;" />
+              <div class="q-mt-md">
+                <q-btn @click="mostrarFormularioAgregarSedes = false" label="Cancelar" class="q-mr-sm">
+                  <q-tooltip>
+                    Cancelar
+                  </q-tooltip>
+                </q-btn>
+                <q-btn :loading="useSede.loading" :disable="useSede.loading" type="submit" label="Guardar Sede"
+                  color="primary" class="q-ma-sm">
+                  <q-tooltip>
+                    Guardar Sede
+                  </q-tooltip>
+                  <template v-slot:loading>
+                    <q-spinner color="white" size="1em" />
+                  </template>
+                </q-btn>
+              </div>
+            </q-form>
+          </q-card-section>
+        </q-card>
+      </q-dialog>
 
-        <template class="a" v-slot:body-cell-estado="props">
-          <q-td class="b" :props="props">
-            <p :style="{
-              color: props.row.estado === 1 ? 'green' : 'red',
-              margin: 0,
-            }">
-              {{ props.row.estado === 1 ? "Activo" : "Inactivo" }}
-            </p>
-          </q-td>
-        </template>
-      </q-table>
+      <!-- Dialogo para editar sede -->
+      <q-dialog v-model="mostrarFormularioEditarSedes">
+        <q-card>
+          <q-card-section>
+            <div class="text-h6">Editar Sede</div>
+          </q-card-section>
+
+          <q-card-section>
+            <q-form @submit.prevent="editarSede">
+              <q-input v-model.trim="nombre" label="Nombre" filled required class="q-mb-md" />
+              <q-input v-model.trim="direccion" label="Dirección" filled required class="q-mb-md" />
+              <q-input v-model="codigo" label="Código" type="number" filled required class="q-mb-md" />
+              <q-input v-model.trim="horario" label="Horario" filled required class="q-mb-md" />
+              <q-input v-model.trim="ciudad" label="Ciudad" filled required class="q-mb-md" />
+              <q-input v-model="telefono" label="Teléfono" type="number" filled required class="q-mb-md" min="0" />
+              <div class="q-mt-md">
+                <q-btn @click="mostrarFormularioEditarSedes = false" label="Cancelar" class="q-mr-sm">
+                  <q-tooltip>
+                    Cancelar
+                  </q-tooltip>
+                </q-btn>
+                <q-btn :loading="useSede.loading" :disable="useSede.loading" type="submit" label="Guardar cambios"
+                  color="primary" class="q-ma-sm">
+                  <q-tooltip>
+                    Guardar cambios
+                  </q-tooltip>
+                  <template v-slot:loading>
+                    <q-spinner color="white" size="1em" />
+                  </template>
+                </q-btn>
+              </div>
+            </q-form>
+          </q-card-section>
+        </q-card>
+      </q-dialog>
+    </div>
+
+    <q-table flat bordered title="Sedes" title-class="text-green text-weight-bolder text-h5" :rows="filteredRows"
+      :columns="columns" row-key="id" :loading="loadingg">
+      <template v-slot:body-cell-opciones="props">
+        <q-td :props="props">
+          <q-btn @click="mostrarDatosParaEditar(props.row)">
+            ✏️
+            <q-tooltip>
+              Editar Sede
+            </q-tooltip>
+          </q-btn>
+          <q-btn v-if="props.row.estado == 1" @click="inactivarSede(props.row._id)">
+            ❌
+            <q-tooltip>
+              Inactivar Sede
+            </q-tooltip>
+          </q-btn>
+          <q-btn v-else @click="activarSede(props.row._id)">
+            ✅
+            <q-tooltip>
+              Activar Sede
+            </q-tooltip>
+          </q-btn>
+        </q-td>
+      </template>
+
+      <template class="a" v-slot:body-cell-estado="props">
+        <q-td class="b" :props="props">
+          <p :style="{
+            color: props.row.estado === 1 ? 'green' : 'red',
+            margin: 0,
+          }">
+            {{ props.row.estado === 1 ? "Activo" : "Inactivo" }}
+          </p>
+        </q-td>
+      </template>
+
+      <template v-slot:loading>
+        <q-inner-loading :showing="loadingg" label="Por favor espere..." label-class="text-teal"
+          label-style="font-size: 1.1em">
+        </q-inner-loading>
+      </template>
+    </q-table>
   </div>
   <q-inner-loading :showing="isLoading" label="Por favor espere..." label-class="text-teal"
     label-style="font-size: 1.1em" />

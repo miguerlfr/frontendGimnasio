@@ -9,6 +9,7 @@ const useMaquina = useStoreMaquinas();
 const useSede = useStoreSedes();
 
 const visible = ref(true);
+const loadingg = ref(true)
 const codigoMaquina = ref("");
 
 // variables para mostrar el div que aparece al pasarle el mouse a la descripción
@@ -89,18 +90,27 @@ const columns = ref([
 ]);
 
 async function actualizarListadoMaquinas() {
-  const maquinasPromise = selectedOption.value === "Listar Máquinas Activas"
-    ? useMaquina.getMaquinasActivas()
-    : selectedOption.value === "Listar Máquinas Inactivas"
-      ? useMaquina.getMaquinasInactivas()
-      : useMaquina.getMaquinas();
+  loadingg.value = true;
+  try {
+    const maquinasPromise = selectedOption.value === "Listar Máquinas Activas"
+      ? useMaquina.getMaquinasActivas()
+      : selectedOption.value === "Listar Máquinas Inactivas"
+        ? useMaquina.getMaquinasInactivas()
+        : useMaquina.getMaquinas();
 
-  rows.value = (await maquinasPromise).data.maquinas;
-  visible.value = false;
-  console.log("Maquinas", rows.value);
+    rows.value = (await maquinasPromise).data.maquinas;
+    console.log("Maquinas", rows.value);
+  } finally {
+    loadingg.value = false;
+    visible.value = false;
+  }
 }
 
 const filtrarFilas = computed(() => {
+  if (loadingg.value) {
+    return []; // Retorna una lista vacía mientras se está cargando
+  }
+
   const codigoInput = codigoMaquina.value ? codigoMaquina.value.toString() : '';
 
   return rows.value.filter(row => {
@@ -233,7 +243,8 @@ onMounted(() => {
 
 watch(selectedOption, () =>
   actualizarListadoMaquinas(),
-  isLoading
+  isLoading,
+  loadingg
 );
 </script>
 
@@ -298,8 +309,8 @@ watch(selectedOption, () =>
                       Cancelar
                     </q-tooltip>
                   </q-btn>
-                  <q-btn :loading="useMaquina.loading" :disable="useMaquina.loading" type="submit" label="Guardar Máquina" color="primary"
-                    class="q-ma-sm">
+                  <q-btn :loading="useMaquina.loading" :disable="useMaquina.loading" type="submit"
+                    label="Guardar Máquina" color="primary" class="q-ma-sm">
                     <q-tooltip>
                       Guardar Máquina
                     </q-tooltip>
@@ -349,8 +360,8 @@ watch(selectedOption, () =>
                       Cancelar
                     </q-tooltip>
                   </q-btn>
-                  <q-btn :loading="useMaquina.loading" :disable="useMaquina.loading" type="submit" label="Guardar Cambios" color="primary"
-                    class="q-ma-sm">
+                  <q-btn :loading="useMaquina.loading" :disable="useMaquina.loading" type="submit"
+                    label="Guardar Cambios" color="primary" class="q-ma-sm">
                     <q-tooltip>
                       Guardar Cambios
                     </q-tooltip>
@@ -367,7 +378,7 @@ watch(selectedOption, () =>
     </div>
 
     <q-table flat bordered title="Maquinas" title-class="text-green text-weight-bolder text-h5" :rows="filtrarFilas"
-      :columns="columns" row-key="id">
+      :columns="columns" row-key="id" :loading="loadingg">
       <template v-slot:body-cell-opciones="props">
         <q-td :props="props">
           <q-btn @click="cargarMaquinaParaEdicion(props.row)">
@@ -410,6 +421,12 @@ watch(selectedOption, () =>
             {{ truncateText(props.row.descripcion, 20) }}
           </div>
         </q-td>
+      </template>
+
+      <template v-slot:loading>
+        <q-inner-loading :showing="loadingg" label="Por favor espere..." label-class="text-teal"
+          label-style="font-size: 1.1em">
+        </q-inner-loading>
       </template>
     </q-table>
   </div>

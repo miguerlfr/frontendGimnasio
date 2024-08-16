@@ -11,6 +11,7 @@ const useIngreso = useStoreIngresos();
 const useSede = useStoreSedes();
 
 const visible = ref(true);
+const loadingg = ref(true)
 
 const mostrarFormularioAgregarIngreso = ref(false);
 const mostrarFormularioEditarIngreso = ref(false);
@@ -88,13 +89,22 @@ let columns = ref([
 ]);
 
 async function listarIngresos() {
-  const ingresos = await useIngreso.getIngresos()
-  rows.value = ingresos.data.ingresos;
-  visible.value = false
-  console.log("Ingresos", ingresos.data.ingresos);
+  loadingg.value = true;
+  try {
+    const ingresos = await useIngreso.getIngresos()
+    rows.value = ingresos.data.ingresos;
+    console.log("Ingresos", ingresos.data.ingresos);
+  } finally {
+    loadingg.value = false;
+    visible.value = false;
+  }
 }
 
 const filtrarFilas = computed(() => {
+  if (loadingg.value) {
+    return []; // Retorna una lista vacía mientras se está cargando
+  }
+
   const nombreCliente = nombreClienteIngreso.value || '';
   const fecha1Value = fecha1.value ? new Date(fecha1.value) : null;
   const fecha2Value = fecha2.value ? new Date(fecha2.value) : null;
@@ -251,6 +261,7 @@ onMounted(() => {
 watch(selectedOption, () => {
   listarIngresos();
   isLoading
+  loadingg
 });
 </script>
 
@@ -327,8 +338,8 @@ watch(selectedOption, () => {
                     Cancelar
                   </q-tooltip>
                 </q-btn>
-                <q-btn :loading="useIngreso.loading" :disable="useIngreso.loading" type="submit" label="Guardar Ingreso" color="primary"
-                  class="q-ma-sm">
+                <q-btn :loading="useIngreso.loading" :disable="useIngreso.loading" type="submit" label="Guardar Ingreso"
+                  color="primary" class="q-ma-sm">
                   <q-tooltip>
                     Guardar Ingreso
                   </q-tooltip>
@@ -380,8 +391,8 @@ watch(selectedOption, () => {
                     Cancelar
                   </q-tooltip>
                 </q-btn>
-                <q-btn :loading="useIngreso.loading" :disable="useIngreso.loading" type="submit" label="Guardar Cambios" color="primary"
-                  class="q-ma-sm">
+                <q-btn :loading="useIngreso.loading" :disable="useIngreso.loading" type="submit" label="Guardar Cambios"
+                  color="primary" class="q-ma-sm">
                   <q-tooltip>
                     Guardar Cambios
                   </q-tooltip>
@@ -397,7 +408,7 @@ watch(selectedOption, () => {
     </div>
 
     <q-table flat bordered title="Ingresos" title-class="text-green text-weight-bolder text-h5" :rows="filtrarFilas"
-      :columns="columns" row-key="id">
+      :columns="columns" row-key="id" :loading="loadingg">
       <template v-slot:body-cell-opciones="props">
         <q-td :props="props">
           <q-btn @click="cargarIngresoParaEdicion(props.row)">
@@ -407,6 +418,12 @@ watch(selectedOption, () => {
             </q-tooltip>
           </q-btn>
         </q-td>
+      </template>
+
+      <template v-slot:loading>
+        <q-inner-loading :showing="loadingg" label="Por favor espere..." label-class="text-teal"
+          label-style="font-size: 1.1em">
+        </q-inner-loading>
       </template>
     </q-table>
   </div>

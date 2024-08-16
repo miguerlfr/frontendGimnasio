@@ -80,7 +80,7 @@ async function listarProveedores() {
 }
 
 const actualizarListadoProductos = async () => {
-  loadingg.value = true; // Inicia el estado de carga
+  loadingg.value = true;
   try {
     const productosPromise = selectedOption.value === "Listar Productos Activos"
       ? useProducto.getProductosActivos()

@@ -12,6 +12,7 @@ function formatoNumerico(numero) {
 
 // Loading
 const visible = ref(true);
+const loadingg = ref(true)
 const listarCodigo = ref("")
 const listarFechasOne = ref("")
 const listarFechasTwo = ref("")
@@ -86,15 +87,23 @@ const productoOptions = computed(() => {
 });
 
 async function listarCompras() {
-  const comprasResponse = await useCompra.getCompras();
-  const compras = comprasResponse.data;
-  console.log("Compras", compras);
+  loadingg.value = true;
+  try {
+    const comprasResponse = await useCompra.getCompras();
+    const compras = comprasResponse.data;
+    console.log("Compras", compras);
 
-  rows.value = compras;
-  visible.value = false;
+    rows.value = compras;
+  } finally {
+    loadingg.value = false;
+    visible.value = false;
+  }
 }
 
 const filtrarFilas = computed(() => {
+  if (loadingg.value) {
+    return []; // Retorna una lista vacía mientras se está cargando
+  }
   let comprasFiltradas = rows.value;
 
   if (selectedOption.value === "Listar Compras por Producto" && listarCodigo.value) {
@@ -210,6 +219,7 @@ onMounted(() => {
 watch(selectedOption, () => {
   listarCompras();
   isLoading
+  loadingg
 });
 
 </script>
@@ -269,23 +279,24 @@ watch(selectedOption, () => {
                 </template>
               </q-select>
               <q-input v-model="cantidad" label="Cantidad" type="number" filled outlined class="q-mb-md" min="0"
-                required style="width: 85%; margin: auto; margin-bottom: 20px;"/>
+                required style="width: 85%; margin: auto; margin-bottom: 20px;" />
 
               <div style="display: flex; width: 100%; justify-content: center;">
-              <q-btn label="Cancelar" color="negative" class="q-ma-sm" @click="mostrarFormularioAgregarCompra = false">
-                <q-tooltip>
-                  Cancelar
-                </q-tooltip>
-              </q-btn>
-              <q-btn :loading="useCompra.loading" :disable="useCompra.loading" type="submit" label="Guardar Compra"
-                color="primary" class="q-ma-sm">
-                <q-tooltip>
-                  Guardar Compra
-                </q-tooltip>
-                <template v-slot:loading>
-                  <q-spinner color="white" size="1em" />
-                </template>
-              </q-btn>
+                <q-btn label="Cancelar" color="negative" class="q-ma-sm"
+                  @click="mostrarFormularioAgregarCompra = false">
+                  <q-tooltip>
+                    Cancelar
+                  </q-tooltip>
+                </q-btn>
+                <q-btn :loading="useCompra.loading" :disable="useCompra.loading" type="submit" label="Guardar Compra"
+                  color="primary" class="q-ma-sm">
+                  <q-tooltip>
+                    Guardar Compra
+                  </q-tooltip>
+                  <template v-slot:loading>
+                    <q-spinner color="white" size="1em" />
+                  </template>
+                </q-btn>
               </div>
             </q-form>
           </q-card-section>
@@ -312,7 +323,7 @@ watch(selectedOption, () => {
                 </template>
               </q-select>
               <q-input v-model="cantidad" label="Cantidad" type="number" filled outlined class="q-mb-md" min="0"
-              required style="width: 85%; margin: auto; margin-bottom: 20px;"/>
+                required style="width: 85%; margin: auto; margin-bottom: 20px;" />
 
               <div style="display: flex; width: 100%; justify-content: center;">
                 <q-btn label="Cancelar" color="negative" class="q-ma-sm" @click="mostrarFormularioEditarCompra = false">
@@ -329,7 +340,7 @@ watch(selectedOption, () => {
                     <q-spinner color="white" size="1em" />
                   </template>
                 </q-btn>
-                </div>
+              </div>
             </q-form>
           </q-card-section>
         </q-card>
@@ -337,7 +348,7 @@ watch(selectedOption, () => {
     </div>
 
     <q-table flat bordered title="Compras" title-class="text-green text-weight-bolder text-h5" :rows="filtrarFilas"
-      :columns="columns" row-key="id">
+      :columns="columns" row-key="id" :loading="loadingg">
       <template v-slot:body-cell-opciones="props">
         <q-td :props="props">
           <q-btn @click="cargarCompraParaEdicion(props.row)">
@@ -347,6 +358,12 @@ watch(selectedOption, () => {
             </q-tooltip>
           </q-btn>
         </q-td>
+      </template>
+
+      <template v-slot:loading>
+        <q-inner-loading :showing="loadingg" label="Por favor espere..." label-class="text-teal"
+          label-style="font-size: 1.1em">
+        </q-inner-loading>
       </template>
     </q-table>
   </div>

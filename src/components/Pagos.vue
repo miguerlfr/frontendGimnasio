@@ -13,6 +13,7 @@ function formatoNumerico(numero) {
 
 // Loading
 const visible = ref(true);
+const loadingg = ref(true)
 
 // Variables parra mostrar formularios
 const mostrarFormularioAgregarPago = ref(false);
@@ -57,15 +58,20 @@ const estadoOptions = [
 ];
 
 async function actualizarListadoPagos() {
-  const pagosPromise = selectedOption.value === "Listar Pagos Activos"
-    ? usePago.getPagosActivos()
-    : selectedOption.value === "Listar Pagos Inactivos"
-      ? usePago.getPagosInactivos()
-      : usePago.getPagos();
+  loadingg.value = true;
+  try {
+    const pagosPromise = selectedOption.value === "Listar Pagos Activos"
+      ? usePago.getPagosActivos()
+      : selectedOption.value === "Listar Pagos Inactivos"
+        ? usePago.getPagosInactivos()
+        : usePago.getPagos();
 
-  rows.value = (await pagosPromise).data.pagos;
-  visible.value = false;
-  console.log("Pagos", rows.value);
+    rows.value = (await pagosPromise).data.pagos;
+    console.log("Pagos", rows.value);
+  } finally {
+    loadingg.value = false;
+    visible.value = false;
+  }
 }
 
 async function listarClientes() {
@@ -141,6 +147,10 @@ const columns = ref([
 ]);
 
 const filtrarFilas = computed(() => {
+  if (loadingg.value) {
+    return []; // Retorna una lista vacía mientras se está cargando
+  }
+
   const fecha1Value = fecha1.value ? new Date(fecha1.value) : null;
   const fecha2Value = fecha2.value ? new Date(fecha2.value) : null;
   const planInput = planC.value ? planC.value.toString() : '';
@@ -331,6 +341,7 @@ onMounted(() => {
 watch(selectedOption, () => {
   actualizarListadoPagos()
   isLoading
+  loadingg
 });
 </script>
 
@@ -418,7 +429,8 @@ watch(selectedOption, () => {
                       Cancelar
                     </q-tooltip>
                   </q-btn>
-                  <q-btn :loading="usePago.loading" :disable="usePago.loading" type="submit" label="Guardar pago" color="primary">
+                  <q-btn :loading="usePago.loading" :disable="usePago.loading" type="submit" label="Guardar pago"
+                    color="primary">
                     <q-tooltip>
                       Guardar pago
                     </q-tooltip>
@@ -476,7 +488,8 @@ watch(selectedOption, () => {
                       Cancelar
                     </q-tooltip>
                   </q-btn>
-                  <q-btn :loading="usePago.loading" :disable="usePago.loading" type="submit" label="Guardar cambios" color="primary">
+                  <q-btn :loading="usePago.loading" :disable="usePago.loading" type="submit" label="Guardar cambios"
+                    color="primary">
                     <q-tooltip>
                       Guardar cambios
                     </q-tooltip>
@@ -493,7 +506,7 @@ watch(selectedOption, () => {
     </div>
 
     <q-table flat bordered title="Pagos" title-class="text-green text-weight-bolder text-h5" :rows="filtrarFilas"
-      :columns="columns" row-key="id">
+      :columns="columns" row-key="id" :loading="loadingg">
       <template v-slot:body-cell-opciones="props">
         <q-td :props="props">
           <q-btn @click="cargarPagoParaEdicion(props.row)">
@@ -526,6 +539,12 @@ watch(selectedOption, () => {
             {{ props.row.estado === 1 ? "Activo" : "Inactivo" }}
           </p>
         </q-td>
+      </template>
+
+      <template v-slot:loading>
+        <q-inner-loading :showing="loadingg" label="Por favor espere..." label-class="text-teal"
+          label-style="font-size: 1.1em">
+        </q-inner-loading>
       </template>
     </q-table>
   </div>
