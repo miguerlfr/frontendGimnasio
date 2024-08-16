@@ -92,12 +92,7 @@ onMounted(() => {
 					</button>
 				</div>
 				<div class="div_button">
-<<<<<<< HEAD
 					<q-btn style="color: black;" class="submit black" type="submit">
-=======
-					<q-btn style="color: black;" class="submit black"
-						type="submit" >
->>>>>>> 77f116f9374ca9a8a89c360ede655f9feef5471f
 						Restablecer
 					</q-btn>
 				</div>
