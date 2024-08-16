@@ -5,7 +5,7 @@ import axios from "axios";
 import { notifyErrorRequest, notifySuccessRequest } from "../routes/routes.js";
 
 const url = "https://backendgimnasio-ip8j.onrender.com";
-// const url = "http://localhost:4505"
+// const url = "http://localhost:4505";
 
 export const useStoreClientes = defineStore(
 	"Cliente",
