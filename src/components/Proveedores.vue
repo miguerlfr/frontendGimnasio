@@ -22,7 +22,6 @@ const idProveedorSeleccionada = ref("");
 const nombre = ref("");
 const telefono = ref("");
 const notas = ref("");
-const productosProveedor = ref("");
 const estado = ref("");
 
 const selectedOption = ref("Listar Proveedores");
@@ -53,12 +52,6 @@ const columns = ref([
     label: "Teléfono",
     field: "telefono",
     align: "center"
-  },
-  {
-    name: "productos",
-    label: "Producto(s)",
-    field: "productos",
-    align: "center",
   },
   {
     name: "notas",
@@ -134,7 +127,6 @@ const limpiarCampos = () => {
   nombre.value = "";
   telefono.value = "";
   notas.value = "";
-  productosProveedor.value = "";
   estado.value = "Activo";
 }
 
@@ -143,7 +135,6 @@ async function agregarProveedor() {
     nombre: nombre.value,
     telefono: telefono.value,
     notas: notas.value,
-    productos: productosProveedor.value,
     estado: estado.value === "Activo" ? 1 : 0,
   };
 
@@ -159,7 +150,6 @@ const cargarProveedorParaEdicion = (proveedor) => {
   idProveedorSeleccionada.value = proveedor._id;
   nombre.value = proveedor.nombre;
   telefono.value = proveedor.telefono;
-  productosProveedor.value = proveedor.productos;
   notas.value = proveedor.notas;
   estado.value = proveedor.estado;
 
@@ -173,7 +163,6 @@ async function editarProveedor() {
     nombre: nombre.value,
     telefono: telefono.value,
     notas: notas.value,
-    productos: productosProveedor.value,
     estado: estado.value === "Activo" ? 1 : 0,
   };
 
@@ -244,7 +233,6 @@ watch(selectedOption, () => {
             <q-form @submit.prevent="agregarProveedor">
               <q-input v-model="nombre" label="Nombre" filled outlined class="q-mb-md" required />
               <q-input v-model="telefono" label="Teléfono" type="number" filled outlined class="q-mb-md" required />
-              <q-input v-model="productosProveedor" label="Producto(s)" filled outlined class="q-mb-md" required />
               <q-input v-model="notas" label="Notas" type="notas" filled outlined class="q-mb-md" required />
               <q-select v-model="estado" label="Estado" :options="[{ label: 'Activo' }, { label: 'Inactivo' }]" filled
                 outlined class="q-mb-md" required />
@@ -280,7 +268,6 @@ watch(selectedOption, () => {
             <q-form @submit.prevent="editarProveedor">
               <q-input v-model="nombre" label="Nombre" filled outlined class="q-mb-md" required />
               <q-input v-model="telefono" label="Teléfono" type="number" filled outlined class="q-mb-md" required />
-              <q-input v-model="productosProveedor" label="Producto(s)" filled outlined class="q-mb-md" required />
               <q-input v-model="notas" label="Notas" type="notas" filled outlined class="q-mb-md" required />
 
               <div class="q-mt-md" style="display: flex; justify-content: flex-end;">

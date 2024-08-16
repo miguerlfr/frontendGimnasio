@@ -11,11 +11,6 @@ const aviso = ref("");
 const router = useRouter();
 const route = useRoute();
 const useUsuario = useStoreUsuarios();
-<<<<<<< HEAD
-=======
-
-const id = ref(route.body.id);
->>>>>>> fc7471de55684ac2b620ce7cc6e434eda6ae87a0
 const passwordFieldType = ref('password');
 
 function togglePasswordVisibility() {
@@ -23,15 +18,15 @@ function togglePasswordVisibility() {
 }
 
 async function avisoo() {
-    try {
-        const res = await useUsuario.contraseñaCambiada(token.value);
-        if (res.data.code == "ERR_BAD_REQUEST") {
-            aviso.value = false;
-        }
-        aviso.value = true;
-    } catch (error) {
-        console.log(error);
-    }
+	try {
+		const res = await useUsuario.contraseñaCambiada(token.value);
+		if (res.data.code == "ERR_BAD_REQUEST") {
+			aviso.value = false;
+		}
+		aviso.value = true;
+	} catch (error) {
+		console.log(error);
+	}
 }
 
 const restablecerContrasenia = async () => {
@@ -44,17 +39,10 @@ const restablecerContrasenia = async () => {
 			notifyErrorRequest('Las contraseñas no coinciden');
 			return;
 		}
-<<<<<<< HEAD
 		const datos = {
 			nuevaContrasenia: nuevaContrasenia.value,
 		};
 		const response = await useUsuario.putUsuariosPassword(token.value, datos);
-=======
-        const datos = {
-            nuevaContrasenia: nuevaContrasenia.value,
-        };
-        const response = await useUsuario.putUsuariosPassword(id.value, datos);
->>>>>>> fc7471de55684ac2b620ce7cc6e434eda6ae87a0
 
 	} catch (error) {
 		notifyErrorRequest('Error en el servidor.');
@@ -67,8 +55,8 @@ function regresar() {
 }
 
 onMounted(() => {
-    token.value = route.query.tokenP || "";
-    avisoo();
+	token.value = route.query.tokenP || "";
+	avisoo();
 });
 </script>
 <template>
@@ -91,25 +79,20 @@ onMounted(() => {
 			<form @submit.prevent="restablecerContrasenia">
 				<div class="input_contrasena">
 					<input :type="passwordFieldType" class="input" placeholder="Nueva contraseña"
-						v-model="nuevaContrasenia" autocomplete="new-password"/>
+						v-model="nuevaContrasenia" autocomplete="new-password" />
 					<button type="button" @click="togglePasswordVisibility">
 						<q-icon :name="passwordFieldType === 'password' ? 'visibility_off' : 'visibility'" />
 					</button>
 				</div>
 				<div class="input_contrasena">
 					<input :type="passwordFieldType" class="input" placeholder="Confirmar contraseña"
-						v-model="confirmarContrasenia" autocomplete="new-password"/>
+						v-model="confirmarContrasenia" autocomplete="new-password" />
 					<button type="button" @click="togglePasswordVisibility">
 						<q-icon :name="passwordFieldType === 'password' ? 'visibility_off' : 'visibility'" />
 					</button>
 				</div>
 				<div class="div_button">
-<<<<<<< HEAD
-					<q-btn style="color: black;" class="submit black"
-						type="submit" >
-=======
-					<q-btn style="color: black;" class="submit black" type="submit" :loading="useUsuario.loading">
->>>>>>> fc7471de55684ac2b620ce7cc6e434eda6ae87a0
+					<q-btn style="color: black;" class="submit black" type="submit">
 						Restablecer
 					</q-btn>
 				</div>
@@ -121,8 +104,8 @@ onMounted(() => {
 
 <style scoped>
 * {
-  font-family: cursive;
-  font-style: italic;
+	font-family: cursive;
+	font-style: italic;
 }
 
 .titlee {

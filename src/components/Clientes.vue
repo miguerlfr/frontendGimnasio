@@ -2,12 +2,19 @@
 import { ref, onMounted, computed, watch } from "vue";
 import { notifyErrorRequest } from "../routes/routes.js";
 import { useStoreClientes } from "../stores/Clientes.js";
+import { useStorePagos } from "../stores/Pagos.js";
 import { useStorePlanes } from "../stores/Planes.js";
 import { useStoreUsuarios } from "../stores/Usuarios.js";
 import { format } from "date-fns";
 
 // loading
 const visible = ref(true);
+const loadingg = ref(true)
+
+// planCliente mostrado / planCliente No mostrado
+const mostrarSelectPlan = ref(true);
+
+
 
 // variables para mostrar el div que aparece al pasarle el mouse a las observaciones y objetivo
 const tooltipText = ref('');
@@ -155,6 +162,7 @@ let columns = ref([
   { name: "opciones", label: "Opciones", field: "opciones", align: "center" },
 ]);
 
+const pagos = ref([])
 const planes = ref([])
 
 const planOptions = computed(() => {
@@ -193,9 +201,16 @@ const options = ref([
 // Llamado de modelos
 const useUsuario = useStoreUsuarios();
 const useCliente = useStoreClientes();
+const usePago = useStorePagos();
 const usePlan = useStorePlanes();
 
 // Funciones async
+async function listarPagos() {
+  const r = await usePago.getPagos();
+  console.log("Pagos", r.data.pagos);
+  pagos.value = r.data.pagos;
+}
+
 async function listarPlanes() {
   const r = await usePlan.getPlanes();
   console.log("Planes", r.data.planes);
@@ -203,15 +218,20 @@ async function listarPlanes() {
 }
 
 async function actualizarListadoClientes() {
-  const clientesPromise = selectedOption.value === "Listar Clientes Activos"
-    ? useCliente.getClientesActivos()
-    : selectedOption.value === "Listar Clientes Inactivos"
-      ? useCliente.getClientesInactivos()
-      : useCliente.getClientes();
+  loadingg.value = true; // Inicia el estado de carga
+  try {
+    const clientesPromise = selectedOption.value === "Listar Clientes Activos"
+      ? useCliente.getClientesActivos()
+      : selectedOption.value === "Listar Clientes Inactivos"
+        ? useCliente.getClientesInactivos()
+        : useCliente.getClientes();
 
-  rows.value = (await clientesPromise).data.clientes;
-  visible.value = false;
-  console.log("Clientes", rows.value);
+    rows.value = (await clientesPromise).data.clientes;
+    console.log("Clientes", rows.value);
+  } finally {
+    loadingg.value = false;
+    visible.value = false;
+  }
 }
 
 async function inactivarCliente(id) {
@@ -258,9 +278,9 @@ async function editarCliente() {
 
   for (let plan of planes.value) {
     if (plan.descripcion === planCliente.value) {
-      if(plan.estado == 1){
-      planActual = plan._id;
-      break;
+      if (plan.estado == 1) {
+        planActual = plan._id;
+        break;
       } else {
         notifyErrorRequest("Plan seleccionado inactivo")
         return;
@@ -268,8 +288,6 @@ async function editarCliente() {
     }
   }
 
-  console.log("p",planCliente.value);
-  
   const clienteEditado = {
     _id: idClienteSeleccionado.value,
     nombre: nombreCliente.value,
@@ -285,7 +303,7 @@ async function editarCliente() {
     fechaVencimiento: fechaVencimientoCliente.value,
     seguimiento: seguimientoCliente.value
   };
-  console.log("Datos del cliente a validar:", clienteEditado);
+
   if (await validarDatosCliente(clienteEditado)) {
     const r = await useCliente.putClientes(idClienteSeleccionado.value, clienteEditado);
     if (r.status == 200) {
@@ -313,22 +331,27 @@ const limpiarCampos = () => {
   seguimientoCliente.value = [];
 };
 
-const cargarClienteParaEdicion = (cliente) => {
+function verificarPagosCliente(clienteId) {
+  // Asegúrate de que el clienteId esté en el formato esperado y coincide con los IDs en pagos
+  return pagos.value.some(pago => pago.cliente._id === clienteId);
+}
+
+function cargarClienteParaEdicion(cliente) {
   idClienteSeleccionado.value = cliente._id;
   nombreCliente.value = cliente.nombre;
   emailCliente.value = cliente.email;
-  fechaIngresoCliente.value = cliente.fechaIngreso.split("T")[0];
+  fechaIngresoCliente.value = cliente.fechaIngreso.split('T')[0];
   documentoCliente.value = cliente.documento;
-  fechaNacimientoCliente.value = cliente.fechaNacimiento.split("T")[0];
+  fechaNacimientoCliente.value = cliente.fechaNacimiento.split('T')[0];
   edadCliente.value = cliente.edad;
   direccionCliente.value = cliente.direccion;
   objetivoCliente.value = cliente.objetivo;
   observacionesCliente.value = cliente.observaciones;
   planCliente.value = cliente.plan.descripcion;
-  fechaVencimientoCliente.value = cliente.fechaVencimiento.split("T")[0];
+  fechaVencimientoCliente.value = cliente.fechaVencimiento.split('T')[0];
 
-  seguimientoCliente.value = cliente.seguimiento.map((item) => ({
-    fecha: item.fecha.split("T")[0],
+  seguimientoCliente.value = cliente.seguimiento.map(item => ({
+    fecha: item.fecha.split('T')[0],
     peso: item.peso,
     imc: item.imc,
     estadoIMC: item.estadoIMC,
@@ -338,8 +361,11 @@ const cargarClienteParaEdicion = (cliente) => {
     estatura: item.estatura,
   }));
 
+  // Verifica si el cliente tiene pagos registrados y ajusta la visibilidad del select
+  mostrarSelectPlan.value = !verificarPagosCliente(cliente._id);
+
   mostrarFormularioEditarCliente.value = true;
-  console.log("Datos del cliente a editar:", cliente);
+  console.log('Datos del cliente a editar:', cliente);
 };
 
 async function validarDatosCliente(cliente) {
@@ -403,6 +429,10 @@ const getColor = (estadoIMC) => {
 
 // Funciones computadas
 const filtrarFilas = computed(() => {
+  if (loadingg.value) {
+    return []; // Retorna una lista vacía mientras se está cargando
+  }
+
   const searchTermDocumento = documento.value.toString();
   const fechaSeleccionadaSeguimiento = fechaSeguimiento.value ? new Date(fechaSeguimiento.value).toISOString().split("T")[0] : null;
   const fechaSeleccionadaCumpleanos = fechaCumpleanos.value ? new Date(fechaCumpleanos.value) : null;
@@ -475,384 +505,390 @@ function s() {
 // Montaje
 onMounted(() => {
   actualizarListadoClientes();
+  listarPagos();
   listarPlanes();
 });
 
 watch(selectedOption, () =>
   actualizarListadoClientes(),
-  isLoading
+  isLoading,
+  loadingg
 );
 </script>
 
 <template>
   <div class="q-pa-md" v-if="!visible">
-      <div>
-        <h3 style="text-align: center; margin: 10px">Clientes</h3>
-        <hr style="width: 70%; height: 5px; background-color: green" />
+    <div>
+      <h3 style="text-align: center; margin: 10px">Clientes</h3>
+      <hr style="width: 70%; height: 5px; background-color: green" />
+    </div>
+
+    <div class="contSelect" style="margin-left: 5%; text-align: end; margin-right: 5%">
+      <q-select background-color="green" class="q-my-md" v-model="selectedOption" outlined dense options-dense
+        emit-value :options="options" />
+
+      <input v-if="selectedOption === 'Listar Cliente por Documento'" v-model="documento" class="q-my-md" type="text"
+        name="search" id="search" @dblclick="selectAllText" placeholder="Documento del Cliente" />
+
+      <input v-if="selectedOption === 'Listar Clientes por Plan'" v-model="planC" class="q-my-md" type="text"
+        name="search" id="search" @dblclick="selectAllText" placeholder="Plan del Cliente" />
+
+      <input v-if="selectedOption === 'Listar Clientes por Fecha de Seguimiento'" v-model="fechaSeguimiento"
+        class="q-my-md" type="date" name="search" id="search" @dblclick="selectAllText" />
+
+      <input v-if="selectedOption === 'Listar Clientes por Fecha de Cumpleaños'" v-model="fechaCumpleanos"
+        class="q-my-md" type="date" name="search" id="search" @dblclick="selectAllText" />
+
+      <input v-if="selectedOption === 'Listar Clientes por Fecha de Ingreso'" v-model="fechaIngreso" class="q-my-md"
+        type="date" name="search" id="search" @dblclick="selectAllText" />
+    </div>
+
+    <div>
+      <!-- Botones para abrir diálogos -->
+      <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-my-md">
+        <q-btn :label="isInstructor ? 'Agregar Seguimiento' : 'Agregar Cliente'" @click="s()">
+          <q-tooltip>
+            {{ isInstructor ? 'Agregar Seguimiento' : 'Agregar Cliente' }}
+          </q-tooltip>
+        </q-btn>
       </div>
 
-      <div class="contSelect" style="margin-left: 5%; text-align: end; margin-right: 5%">
-        <q-select background-color="green" class="q-my-md" v-model="selectedOption" outlined dense options-dense
-          emit-value :options="options" />
+      <!-- Dialogo para agregar cliente -->
+      <q-dialog v-model="mostrarFormularioAgregarCliente" v-bind="mostrarFormularioAgregarCliente && limpiarCampos()">
+        <q-card style="width: 377px;">
+          <q-card-section>
+            <div class="text-h5" style="padding-left: 18px; font-weight: bold;">{{ isInstructor ? `Agregar
+              Seguimiento` : `Agregar Cliente` }}</div>
+          </q-card-section>
 
-        <input v-if="selectedOption === 'Listar Cliente por Documento'" v-model="documento" class="q-my-md" type="text"
-          name="search" id="search" @dblclick="selectAllText" placeholder="Documento del Cliente" />
+          <q-card-section>
+            <q-form @submit.prevent="agregarCliente">
+              <div style="padding-inline: 18px;">
+                <div v-if="!isInstructor">
+                  <!-- Datos del Cliente -->
+                  <q-input v-model.trim="nombreCliente" label="Nombre" filled required class="q-mb-md" />
+                  <q-input v-model="fechaIngresoCliente" label="Fecha de Ingreso" type="date" filled required
+                    class="q-mb-md" />
+                  <q-input v-model="documentoCliente" label="Documento" type="number" filled required class="q-mb-md"
+                    min="0" />
+                  <q-input v-model="fechaNacimientoCliente" label="Fecha de Nacimiento" type="date" filled required
+                    class="q-mb-md" />
+                  <q-input v-model="edadCliente" label="Edad" type="number" filled class="q-mb-md"
+                    style="display: none" />
+                  <q-input v-model.trim="direccionCliente" label="Dirección" filled required class="q-mb-md" />
+                  <q-input v-model="emailCliente" label="Email" type="string" filled required class="q-mb-md" min="0" />
+                  <q-input v-model.trim="objetivoCliente" label="Objetivo" type="textarea" filled required
+                    class="q-mb-md" />
+                  <q-input v-model.trim="observacionesCliente" label="Observaciones" type="textarea" filled required
+                    class="q-mb-md" style="max-width: 100%;" />
+                  <q-select v-model="estadoCliente" label="Estado" filled outlined :options="estadoOptions" required
+                    class="q-mb-md" style="max-width: 100%;" />
+                  <q-select v-model="planCliente" label="Plan" filled outlined :options="planOptions" class="q-mb-md"
+                    style="max-width: 100%;">
+                    <template v-slot:no-option>
+                      <q-item>
+                        <q-item-section>
+                          No results
+                        </q-item-section>
+                      </q-item>
+                    </template>
+                  </q-select>
+                  <q-input v-model="fechaVencimientoCliente" label="Fecha de Vencimiento" type="date" filled
+                    class="q-mb-md" style="display: none" />
+                </div>
+              </div>
 
-        <input v-if="selectedOption === 'Listar Clientes por Plan'" v-model="planC" class="q-my-md" type="text"
-          name="search" id="search" @dblclick="selectAllText" placeholder="Plan del Cliente" />
+              <!-- Contenedor principal para el formulario y seguimientos -->
+              <div class="seguimientos-container">
+                <q-card-section v-if="hasSeguimientos" class="text-h5" style="text-align: center; font-weight: bold;">
+                  Seguimientos
+                </q-card-section>
+                <!-- Seguimientos -->
+                <div v-for="(item, index) in seguimientoCliente" :key="index" class="seguimiento-item">
+                  <q-card-section class="text-h5"># {{ index + 1 }}</q-card-section>
+                  <q-input v-model="item.fecha" :label="'Fecha de Seguimiento'" type="date" filled class="q-mb-md"
+                    required />
+                  <q-input v-model="item.peso" :label="'Peso (kg)'" type="number" filled class="q-mb-md" required
+                    min="0" />
+                  <q-input v-model="item.imc" :label="'IMC'" type="text" filled class="q-mb-md" style="display: none;"
+                    min="0" />
+                  <q-input v-model="item.estadoIMC" :label="'Estado del IMC'" type="text" filled class="q-mb-md"
+                    style="display: none;" min="0" />
+                  <q-input v-model="item.brazo" :label="'Brazo'" type="number" filled class="q-mb-md" required
+                    min="0" />
+                  <q-input v-model="item.pierna" :label="'Pierna'" type="number" filled class="q-mb-md" required
+                    min="0" />
+                  <q-input v-model="item.cintura" :label="'Cintura'" type="number" filled class="q-mb-md" required
+                    min="0" />
+                  <q-input v-model="item.estatura" label="Estatura (cm)" type="number" filled class="q-mb-md" required
+                    min="0" max="300" />
+                </div>
 
-        <input v-if="selectedOption === 'Listar Clientes por Fecha de Seguimiento'" v-model="fechaSeguimiento"
-          class="q-my-md" type="date" name="search" id="search" @dblclick="selectAllText" />
+                <!-- Botones de acción -->
+                <div class="q-mt-md"
+                  style="position: relative; display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center">
 
-        <input v-if="selectedOption === 'Listar Clientes por Fecha de Cumpleaños'" v-model="fechaCumpleanos"
-          class="q-my-md" type="date" name="search" id="search" @dblclick="selectAllText" />
+                  <!-- Botón para agregar seguimiento -->
+                  <q-btn @click="addSeguimiento" :disable="useCliente.loading" label="Agregar Seguimiento" color="primary" class="q-ma-sm">
+                    <q-tooltip>
+                      Agregar Seguimiento
+                    </q-tooltip>
+                  </q-btn>
+                  <q-btn @click="deleteSeguimiento" :disable="useCliente.loading" label="Eliminar Seguimiento" color="primary" class="q-ma-sm">
+                    <q-tooltip>
+                      Eliminar Seguimiento
+                    </q-tooltip>
+                  </q-btn>
+                </div>
+                <q-btn :loading="useCliente.loading" :disable="useCliente.loading" type="submit" :label="isInstructor ? 'Guardar Seguimiento' : 'Guardar Cliente'"
+                  color="primary" class="q-ma-sm">
+                  <q-tooltip>
+                    {{ isInstructor ? `Guardar Seguimiento` : `Guardar Cliente` }}
+                  </q-tooltip>
+                  <template v-slot:loading>
+                    <q-spinner color="white" size="1em" />
+                  </template>
+                </q-btn>
+                <q-btn @click="mostrarFormularioAgregarCliente = false" label="Cancelar" class="q-ma-sm">
+                  <q-tooltip>
+                    Cancelar
+                  </q-tooltip>
+                </q-btn>
+              </div>
+            </q-form>
+          </q-card-section>
+        </q-card>
+      </q-dialog>
 
-        <input v-if="selectedOption === 'Listar Clientes por Fecha de Ingreso'" v-model="fechaIngreso" class="q-my-md"
-          type="date" name="search" id="search" @dblclick="selectAllText" />
-      </div>
+      <!-- Dialogo para editar cliente -->
+      <q-dialog v-model="mostrarFormularioEditarCliente">
+        <q-card style="width: 377px;">
+          <q-card-section>
+            <div class="text-h5" style="padding-left: 18px; font-weight: bold;">{{ isInstructor ? 'Editar Seguimiento'
+              :
+              'Editar Cliente' }}</div>
+          </q-card-section>
 
-      <div>
-        <!-- Botones para abrir diálogos -->
-        <div style="margin-left: 5%; text-align: end; margin-right: 5%" class="q-my-md">
-          <q-btn :label="isInstructor ? 'Agregar Seguimiento' : 'Agregar Cliente'" @click="s()">
+          <q-card-section>
+            <q-form @submit.prevent="editarCliente">
+              <!-- Datos del Cliente -->
+              <div v-if="!isInstructor">
+                <div style="padding-inline: 18px;">
+                  <q-input v-model.trim="nombreCliente" label="Nombre" filled required class="q-mb-md" />
+                  <q-input v-model="fechaIngresoCliente" label="Fecha de Ingreso" type="date" filled class="q-mb-md"
+                    required />
+                  <q-input v-model="documentoCliente" label="Documento" type="number" filled required class="q-mb-md"
+                    min="0" />
+                  <q-input v-model="fechaNacimientoCliente" label="Fecha de Nacimiento" type="date" filled
+                    class="q-mb-md" required />
+                  <q-input v-model="edadCliente" label="Edad" type="number" filled class="q-mb-md"
+                    style="display: none" />
+                  <q-input v-model.trim="direccionCliente" label="Dirección" filled class="q-mb-md" required />
+                  <q-input v-model="emailCliente" label="Email" type="string" filled required class="q-mb-md" min="0" />
+                  <q-input v-model.trim="objetivoCliente" label="Objetivo" type="textarea" filled required
+                    class="q-mb-md" />
+                  <q-input v-model.trim="observacionesCliente" label="Observaciones" type="textarea" filled
+                    class="q-mb-md" required />
+                  <q-select v-model="planCliente" label="Plan" filled outlined :options="planOptions" class="q-mb-md"
+                    :style="{ display: mostrarSelectPlan ? 'block' : 'none' }" style="max-width: 100%;" required>
+                    <template v-slot:no-option>
+                      <q-item>
+                        <q-item-section>
+                          No results
+                        </q-item-section>
+                      </q-item>
+                    </template>
+                  </q-select>
+                  <q-input v-model="fechaVencimientoCliente" label="Fecha de Vencimiento" type="date" filled
+                    class="q-mb-md" style="display: none" />
+                </div>
+              </div>
+
+              <!-- Contenedor principal para el formulario y seguimientos -->
+              <div class="seguimientos-container">
+                <q-card-section v-if="hasSeguimientos" class="text-h5" style="text-align: center; font-weight: bold;">
+                  Seguimiento(s)
+                </q-card-section>
+                <!-- Mostrar Seguimientos Existentes -->
+                <div v-for="(item, index) in seguimientoCliente" :key="index" class="seguimiento-item">
+                  <q-card-section class="text-h5"># {{ index + 1 }}</q-card-section>
+                  <q-input v-model="item.fecha" :label="'Fecha de Seguimiento'" type="date" filled class="q-mb-md"
+                    required />
+                  <q-input v-model="item.peso" :label="'Peso (kg)'" type="number" filled class="q-mb-md" required
+                    min="0" />
+                  <q-input v-model="item.imc" :label="'IMC'" type="text" filled class="q-mb-md" style="display: none;"
+                    min="0" />
+                  <q-input v-model="item.estadoIMC" :label="'Estado del IMC'" type="text" filled class="q-mb-md"
+                    style="display: none;" min="0" />
+                  <q-input v-model="item.brazo" :label="'Brazo'" type="number" filled class="q-mb-md" required
+                    min="0" />
+                  <q-input v-model="item.pierna" :label="'Pierna'" type="number" filled class="q-mb-md" required
+                    min="0" />
+                  <q-input v-model="item.cintura" :label="'Cintura'" type="number" filled class="q-mb-md" required
+                    min="0" />
+                  <q-input v-model="item.estatura" label="Estatura (cm)" type="number" filled class="q-mb-md" required
+                    min="0" max="300" />
+                </div>
+
+                <div class="q-mt-md"
+                  style="position: relative; display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center;">
+                  <!-- Botón para agregar seguimiento -->
+                  <q-btn @click="addSeguimiento" :disable="useCliente.loading" label="Agregar Seguimiento" color="primary" class="q-ma-sm">
+                    <q-tooltip>
+                      Agregar Seguimiento
+                    </q-tooltip>
+                  </q-btn>
+                  <q-btn @click="deleteSeguimiento" :disable="useCliente.loading" label="Eliminar Seguimiento" color="primary" class="q-ma-sm">
+                    <q-tooltip>
+                      Eliminar Seguimiento
+                    </q-tooltip>
+                  </q-btn>
+                </div>
+                <q-btn type="submit" label="Guardar Cambios" color="primary" class="q-ma-sm"
+                  :loading="useCliente.loading" :disable="useCliente.loading">
+                  <q-tooltip>
+                    Guardar Cambios
+                  </q-tooltip>
+                  <template v-slot:loading>
+                    <q-spinner color="white" size="1em" />
+                  </template>
+                </q-btn>
+                <q-btn @click="mostrarFormularioEditarCliente = false" label="Cancelar" class="q-ma-sm">
+                  <q-tooltip>
+                    Cancelar
+                  </q-tooltip>
+                </q-btn>
+              </div>
+            </q-form>
+          </q-card-section>
+        </q-card>
+      </q-dialog>
+
+      <!-- Modal o div para mostrar el seguimiento seleccionado -->
+      <q-dialog v-model="mostrarSeguimientoModal" style="margin: 0; ">
+        <q-card style="max-width: 100%; min-width: 280px;  margin: 0; padding: 5px;">
+          <q-card-section style="margin: 0; padding: 0; ">
+
+            <div class="some-page-wrapper" style="display: flex;">
+              <div class="row" style="display: flex; align-items: center; width: 100%;">
+                <div class="column" style="flex: 1;">
+                  <div class="blue-column" style="width: 100%;">
+                    <p>Seguimientos
+                      del
+                      Cliente</p>
+                  </div>
+                </div>
+                <div class="btnCerrar">
+                  <q-btn class="btn" flat label="X" v-close-popup />
+                </div>
+              </div>
+            </div>
+
+            <div
+              style="padding-top: 30px; padding-bottom: 10px;display: flex; justify-content: center; align-items: center; flex-direction: row; flex-wrap: wrap; width: auto;"
+              v-if="seguimientoSeleccionado">
+
+              <div class="datosSeguimiento" v-for="(seguimiento, index) in seguimientoSeleccionado" :key="index"
+                :style="getColor(seguimiento.estadoIMC)">
+                <h6># {{ (index + 1) }}</h6>
+                <p>{{ `Fecha: ${seguimiento.fecha.split('T')[0].split('-').reverse().join('/')}` }}</p>
+                <p>{{ `Peso: ${seguimiento.peso}` }}</p>
+                <p>{{ `IMC: ${typeof seguimiento.imc === 'number' ?
+                  seguimiento.imc.toFixed(0).replace(/\.(\d{2})\d*$/, '.$1...') : seguimiento.imc}` }}</p>
+                <p>{{ `estado IMC: ${seguimiento.estadoIMC}` }}</p>
+                <p>{{ `Brazo: ${seguimiento.brazo}` }}</p>
+                <p>{{ `Pierna: ${seguimiento.pierna}` }}</p>
+                <p>{{ `Cintura: ${seguimiento.cintura}` }}</p>
+                <p>
+                  Estatura: {{
+                    seguimiento.estatura.toString().length === 2
+                      ? `${seguimiento.estatura.toString().charAt(0)}'0${seguimiento.estatura.toString().charAt(1)}`
+                      : `${seguimiento.estatura.toString().charAt(0)}'${seguimiento.estatura.toString().slice(1)}`
+                  }}
+                </p>
+              </div>
+            </div>
+          </q-card-section>
+        </q-card>
+      </q-dialog>
+
+    </div>
+
+    <q-table class="table" flat bordered title="Clientes" title-class="text-green text-weight-bolder text-h5"
+      :rows="filtrarFilas" :columns="columns" row-key="id" :loading="loadingg">
+      <template v-slot:body-cell-opciones="props">
+        <q-td :props="props">
+          <q-btn @click="cargarClienteParaEdicion(props.row)">✏️
             <q-tooltip>
-              {{ isInstructor ? 'Agregar Seguimiento' : 'Agregar Cliente' }}
+              {{ 'Editar Cliente' }}
             </q-tooltip>
           </q-btn>
-        </div>
+          <q-btn v-if="props.row.estado == 1" @click="inactivarCliente(props.row._id)">
+            ❌
+            <q-tooltip>
+              {{ 'Inactivar Cliente' }}
+            </q-tooltip>
+          </q-btn>
+          <q-btn v-else @click="activarCliente(props.row._id)">
+            ✅
+            <q-tooltip>
+              {{ 'Activar Cliente' }}
+            </q-tooltip>
+          </q-btn>
+        </q-td>
+      </template>
 
-        <!-- Dialogo para agregar cliente -->
-        <q-dialog v-model="mostrarFormularioAgregarCliente" v-bind="mostrarFormularioAgregarCliente && limpiarCampos()">
-          <q-card style="width: 377px;">
-            <q-card-section>
-              <div class="text-h5" style="padding-left: 18px; font-weight: bold;">{{ isInstructor ? `Agregar
-                Seguimiento` : `Agregar Cliente` }}</div>
-            </q-card-section>
+      <template class="a" v-slot:body-cell-estado="props">
+        <q-td class="b" :props="props">
+          <p :style="{
+            color: props.row.estado === 1 ? 'green' : 'red',
+            margin: 0,
+          }">
+            {{ props.row.estado === 1 ? "Activo" : "Inactivo" }}
+          </p>
+        </q-td>
+      </template>
 
-            <q-card-section>
-              <q-form @submit.prevent="agregarCliente">
-                <div style="padding-inline: 18px;">
-                  <div v-if="!isInstructor">
-                    <!-- Datos del Cliente -->
-                    <q-input v-model.trim="nombreCliente" label="Nombre" filled required class="q-mb-md" />
-                    <q-input v-model="fechaIngresoCliente" label="Fecha de Ingreso" type="date" filled required
-                      class="q-mb-md" />
-                    <q-input v-model="documentoCliente" label="Documento" type="number" filled required class="q-mb-md"
-                      min="0" />
-                    <q-input v-model="fechaNacimientoCliente" label="Fecha de Nacimiento" type="date" filled required
-                      class="q-mb-md" />
-                    <q-input v-model="edadCliente" label="Edad" type="number" filled class="q-mb-md"
-                      style="display: none" />
-                    <q-input v-model.trim="direccionCliente" label="Dirección" filled required class="q-mb-md" />
-                    <q-input v-model="emailCliente" label="Email" type="string" filled required class="q-mb-md"
-                      min="0" />
-                    <q-input v-model.trim="objetivoCliente" label="Objetivo" type="textarea" filled required
-                      class="q-mb-md" />
-                    <q-input v-model.trim="observacionesCliente" label="Observaciones" type="textarea" filled required
-                      class="q-mb-md" style="max-width: 100%;" />
-                    <q-select v-model="estadoCliente" label="Estado" filled outlined :options="estadoOptions" required
-                      class="q-mb-md" style="max-width: 100%;" />
-                    <q-select v-model="planCliente" label="Plan" filled outlined :options="planOptions" class="q-mb-md"
-                      style="max-width: 100%;">
-                      <template v-slot:no-option>
-                        <q-item>
-                          <q-item-section>
-                            No results
-                          </q-item-section>
-                        </q-item>
-                      </template>
-                    </q-select>
-                    <q-input v-model="fechaVencimientoCliente" label="Fecha de Vencimiento" type="date" filled
-                      class="q-mb-md" style="display: none" />
-                  </div>
-                </div>
+      <template v-slot:body-cell-seguimiento="props">
+        <q-td class="b" :props="props">
+          <q-btn @click="mostrarSeguimiento(props.row)">📆
+            <q-tooltip>
+              {{ 'Mostrar Seguimiento' }}
+            </q-tooltip>
+          </q-btn>
+        </q-td>
+      </template>
 
-                <!-- Contenedor principal para el formulario y seguimientos -->
-                <div class="seguimientos-container">
-                  <q-card-section v-if="hasSeguimientos" class="text-h5" style="text-align: center; font-weight: bold;">
-                    Seguimientos
-                  </q-card-section>
-                  <!-- Seguimientos -->
-                  <div v-for="(item, index) in seguimientoCliente" :key="index" class="seguimiento-item">
-                    <q-card-section class="text-h5"># {{ index + 1 }}</q-card-section>
-                    <q-input v-model="item.fecha" :label="'Fecha de Seguimiento'" type="date" filled class="q-mb-md"
-                      required />
-                    <q-input v-model="item.peso" :label="'Peso (kg)'" type="number" filled class="q-mb-md" required
-                      min="0" />
-                    <q-input v-model="item.imc" :label="'IMC'" type="text" filled class="q-mb-md" style="display: none;"
-                      min="0" />
-                    <q-input v-model="item.estadoIMC" :label="'Estado del IMC'" type="text" filled class="q-mb-md"
-                      style="display: none;" min="0" />
-                    <q-input v-model="item.brazo" :label="'Brazo'" type="number" filled class="q-mb-md" required
-                      min="0" />
-                    <q-input v-model="item.pierna" :label="'Pierna'" type="number" filled class="q-mb-md" required
-                      min="0" />
-                    <q-input v-model="item.cintura" :label="'Cintura'" type="number" filled class="q-mb-md" required
-                      min="0" />
-                    <q-input v-model="item.estatura" label="Estatura (cm)" type="number" filled class="q-mb-md" required
-                      min="0" max="300" />
-                  </div>
+      <!-- Observaciones Column -->
+      <template v-slot:body-cell-observaciones="props">
+        <q-td :props="props" class="relative">
+          <div class="truncated-text" @mouseover="checkAndShowTooltip($event, props.row.observaciones, 20)"
+            @mouseleave="hideTooltip">
+            {{ truncateText(props.row.observaciones, 20) }}
+          </div>
+        </q-td>
+      </template>
+      <!-- Objetivo Column -->
+      <template v-slot:body-cell-objetivo="props">
+        <q-td :props="props" class="relative">
+          <div class="truncated-text" @mouseover="checkAndShowTooltip($event, props.row.objetivo, 20)"
+            @mouseleave="hideTooltip">
+            {{ truncateText(props.row.objetivo, 20) }}
+          </div>
+        </q-td>
+      </template>
 
-                  <!-- Botones de acción -->
-                  <div class="q-mt-md"
-                    style="position: relative; display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center">
+      <template v-slot:loading>
+        <q-inner-loading :showing="loadingg" label="Por favor espere..." label-class="text-teal"
+          label-style="font-size: 1.1em">
+        </q-inner-loading>
+      </template>
+    </q-table>
 
-                    <!-- Botón para agregar seguimiento -->
-                    <q-btn @click="addSeguimiento" label="Agregar Seguimiento" color="primary" class="q-ma-sm">
-                      <q-tooltip>
-                        Agregar Seguimiento
-                      </q-tooltip>
-                    </q-btn>
-                    <q-btn @click="deleteSeguimiento" label="Eliminar Seguimiento" color="primary" class="q-ma-sm">
-                      <q-tooltip>
-                        Eliminar Seguimiento
-                      </q-tooltip>
-                    </q-btn>
-                  </div>
-                  <q-btn :loading="useCliente.loading" :disable="useCliente.loading" type="submit" label="Guardar Cliente" color="primary"
-                    class="q-ma-sm">
-                    <q-tooltip>
-                      Guardar Cliente
-                    </q-tooltip>
-                    <template v-slot:loading>
-                      <q-spinner color="white" size="1em" />
-                    </template>
-                  </q-btn>
-                  <q-btn @click="mostrarFormularioAgregarCliente = false" label="Cancelar" class="q-ma-sm">
-                    <q-tooltip>
-                      Cancelar
-                    </q-tooltip>
-                  </q-btn>
-                </div>
-              </q-form>
-            </q-card-section>
-          </q-card>
-        </q-dialog>
-
-        <!-- Dialogo para editar cliente -->
-        <q-dialog v-model="mostrarFormularioEditarCliente">
-          <q-card style="width: 377px;">
-            <q-card-section>
-              <div class="text-h5" style="padding-left: 18px; font-weight: bold;">{{ isInstructor ? 'Editar Seguimiento'
-                :
-                'Editar Cliente' }}</div>
-            </q-card-section>
-
-            <q-card-section>
-              <q-form @submit.prevent="editarCliente">
-                <!-- Datos del Cliente -->
-                <div v-if="!isInstructor">
-                  <div style="padding-inline: 18px;">
-                    <q-input v-model.trim="nombreCliente" label="Nombre" filled required class="q-mb-md" />
-                    <q-input v-model="fechaIngresoCliente" label="Fecha de Ingreso" type="date" filled class="q-mb-md"
-                      required />
-                    <q-input v-model="documentoCliente" label="Documento" type="number" filled required class="q-mb-md"
-                      min="0" />
-                    <q-input v-model="fechaNacimientoCliente" label="Fecha de Nacimiento" type="date" filled
-                      class="q-mb-md" required />
-                    <q-input v-model="edadCliente" label="Edad" type="number" filled class="q-mb-md"
-                      style="display: none" />
-                    <q-input v-model.trim="direccionCliente" label="Dirección" filled class="q-mb-md" required />
-                    <q-input v-model="emailCliente" label="Email" type="string" filled required class="q-mb-md"
-                      min="0" />
-                    <q-input v-model.trim="objetivoCliente" label="Objetivo" type="textarea" filled required
-                      class="q-mb-md" />
-                    <q-input v-model.trim="observacionesCliente" label="Observaciones" type="textarea" filled
-                      class="q-mb-md" required />
-                    <q-select v-model="planCliente" label="Plan" filled outlined :options="planOptions" class="q-mb-md"
-                      style="max-width: 100%;" required>
-                      <template v-slot:no-option>
-                        <q-item>
-                          <q-item-section>
-                            No results
-                          </q-item-section>
-                        </q-item>
-                      </template>
-                    </q-select>
-                    <q-input v-model="fechaVencimientoCliente" label="Fecha de Vencimiento" type="date" filled
-                      class="q-mb-md" style="display: none" />
-                  </div>
-                </div>
-
-                <!-- Contenedor principal para el formulario y seguimientos -->
-                <div class="seguimientos-container">
-                  <q-card-section v-if="hasSeguimientos" class="text-h5" style="text-align: center; font-weight: bold;">
-                    Seguimiento(s)
-                  </q-card-section>
-                  <!-- Mostrar Seguimientos Existentes -->
-                  <div v-for="(item, index) in seguimientoCliente" :key="index" class="seguimiento-item">
-                    <q-card-section class="text-h5"># {{ index + 1 }}</q-card-section>
-                    <q-input v-model="item.fecha" :label="'Fecha de Seguimiento'" type="date" filled class="q-mb-md"
-                      required />
-                    <q-input v-model="item.peso" :label="'Peso (kg)'" type="number" filled class="q-mb-md" required
-                      min="0" />
-                    <q-input v-model="item.imc" :label="'IMC'" type="text" filled class="q-mb-md" style="display: none;"
-                      min="0" />
-                    <q-input v-model="item.estadoIMC" :label="'Estado del IMC'" type="text" filled class="q-mb-md"
-                      style="display: none;" min="0" />
-                    <q-input v-model="item.brazo" :label="'Brazo'" type="number" filled class="q-mb-md" required
-                      min="0" />
-                    <q-input v-model="item.pierna" :label="'Pierna'" type="number" filled class="q-mb-md" required
-                      min="0" />
-                    <q-input v-model="item.cintura" :label="'Cintura'" type="number" filled class="q-mb-md" required
-                      min="0" />
-                    <q-input v-model="item.estatura" label="Estatura (cm)" type="number" filled class="q-mb-md" required
-                      min="0" max="300" />
-                  </div>
-
-                  <div class="q-mt-md"
-                    style="position: relative; display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center;">
-                    <!-- Botón para agregar seguimiento -->
-                    <q-btn @click="addSeguimiento" label="Agregar Seguimiento" color="primary" class="q-ma-sm">
-                      <q-tooltip>
-                        Agregar Seguimiento
-                      </q-tooltip>
-                    </q-btn>
-                    <q-btn @click="deleteSeguimiento" label="Eliminar Seguimiento" color="primary" class="q-ma-sm">
-                      <q-tooltip>
-                        Eliminar Seguimiento
-                      </q-tooltip>
-                    </q-btn>
-                  </div>
-                  <q-btn type="submit" label="Guardar Cambios" color="primary" class="q-ma-sm"
-                    :loading="useCliente.loading" :disable="useCliente.loading">
-                    <q-tooltip>
-                      Guardar Cambios
-                    </q-tooltip>
-                    <template v-slot:loading>
-                      <q-spinner color="white" size="1em" />
-                    </template>
-                  </q-btn>
-                  <q-btn @click="mostrarFormularioEditarCliente = false" label="Cancelar" class="q-ma-sm">
-                    <q-tooltip>
-                      Cancelar
-                    </q-tooltip>
-                  </q-btn>
-                </div>
-              </q-form>
-            </q-card-section>
-          </q-card>
-        </q-dialog>
-
-        <!-- Modal o div para mostrar el seguimiento seleccionado -->
-        <q-dialog v-model="mostrarSeguimientoModal" style="margin: 0; ">
-          <q-card style="max-width: 100%; min-width: 280px;  margin: 0; padding: 5px;">
-            <q-card-section style="margin: 0; padding: 0; ">
-
-              <div class="some-page-wrapper" style="display: flex;">
-                <div class="row" style="display: flex; align-items: center; width: 100%;">
-                  <div class="column" style="flex: 1;">
-                    <div class="blue-column" style="width: 100%;">
-                      <p>Seguimientos
-                        del
-                        Cliente</p>
-                    </div>
-                  </div>
-                  <div class="btnCerrar">
-                    <q-btn class="btn" flat label="X" v-close-popup />
-                  </div>
-                </div>
-              </div>
-
-              <div
-                style="padding-top: 30px; padding-bottom: 10px;display: flex; justify-content: center; align-items: center; flex-direction: row; flex-wrap: wrap; width: auto;"
-                v-if="seguimientoSeleccionado">
-
-                <div class="datosSeguimiento" v-for="(seguimiento, index) in seguimientoSeleccionado" :key="index"
-                  :style="getColor(seguimiento.estadoIMC)">
-                  <h6># {{ (index + 1) }}</h6>
-                  <p>{{ `Fecha: ${seguimiento.fecha.split('T')[0].split('-').reverse().join('/')}` }}</p>
-                  <p>{{ `Peso: ${seguimiento.peso}` }}</p>
-                  <p>{{ `IMC: ${typeof seguimiento.imc === 'number' ?
-                    seguimiento.imc.toFixed(0).replace(/\.(\d{2})\d*$/, '.$1...') : seguimiento.imc}` }}</p>
-                  <p>{{ `estado IMC: ${seguimiento.estadoIMC}` }}</p>
-                  <p>{{ `Brazo: ${seguimiento.brazo}` }}</p>
-                  <p>{{ `Pierna: ${seguimiento.pierna}` }}</p>
-                  <p>{{ `Cintura: ${seguimiento.cintura}` }}</p>
-                  <p>
-                    Estatura: {{
-                      seguimiento.estatura.toString().length === 2
-                        ? `${seguimiento.estatura.toString().charAt(0)}'0${seguimiento.estatura.toString().charAt(1)}`
-                        : `${seguimiento.estatura.toString().charAt(0)}'${seguimiento.estatura.toString().slice(1)}`
-                    }}
-                  </p>
-                </div>
-              </div>
-            </q-card-section>
-          </q-card>
-        </q-dialog>
-
-      </div>
-
-      <q-table class="table" flat bordered title="Clientes" title-class="text-green text-weight-bolder text-h5"
-        :rows="filtrarFilas" :columns="columns" row-key="id">
-        <template v-slot:body-cell-opciones="props">
-          <q-td :props="props">
-            <q-btn @click="cargarClienteParaEdicion(props.row)">✏️
-              <q-tooltip>
-                {{ 'Editar Cliente' }}
-              </q-tooltip>
-            </q-btn>
-            <q-btn v-if="props.row.estado == 1" @click="inactivarCliente(props.row._id)">
-              ❌
-              <q-tooltip>
-                {{ 'Inactivar Cliente' }}
-              </q-tooltip>
-            </q-btn>
-            <q-btn v-else @click="activarCliente(props.row._id)">
-              ✅
-              <q-tooltip>
-                {{ 'Activar Cliente' }}
-              </q-tooltip>
-            </q-btn>
-          </q-td>
-        </template>
-
-        <template class="a" v-slot:body-cell-estado="props">
-          <q-td class="b" :props="props">
-            <p :style="{
-              color: props.row.estado === 1 ? 'green' : 'red',
-              margin: 0,
-            }">
-              {{ props.row.estado === 1 ? "Activo" : "Inactivo" }}
-            </p>
-          </q-td>
-        </template>
-
-        <template v-slot:body-cell-seguimiento="props">
-          <q-td class="b" :props="props">
-            <q-btn @click="mostrarSeguimiento(props.row)">📆
-              <q-tooltip>
-                {{ 'Mostrar Seguimiento' }}
-              </q-tooltip>
-            </q-btn>
-          </q-td>
-        </template>
-
-        <!-- Observaciones Column -->
-        <template v-slot:body-cell-observaciones="props">
-          <q-td :props="props" class="relative">
-            <div class="truncated-text" @mouseover="checkAndShowTooltip($event, props.row.observaciones, 20)"
-              @mouseleave="hideTooltip">
-              {{ truncateText(props.row.observaciones, 20) }}
-            </div>
-          </q-td>
-        </template>
-        <!-- Objetivo Column -->
-        <template v-slot:body-cell-objetivo="props">
-          <q-td :props="props" class="relative">
-            <div class="truncated-text" @mouseover="checkAndShowTooltip($event, props.row.objetivo, 20)"
-              @mouseleave="hideTooltip">
-              {{ truncateText(props.row.objetivo, 20) }}
-            </div>
-          </q-td>
-        </template>
-      </q-table>
-
-      <div v-if="tooltipVisible && tooltipText !== truncateText(tooltipText, 20)" class="tooltip-content"
-        :style="{ top: tooltipPosition.top + 'px', left: tooltipPosition.left + 'px' }">
-        <p>{{ tooltipText }}</p>
-      </div>
+    <div v-if="tooltipVisible && tooltipText !== truncateText(tooltipText, 20)" class="tooltip-content"
+      :style="{ top: tooltipPosition.top + 'px', left: tooltipPosition.left + 'px' }">
+      <p>{{ tooltipText }}</p>
+    </div>
   </div>
   <q-inner-loading :showing="isLoading" label="Por favor espere..." label-class="text-teal"
     label-style="font-size: 1.1em" />
@@ -863,6 +899,7 @@ watch(selectedOption, () =>
   font-family: cursive;
   font-style: italic;
 }
+
 /* .truncated-text {
   overflow: hidden;
   white-space: nowrap;

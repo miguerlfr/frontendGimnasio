@@ -3,8 +3,8 @@ import { ref } from "vue";
 import axios from "axios";
 import { notifyErrorRequest, notifySuccessRequest } from "../routes/routes.js";
 
-// const url = "https://backendgimnasio-ip8j.onrender.com"
-const url = "http://localhost:4505"
+const url = "https://backendgimnasio-ip8j.onrender.com"
+// const url = "http://localhost:4505"
 
 export const useStoreUsuarios = defineStore("Usuario", () => {
     let loading = ref(false)
@@ -202,7 +202,6 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
     const contraseñaCambiada = async (tokenA) => {
         try {
             loading.value = true;
-<<<<<<< HEAD
             const r = await axios.put(`${url}/api/usuarios/notificacion/token`, {}, {
                 headers: {
                     tokenP: tokenA,
@@ -220,10 +219,6 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
             loading.value = true;
             const r = await axios.put(`${url}/api/usuarios/cambiar/contrasena/${token}`, data);
             console.log("Respuesta del backend:", r);
-=======
-            const r = await axios.put(`${url}/api/usuarios/cambiar/contrasena`, {data});
-            console.log("Respuesta del servidor:", r.data.msg); // Añadir esta línea
->>>>>>> fc7471de55684ac2b620ce7cc6e434eda6ae87a0
             return r;
         } catch (error) {
             console.error("Error al restablecer contraseña", error);

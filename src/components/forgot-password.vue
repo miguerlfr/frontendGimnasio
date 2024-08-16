@@ -11,31 +11,9 @@ let email = ref('');
 let loading = ref(false);
 
 async function solicitarRestablecimiento() {
-<<<<<<< HEAD
 	if (email.value === '') {
 		notifyErrorRequest("El correo no puede estar vacío");
 		return;
-=======
-	try {
-		if (email.value === '') {
-			notifyErrorRequest("El correo no puede estar vacío");
-			return;
-		}
-		loadingEnviarCodigo.value = true; // Activar el spinner
-		const res = await useUsuario.recuperarContrasena(email.value);
-
-		if (res.status === 200) {
-			notifySuccessRequest("Correo de restablecimiento enviado");
-			router.push('/');
-		} else {
-			notifyErrorRequest("Error de red");
-		}
-	} catch (error) {
-		notifyErrorRequest("Error de red");
-		console.log(error);
-	} finally {
-		loadingEnviarCodigo.value = false; // Desactivar el spinner
->>>>>>> fc7471de55684ac2b620ce7cc6e434eda6ae87a0
 	}
 	loading.value = true;
 	const res = await useUsuario.recuperarContrasena(email.value);
@@ -97,11 +75,6 @@ function regresar() {
 </template>
 
 <style scoped>
-* {
-  font-family: cursive;
-  font-style: italic;
-}
-
 .title {
 	font-family: cursive;
 	font-style: italic;

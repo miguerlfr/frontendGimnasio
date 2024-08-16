@@ -1,14 +1,16 @@
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
 import { useStoreProductos } from "../stores/Productos.js";
+import { useStoreProveedores } from "../stores/Proveedores.js";
 
 // Para colocar puntos decimales a los nuemros
 function formatoNumerico(numero) {
   return typeof numero === 'number' ? numero.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : undefined;
 }
 
-// Llamado de modelo
+// Llamado de modelos
 const useProducto = useStoreProductos();
+const useProveedor = useStoreProveedores();
 
 // variables para mostrar el div que aparece al pasarle el mouse a la descripción
 const tooltipText = ref('');
@@ -22,11 +24,12 @@ const listarCodigo = ref("")
 const mostrarFormularioAgregarProducto = ref(false);
 const mostrarFormularioEditarProducto = ref(false);
 
+const idProductoSeleccionado = ref(null);
 const codigoProducto = ref("");
+const proveedor = ref("");
 const descripcionProducto = ref("");
 const valorProducto = ref("");
 const cantidadProducto = ref("");
-const idProductoSeleccionado = ref(null);
 
 const selectedOption = ref("Listar Productos"); // Establecer 'Listar Productos' como valor por defecto
 const options = [
@@ -45,6 +48,7 @@ const estadoProducto = ref("Activo");
 let rows = ref([]);
 const columns = ref([
   { name: "codigo", label: "Código", field: "codigo", align: "center" },
+  { name: "proveedor", label: "Proveedor", field: row => row.proveedor ? row.proveedor.nombre : '', align: "center" },
   {
     name: "descripcion",
     label: "Descripción",
@@ -57,6 +61,24 @@ const columns = ref([
   { name: "opciones", label: "Opciones", field: "opciones", align: "center" }
 ]);
 
+const proveedores = ref([])
+
+const proveedorOptions = computed(() => {
+  return proveedores.value
+    .filter(proveedor => proveedor.estado != 0)
+    .map((proveedor) => ({
+      label: proveedor.nombre,
+      id: proveedor._id
+    }));
+});
+
+// Funciones async
+async function listarProveedores() {
+  const r = await useProveedor.getProveedores();
+  console.log("Proveedores", r.data);
+  proveedores.value = r.data;
+}
+
 const actualizarListadoProductos = async () => {
   loadingg.value = true; // Inicia el estado de carga
   try {
@@ -67,8 +89,6 @@ const actualizarListadoProductos = async () => {
         : useProducto.getProductos();
 
     rows.value = (await productosPromise).data.productos;
-  } catch (error) {
-    console.error("Error al listar productos", error);
   } finally {
     loadingg.value = false;
     visible.value = false;
@@ -111,24 +131,28 @@ const filteredRows = computed(() => {
 async function agregarProducto() {
   const nuevoProducto = {
     codigo: codigoProducto.value,
+    proveedor: proveedor.value.id,
     descripcion: descripcionProducto.value,
     valor: valorProducto.value,
     cantidad: cantidadProducto.value,
     estado: estadoProducto.value === "Activo" ? 1 : 0,
   };
 
-  const r = await useProducto.postProductos(nuevoProducto);
-  if (r.status == 200) {
-    mostrarFormularioAgregarProducto.value = false
-    actualizarListadoProductos();
-    estadoProducto.value = "Activo";
-    console.log("Producto agregado exitosamente", nuevoProducto);
+  if (await validarDatosProducto(nuevoProducto)) {
+    const r = await useProducto.postProductos(nuevoProducto);
+    if (r.status == 200) {
+      mostrarFormularioAgregarProducto.value = false
+      actualizarListadoProductos();
+      estadoProducto.value = "Activo";
+      console.log("Producto agregado exitosamente", nuevoProducto);
+    }
   }
 }
 
 function cargarProductoParaEdicion(producto) {
   idProductoSeleccionado.value = producto._id;
   codigoProducto.value = producto.codigo;
+  proveedor.value = producto.proveedor.nombre;
   descripcionProducto.value = producto.descripcion;
   valorProducto.value = producto.valor;
   cantidadProducto.value = producto.cantidad;
@@ -138,19 +162,46 @@ function cargarProductoParaEdicion(producto) {
 }
 
 async function editarProducto() {
+  let proveedorActual = proveedorAgregar.value.id;
+
+  for (let proveedor of proveedores.value) {
+    if (proveedor.descripcion === proveedorAgregar.value) {
+      if (proveedor.estado == 1) {
+        proveedorActual = proveedor._id;
+        break;
+      } else {
+        notifyErrorRequest("Proveedor seleccionado inactivo")
+        return;
+      }
+    }
+  }
+
   const productoEditado = {
     codigo: codigoProducto.value,
+    proveedor: proveedorActual.value,
     descripcion: descripcionProducto.value,
     valor: valorProducto.value,
     cantidad: cantidadProducto.value,
   };
 
-  const r = await useProducto.putProductos(idProductoSeleccionado.value, productoEditado);
-  if (r.status == 200) {
-    mostrarFormularioEditarProducto.value = false;
-    actualizarListadoProductos()
-    console.log("Producto editado exitosamente", productoEditado);
+  if (await validarDatosProducto(productoEditado)) {
+    const r = await useProducto.putProductos(idProductoSeleccionado.value, productoEditado);
+    if (r.status == 200) {
+      mostrarFormularioEditarProducto.value = false;
+      actualizarListadoProductos()
+      console.log("Producto editado exitosamente", productoEditado);
+    }
   }
+}
+
+async function validarDatosProducto(produto) {
+  const { proveedor } = produto;
+
+  if (proveedor === '') {
+    notifyErrorRequest(`El Proveedor es requerido.`);
+    return false;
+  }
+  return true;
 }
 
 async function inactivarProducto(id) {
@@ -167,6 +218,7 @@ async function activarProducto(id) {
 
 function limpiarCampos() {
   codigoProducto.value = "";
+  proveedor.value = '';
   descripcionProducto.value = "";
   valorProducto.value = "";
   cantidadProducto.value = "";
@@ -195,7 +247,10 @@ function checkAndShowTooltip(event, text, maxLength) {
 const isLoading = computed(() => visible.value);
 
 // Montaje
-onMounted(() => actualizarListadoProductos());
+onMounted(() => {
+  actualizarListadoProductos();
+  listarProveedores();
+});
 
 watch(selectedOption, () =>
   actualizarListadoProductos(),
@@ -239,6 +294,16 @@ watch(selectedOption, () =>
           <q-card-section>
             <q-form @submit.prevent="agregarProducto">
               <q-input v-model.trim="codigoProducto" label="Código del producto" filled required class="q-mb-md" />
+              <q-select v-model="proveedor" label="Proveedor" filled outlined :options="proveedorOptions"
+                class="q-mb-md" style="max-width: 100%;" required>
+                <template v-slot:no-option>
+                  <q-item>
+                    <q-item-section>
+                      No results
+                    </q-item-section>
+                  </q-item>
+                </template>
+              </q-select>
               <q-input v-model.trim="descripcionProducto" type="textarea" label="Descripción del producto" filled
                 required class="q-mb-md" />
               <q-input v-model="valorProducto" label="Valor del producto" type="number" filled required class="q-mb-md"
@@ -281,6 +346,16 @@ watch(selectedOption, () =>
           <q-card-section>
             <q-form @submit.prevent="editarProducto">
               <q-input v-model.trim="codigoProducto" label="Código del producto" filled required class="q-mb-md" />
+              <q-select v-model="proveedor" label="Proveedor" filled outlined :options="proveedorOptions"
+                class="q-mb-md" style="max-width: 100%;" required>
+                <template v-slot:no-option>
+                  <q-item>
+                    <q-item-section>
+                      No results
+                    </q-item-section>
+                  </q-item>
+                </template>
+              </q-select>
               <q-input v-model.trim="descripcionProducto" type="textarea" label="Descripción del producto" filled
                 required class="q-mb-md" />
               <q-input v-model="valorProducto" label="Valor del producto" type="number" filled required class="q-mb-md"
