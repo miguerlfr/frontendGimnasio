@@ -126,7 +126,6 @@ onMounted(() => {
 	justify-content: center;
 	align-items: center;
 	height: 100%;
-	background-image: url('../img/gym.jpg');
 	background-size: cover;
 	background-repeat: no-repeat;
 	background-position: center;
