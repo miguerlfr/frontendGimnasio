@@ -83,7 +83,13 @@ const columns = ref([
   {
     name: "fechaUlt",
     label: "Fecha de Último Mantenimiento",
-    field: (row) => format(new Date(row.fechaUlt), 'dd/MM/yyyy'),
+    field: (row) => {
+      const fecha = new Date(row.fechaUlt);
+      fecha.setDate(fecha.getDate() + 1);
+
+      const fechaFormateada = format(fecha, "dd/MM/yyyy");
+      return fechaFormateada;
+    },
     align: "center",
   },
   { name: "estado", label: "Estado", field: "estado", align: "center" },
