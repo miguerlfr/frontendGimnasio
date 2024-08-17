@@ -24,6 +24,7 @@ const codigo = ref("");
 const sede = ref("");
 const descripcion = ref("");
 const fechaIngreso = ref("");
+const fechaUlt = ref("")
 const idMaquinaParaEditar = ref(null);
 
 const sedes = ref([])
@@ -80,9 +81,9 @@ const columns = ref([
     align: "center",
   },
   {
-    name: "updatedAt",
+    name: "fechaUlt",
     label: "Fecha de Último Mantenimiento",
-    field: (row) => format(new Date(row.updatedAt), 'dd/MM/yyyy'),
+    field: (row) => format(new Date(row.fechaUlt), 'dd/MM/yyyy'),
     align: "center",
   },
   { name: "estado", label: "Estado", field: "estado", align: "center" },
@@ -140,6 +141,7 @@ const limpiarCampos = () => {
   sede.value = "";
   descripcion.value = "";
   fechaIngreso.value = "";
+  fechaUlt.value = "";
 };
 
 async function validarDatosMaquina(maquina) {
@@ -157,6 +159,7 @@ async function agregarMaquina() {
     sede: sede.value.id,
     descripcion: descripcion.value,
     fechaIngreso: fechaIngreso.value,
+    fechaUlt: fechaUlt.value,
     estado: estadoM.value === "Activo" ? 1 : 0
   };
 
@@ -177,6 +180,7 @@ const cargarMaquinaParaEdicion = (maquina) => {
   sede.value = maquina.sede.nombre;
   descripcion.value = maquina.descripcion;
   fechaIngreso.value = maquina.fechaIngreso.split("T")[0];
+  fechaUlt.value = maquina.fechaUlt.split("T")[0];
 
   mostrarFormularioEditarMaquina.value = true;
   console.log("Datos de la máquina a editar:", maquina);
@@ -201,6 +205,7 @@ const editarMaquina = async () => {
     sede: idSede,
     descripcion: descripcion.value,
     fechaIngreso: fechaIngreso.value,
+    fechaUlt: fechaUlt.value,
   };
 
   if (await validarDatosMaquina(maquinaEditada)) {
@@ -298,6 +303,8 @@ watch(selectedOption, () =>
                   required />
                 <q-input v-model="fechaIngreso" label="Fecha de Ingreso" filled type="date" outlined class="q-mb-md"
                   required />
+                <q-input v-model="fechaUlt" label="Fecha de Ingreso" filled type="date" outlined class="q-mb-md"
+                  required />
                 <q-select v-model="estadoM" label="Estado" outlined :options="estadoOptions" filled class="q-mb-md"
                   style="max-width: 100%;" />
 
@@ -350,6 +357,8 @@ watch(selectedOption, () =>
                 <q-input v-model.trim="descripcion" label="Descripción" type="textarea" filled outlined class="q-mb-md"
                   required />
                 <q-input v-model="fechaIngreso" label="Fecha de Ingreso" filled type="date" outlined class="q-mb-md"
+                  required />
+                <q-input v-model="fechaUlt" label="Fecha de Ingreso" filled type="date" outlined class="q-mb-md"
                   required />
 
                 <!-- Botones de acción -->
