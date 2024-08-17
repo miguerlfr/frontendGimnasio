@@ -192,7 +192,7 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
             return r;
         } catch (error) {
             notifyErrorRequest(error.response.data.msg);
-            console.error("Error al restablecer contraseña", error.response.data);
+            console.error("Error al restablecer contraseña", error.response.data.msg);
             return error;
         } finally {
             loading.value = false;
