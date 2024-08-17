@@ -303,7 +303,7 @@ watch(selectedOption, () =>
                   required />
                 <q-input v-model="fechaIngreso" label="Fecha de Ingreso" filled type="date" outlined class="q-mb-md"
                   required />
-                <q-input v-model="fechaUlt" label="Fecha de Ingreso" filled type="date" outlined class="q-mb-md"
+                <q-input v-model="fechaUlt" label="Fecha de Último Mantenimiento" filled type="date" outlined class="q-mb-md"
                   required />
                 <q-select v-model="estadoM" label="Estado" outlined :options="estadoOptions" filled class="q-mb-md"
                   style="max-width: 100%;" />
@@ -358,7 +358,7 @@ watch(selectedOption, () =>
                   required />
                 <q-input v-model="fechaIngreso" label="Fecha de Ingreso" filled type="date" outlined class="q-mb-md"
                   required />
-                <q-input v-model="fechaUlt" label="Fecha de Ingreso" filled type="date" outlined class="q-mb-md"
+                <q-input v-model="fechaUlt" label="Fecha de Último Mantenimiento" filled type="date" outlined class="q-mb-md"
                   required />
 
                 <!-- Botones de acción -->
