@@ -307,7 +307,6 @@ async function editarPago() {
       }
     } else if (plan._id == planPago.value) {
       if (plan.estado == 1) {
-        idPlan = plan._id;
         valorNuevo = plan.valor;
         break;
       } else {
