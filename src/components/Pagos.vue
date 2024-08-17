@@ -307,6 +307,7 @@ async function editarPago() {
       }
     } else if (plan.descripcion === planPago.value){
       valorNuevo = plan.valor;
+      break;
     }
   }
   // console.log("idCliente:", idCliente);
