@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue';
-import { notifyErrorRequest } from "../routes/routes.js";
+import { notifyErrorRequest, notifySuccessRequest } from "../routes/routes.js";
 import { useStoreUsuarios } from '../stores/Usuarios.js';
 import { useRouter } from 'vue-router';
 

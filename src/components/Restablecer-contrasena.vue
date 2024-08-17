@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { notifyErrorRequest } from "../routes/routes.js";
+import { notifyErrorRequest, notifySuccessRequest } from "../routes/routes.js";
 import { useStoreUsuarios } from '../stores/Usuarios.js';
 
 let nuevaContrasenia = ref('');
