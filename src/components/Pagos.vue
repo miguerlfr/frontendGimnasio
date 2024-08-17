@@ -298,17 +298,22 @@ async function editarPago() {
   for (let plan of planes.value) {
     if (plan.descripcion === planPago.value) {
       if (plan.estado == 1) {
-        valorNuevo = plan.valor;
         idPlan = plan._id;
+        valorNuevo = plan.valor;
         break;
       } else {
         notifyErrorRequest("Plan seleccionado inactivo")
         return;
       }
-    } else if (plan._id == planPago.value._id){
-      idPlan = plan._id;
-      valorNuevo = plan.valor;
-      break;
+    } else if (plan._id == planPago.value._id) {
+      if (plan.estado == 1) {
+        idPlan = plan._id;
+        valorNuevo = plan.valor;
+        break;
+      } else {
+        notifyErrorRequest("Plan seleccionado inactivo")
+        return;
+      }
     }
   }
   // console.log("idCliente:", idCliente);
