@@ -282,11 +282,7 @@ const cargarPagoParaEdicion = (pago) => {
 async function editarPago() {
   let idCliente = clientePago.value.id
   let idPlan = planPago.value.id
-  let valorNuevo = planes.forEach(item => {
-    if(item._id == planPago.value.id){
-      return item_id
-    }
-  });
+  let valorNuevo;
 
   for (let cliente of clientes.value) {
     if (`${cliente.nombre} - ${cliente.documento}` === clientePago.value) {
