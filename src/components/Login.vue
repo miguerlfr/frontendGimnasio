@@ -120,8 +120,6 @@ async function validateCredentials() {
 }
 
 .login-container {
-    font-family: cursive;
-    font-style: italic;
     text-align: center;
     width: 320px;
     background: linear-gradient(to bottom, rgba(255, 255, 255, 0.842), rgb(255, 255, 255), rgb(255, 255, 255), rgb(255, 255, 255), rgba(255, 255, 255, 0.918));
