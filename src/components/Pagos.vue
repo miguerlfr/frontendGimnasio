@@ -305,7 +305,7 @@ async function editarPago() {
         notifyErrorRequest("Plan seleccionado inactivo")
         return;
       }
-    } else if (plan.descripcion === planPago.value){
+    } else if (plan.descripcion !== planPago.value){
       valorNuevo = plan.valor;
       break;
     }
