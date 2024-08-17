@@ -187,8 +187,8 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
     const recuperarContrasena = async (email) => {
         try {
             loading.value = true;
-            const r = await axios.put(`${url}/api/usuarios/restablecer/contrasena`, {email});
-            console.log("Respuesta del backend:", r.data.msg);
+            const r = await axios.put(`${url}/api/usuarios/restablecer/contrasena`, { email });
+            notifySuccessRequest("Correo de restablecimiento enviado");
             return r;
         } catch (error) {
             notifyErrorRequest(error.response.data.msg);
@@ -206,10 +206,10 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
                 headers: {
                     tokenP: tokenA,
                 }
-            })            
+            })
             return r;
         } catch (error) {
-            console.error("Errro al avisar", error);
+            console.error("Error al avisar", error);
             return error;
         }
     };
@@ -218,7 +218,8 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
         try {
             loading.value = true;
             const r = await axios.put(`${url}/api/usuarios/cambiar/contrasena/${token}`, data);
-            console.log("Respuesta del backend:", r);
+            notifySuccessRequest('Contraseña cambiada exitosamente');
+            console.log("Contraseña cambiada exitosamente:", r.data.user);
             return r;
         } catch (error) {
             console.error("Error al restablecer contraseña", error);

@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { notifyErrorRequest, notifySuccessRequest } from "../routes/routes.js";
+import { notifyErrorRequest } from "../routes/routes.js";
 import { useStoreUsuarios } from '../stores/Usuarios.js';
 
 let nuevaContrasenia = ref('');
@@ -19,8 +19,8 @@ function togglePasswordVisibility() {
 
 async function avisoo() {
 	try {
-		const res = await useUsuario.contraseñaCambiada(token.value);
-		if (res.data.code == "ERR_BAD_REQUEST") {
+		const r = await useUsuario.contraseñaCambiada(token.value);
+		if (r.data.code == "ERR_BAD_REQUEST") {
 			aviso.value = false;
 		}
 		aviso.value = true;

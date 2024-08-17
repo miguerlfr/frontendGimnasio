@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue';
-import { notifyErrorRequest, notifySuccessRequest } from "../routes/routes.js";
+import { notifyErrorRequest } from "../routes/routes.js";
 import { useStoreUsuarios } from '../stores/Usuarios.js';
 import { useRouter } from 'vue-router';
 
@@ -16,11 +16,7 @@ async function solicitarRestablecimiento() {
 		return;
 	}
 	loading.value = true;
-	const res = await useUsuario.recuperarContrasena(email.value);
-	if (res.status === 200) {
-		notifySuccessRequest("Correo de restablecimiento enviado");
-		router.push('/');
-	}
+	const r = await useUsuario.recuperarContrasena(email.value);
 	loading.value = false;
 }
 
