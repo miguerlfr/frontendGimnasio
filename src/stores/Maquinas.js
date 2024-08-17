@@ -4,8 +4,8 @@ import { useStoreUsuarios } from "../stores/Usuarios.js";
 import axios from "axios";
 import { notifyErrorRequest, notifySuccessRequest } from "../routes/routes.js";
 
-// const url = "https://backendgimnasio-ip8j.onrender.com"
-const url = "http://localhost:4505";
+const url = "https://backendgimnasio-ip8j.onrender.com"
+// const url = "http://localhost:4505";
 
 export const useStoreMaquinas = defineStore(
 	"Maquina",
