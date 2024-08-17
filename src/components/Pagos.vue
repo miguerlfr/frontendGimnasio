@@ -298,10 +298,11 @@ async function editarPago() {
   for (let plan of planes.value) {
     if (plan.descripcion === planPago.value) {
       if (plan.estado == 1) {
-        idPlan = plan._id;
         valorNuevo = plan.valor;
+        idPlan = plan._id;
         break;
       } else {
+        valorNuevo = plan.valor;
         notifyErrorRequest("Plan seleccionado inactivo")
         return;
       }
