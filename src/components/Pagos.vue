@@ -282,7 +282,11 @@ const cargarPagoParaEdicion = (pago) => {
 async function editarPago() {
   let idCliente = clientePago.value.id
   let idPlan = planPago.value.id
-  let valorNuevo;
+  let valorNuevo = planes.forEach(item => {
+    if(item._id == planPago.value.id){
+      return item_id
+    }
+  });
 
   for (let cliente of clientes.value) {
     if (`${cliente.nombre} - ${cliente.documento}` === clientePago.value) {
@@ -305,7 +309,7 @@ async function editarPago() {
         notifyErrorRequest("Plan seleccionado inactivo")
         return;
       }
-    } else if (plan._id == planPago.value) {
+    } else if (plan._id == planPago.value.id) {
       if (plan.estado == 1) {
         valorNuevo = plan.valor;
         break;
