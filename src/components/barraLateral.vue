@@ -22,7 +22,7 @@
       <q-toolbar>
         <q-btn dense flat round icon="menu" @click="toggleLeftDrawer" />
         <q-toolbar-title>
-          <em style="font-weight: bold;">Gym Monsters</em>
+          <em style="font-weight: bold; font-family: cursive;">Gym Monsters</em>
         </q-toolbar-title>
         <div class="tooltip-container" @click="handleLogout">
           <svg class="cerrar" height="24" viewBox="0 0 24 24" width="24" focusable="false">
@@ -55,7 +55,8 @@
             </div>
             <div class="text-weight-bold">¡¡ Bienvenido
               {{ useUsuario.user.nombre }} !!</div>
-            <div>
+              <div
+              style="font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;">
               {{ useUsuario.user.email }}</div>
             <div class="rol">Rol:&nbsp;<b class="rolP">{{ useUsuario.user.rol }}</b></div>
           </div>
@@ -160,6 +161,7 @@ const handleLogout = () => {
 
 <style scoped>
 .text-weight-bold {
+  font-family: cursive;
   font-variant: small-caps;
   font-style: italic;
   padding-bottom: 5px;
@@ -171,6 +173,7 @@ const handleLogout = () => {
   right: 0;
   font-size: 14px;
   font-weight: bold;
+  font-family: cursive;
   padding-right: 20px;
   padding: 10px 20px;
   font-size: 16px;
@@ -241,10 +244,9 @@ const handleLogout = () => {
   border-bottom: 1px solid rgb(18, 17, 16);
 }
 
-* {
+body {
   margin: 0;
-  font-family: cursive;
-  font-style: italic;
+  font-family: 'Arial', sans-serif;
 }
 
 #appHeader {

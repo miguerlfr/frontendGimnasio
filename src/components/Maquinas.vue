@@ -435,11 +435,6 @@ watch(selectedOption, () =>
 </template>
 
 <style scoped>
-* {
-  font-family: cursive;
-  font-style: italic;
-}
-
 .contSelect {
   display: flex;
   flex-direction: row;

@@ -103,11 +103,6 @@ onMounted(() => {
 
 
 <style scoped>
-* {
-	font-family: cursive;
-	font-style: italic;
-}
-
 .titlee {
 	font-family: cursive;
 	font-style: italic;
