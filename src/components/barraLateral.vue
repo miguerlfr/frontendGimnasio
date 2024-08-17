@@ -40,7 +40,7 @@
     </q-header>
 
     <q-drawer v-if="isAuthenticated" :model-value="leftDrawerOpen" show-if-above side="left" bordered overlay
-      style="background-color: #f0f0f0b8; overflow-y: hidden;">
+      style="background-color: #f0f0f0b8;">
 
       <div class="q-img q-img--menu relative-top" role="img" style="height: 204px;">
         <div style="padding-bottom: 82.5195%;"></div>
