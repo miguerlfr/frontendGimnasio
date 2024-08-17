@@ -186,7 +186,6 @@ async function editarProveedor() {
     nombre: nombre.value,
     telefono: telefono.value,
     notas: notas.value,
-    estado: estado.value === "Activo" ? 1 : 0,
   };
 
   const r = await useProveedor.putProveedores(

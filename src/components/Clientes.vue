@@ -663,7 +663,7 @@ watch(selectedOption, () =>
       </q-dialog>
 
       <!-- Dialogo para editar cliente -->
-      <q-dialog v-model="mostrarFormularioEditarCliente">
+      <q-dialog v-model="mostrarFormularioEditarCliente" required>
         <q-card style="width: 377px;">
           <q-card-section>
             <div class="text-h5" style="padding-left: 18px; font-weight: bold;">{{ isInstructor ? 'Editar Seguimiento'

@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
+import { notifyErrorRequest } from "../routes/routes.js";
 import { useStoreProductos } from "../stores/Productos.js";
 import { useStoreProveedores } from "../stores/Proveedores.js";
 
@@ -162,12 +163,12 @@ function cargarProductoParaEdicion(producto) {
 }
 
 async function editarProducto() {
-  let proveedorActual = proveedorAgregar.value.id;
+  let proveedorActual = proveedor.value.id;
 
-  for (let proveedor of proveedores.value) {
-    if (proveedor.descripcion === proveedorAgregar.value) {
-      if (proveedor.estado == 1) {
-        proveedorActual = proveedor._id;
+  for (let pro of proveedores.value) {
+    if (pro.descripcion === proveedor.value) {
+      if (pro.estado == 1) {
+        proveedorActual = pro._id;
         break;
       } else {
         notifyErrorRequest("Proveedor seleccionado inactivo")
@@ -178,7 +179,7 @@ async function editarProducto() {
 
   const productoEditado = {
     codigo: codigoProducto.value,
-    proveedor: proveedorActual.value,
+    proveedor: proveedorActual,
     descripcion: descripcionProducto.value,
     valor: valorProducto.value,
     cantidad: cantidadProducto.value,
