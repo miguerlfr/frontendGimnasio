@@ -1,12 +1,10 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import axios from "axios";
-import { useRouter } from 'vue-router';
 import { notifyErrorRequest, notifySuccessRequest } from "../routes/routes.js";
 
 const url = "https://backendgimnasio-ip8j.onrender.com"
 // const url = "http://localhost:4505"
-const router = useRouter();
 
 export const useStoreUsuarios = defineStore("Usuario", () => {
     let loading = ref(false)
@@ -190,8 +188,6 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
         try {
             loading.value = true;
             const r = await axios.put(`${url}/api/usuarios/restablecer/contrasena`, { email });
-            notifySuccessRequest("Correo de restablecimiento enviado");
-            router.push('/');
             return r;
         } catch (error) {
             notifyErrorRequest(error.response.data.msg);
@@ -221,8 +217,6 @@ export const useStoreUsuarios = defineStore("Usuario", () => {
         try {
             loading.value = true;
             const r = await axios.put(`${url}/api/usuarios/cambiar/contrasena/${token}`, data);
-            notifySuccessRequest('Contraseña cambiada exitosamente');
-            router.push('/');
             return r;
         } catch (error) {
             console.error("Error al restablecer contraseña", error);

@@ -16,7 +16,11 @@ async function solicitarRestablecimiento() {
 		return;
 	}
 	loading.value = true;
-	const r = await useUsuario.recuperarContrasena(email.value);
+	const res = await useUsuario.recuperarContrasena(email.value);
+	if (res.status === 200) {
+		notifySuccessRequest("Correo de restablecimiento enviado");
+		router.push('/');
+	}
 	loading.value = false;
 }
 

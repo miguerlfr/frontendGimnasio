@@ -42,7 +42,11 @@ const restablecerContrasenia = async () => {
 		const datos = {
 			nuevaContrasenia: nuevaContrasenia.value,
 		};
-		const response = await useUsuario.putUsuariosPassword(token.value, datos);
+		const r = await useUsuario.putUsuariosPassword(token.value, datos);
+		if (r.status == 200) {
+			router.push('/');
+			notifySuccessRequest('Contraseña cambiada exitosamente');
+		}
 
 	} catch (error) {
 		notifyErrorRequest('Error en el servidor.');
