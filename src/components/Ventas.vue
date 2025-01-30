@@ -10,7 +10,7 @@ function formatoNumerico(numero) {
   return typeof numero === 'number' ? numero.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : undefined;
 }
 
-// Loading
+// Loadingg
 const visible = ref(true);
 const loadingg = ref(true)
 const listarCodigo = ref("")
